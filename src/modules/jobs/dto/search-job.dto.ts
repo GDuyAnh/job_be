@@ -1,6 +1,6 @@
 import { IsOptional, IsString , IsArray } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose , Transform } from 'class-transformer';
+import { Transform } from 'class-transformer';
 
 export class SearchJobDto {
   @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm theo tiêu đề' })

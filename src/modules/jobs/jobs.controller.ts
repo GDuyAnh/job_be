@@ -1,9 +1,11 @@
-import { Controller, Post, Get, Param, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Query, Put } from '@nestjs/common';
 import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import { Job } from './job.entity';
 import { CreateJobDto } from './dto/create-job.dto';
 import { SearchJobDto } from './dto/search-job.dto';
+import { JobDetail } from './job-detail.entity';
+import { JobDetailDto } from './dto/job-detail.dto';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -32,9 +34,20 @@ export class JobsController {
     return this.jobsService.searchJobs(query);
   }
 
-  @Get(':id')
-  @ApiResponse({ status: 200, description: 'Job detail', type: Job })
-  async findOne(@Param('id') id: number): Promise<Job> {
-    return this.jobsService.findOne(id);
+  // @Get(':id')
+  // @ApiResponse({ status: 200, description: 'Job detail', type: Job })
+  // async findOne(@Param('id') id: number): Promise<Job> {
+  //   return this.jobsService.findOne(id);
+  // }
+
+  @Get('/detail/:id')
+  @ApiResponse({
+    status: 200,
+    description: 'Chi tiết công việc',
+    type: JobDetailDto,
+  })
+  async getJobDetail(@Param('id') id: number): Promise<JobDetailDto> {
+    return this.jobsService.getJobDetail(id);
   }
+
 }

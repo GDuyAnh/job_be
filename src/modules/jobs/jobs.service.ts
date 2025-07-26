@@ -3,12 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Job } from './job.entity';
 import { SearchJobDto } from './dto/search-job.dto';
+import { JobDetail } from './job-detail.entity';
+import { JobDetailDto } from './dto/job-detail.dto';
 
 @Injectable()
 export class JobsService {
   constructor(
     @InjectRepository(Job)
     private jobsRepository: Repository<Job>,
+    @InjectRepository(JobDetail)
+    private jobDetailRepository: Repository<JobDetail>,
   ) {}
 
   async create(data: Partial<Job>): Promise<Job> {
@@ -54,5 +58,16 @@ export class JobsService {
     }
 
     return this.jobsRepository.find({ where });
+  }
+
+  async getJobDetail(jobId: number): Promise<JobDetailDto> {
+    const job = await this.jobsRepository.findOne({ where: { id: jobId } });
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    const detail = await this.jobDetailRepository.findOne({ where: { jobId } });
+
+    return new JobDetailDto(job, detail);
   }
 }

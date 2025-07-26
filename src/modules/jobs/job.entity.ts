@@ -4,14 +4,20 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { JobDetail } from './job-detail.entity';
 
 @Entity('jobs')
 export class Job {
   @ApiProperty({ description: 'id' })
   @PrimaryGeneratedColumn()
   id: number;
+
+  @ApiProperty({ description: 'jobDetail' })
+  @OneToOne(()=> JobDetail, (detail) => detail.job)
+  detail: JobDetail;
 
   @ApiProperty({ description: 'title' })
   @Column()
