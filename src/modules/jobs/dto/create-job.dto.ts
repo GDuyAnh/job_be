@@ -16,4 +16,22 @@ export class CreateJobDto {
   @IsNumber()
   @IsNotEmpty()
   tagId: number;
+
+  @ApiProperty({description: 'Category'})
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @ApiProperty({description: 'Location'})
+  @IsString()
+  @IsNotEmpty()
+  location: string;
+
+  @ApiProperty({description: 'typeOfEmployment'})
+  @IsString()
+  typeOfEmployment: string;
+
+  @ApiProperty({description: 'experienceLevel'})
+  @IsString()
+  experienceLevel: string;
 } 

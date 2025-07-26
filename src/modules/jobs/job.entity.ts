@@ -25,6 +25,22 @@ export class Job {
   @Column()
   tagId: number;
 
+  @ApiProperty({ description: 'category' })
+  @Column()
+  category: string;
+
+  @ApiProperty({ description: 'location' })
+  @Column()
+  location: string;
+
+  @ApiProperty({ description: 'typeOfEmployment' })
+  @Column()
+  typeOfEmployment: string;
+
+  @ApiProperty({ description: 'experienceLevel' })
+  @Column()
+  experienceLevel: string;
+
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()
   createdAt: Date;
@@ -32,4 +48,4 @@ export class Job {
   @ApiProperty({ description: 'updatedAt' })
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}
