@@ -27,36 +27,32 @@ export class JobsService {
   }
 
   async searchJobs(dto: SearchJobDto): Promise<Job[]> {
-    console.log('DTO nhận được:', dto);
-
     const where: any = {};
 
-    // Keyword: chỉ lọc nếu có
     if (dto.keyword && dto.keyword.trim()) {
       where.title = Like(`%${dto.keyword.trim()}%`);
     }
 
-    // Category: bỏ qua nếu chọn All Categories
     if (dto.category && dto.category !== 'All Categories') {
       where.category = dto.category;
     }
 
-    // Location: bỏ qua nếu chọn All Locations
     if (dto.location && dto.location !== 'All Locations') {
       where.location = dto.location;
     }
 
-    // Nếu có typeOfEmployment
-    if (dto.typeOfEmployment) {
+    if (dto.typeOfEmployment && dto.typeOfEmployment.length > 0) {
       where.typeOfEmployment = In(dto.typeOfEmployment);
     }
 
-    // Nếu có experienceLevel
-    if (dto.experienceLevel) {
+    if (dto.experienceLevel && dto.experienceLevel.length > 0) {
       where.experienceLevel = In(dto.experienceLevel);
     }
 
-    console.log('WHERE:', where);
+    if (Object.keys(where).length === 0) {
+      return this.jobsRepository.find();
+    }
+
     return this.jobsRepository.find({ where });
   }
 }
