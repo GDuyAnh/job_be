@@ -12,7 +12,7 @@ export class CompanyResponseDto {
   organizationType: string;
 
   @ApiProperty({ description: 'Vị trí đang tuyển' })
-  openPositions: string;
+  openPositions: number;
 
   constructor(company: Company) {
     this.name = company.name;

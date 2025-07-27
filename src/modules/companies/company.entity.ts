@@ -29,7 +29,7 @@ export class Company {
 
   @ApiProperty({ description: 'Vị trí đang tuyển (có thể là số lượng hoặc mô tả ngắn)' })
   @Column({ nullable: true })
-  openPositions: string;
+  openPositions: number;
 
   @CreateDateColumn()
   createdAt: Date;

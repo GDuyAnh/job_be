@@ -20,5 +20,5 @@ export class CreateCompanyDto {
   @ApiProperty({ description: 'Vị trí đang tuyển', example: '5 vị trí' })
   @IsOptional()
   @IsString()
-  openPositions?: string;
+  openPositions?: number;
 } 

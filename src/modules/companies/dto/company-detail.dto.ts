@@ -14,7 +14,7 @@ export class CompanyDetailDto {
   organizationType: string;
 
   @ApiProperty({ description: 'Vị trí đang tuyển' })
-  openPositions: string;
+  openPositions: number;
 
   // Company detail fields
   @ApiProperty({ description: 'Link mạng xã hội' })
