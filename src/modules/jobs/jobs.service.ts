@@ -53,6 +53,10 @@ export class JobsService {
       where.experienceLevel = In(dto.experienceLevel);
     }
 
+    if (dto.isFeatured !== undefined) {
+      where.isFeatured = dto.isFeatured;
+    }
+
     if (Object.keys(where).length === 0) {
       return this.jobsRepository.find();
     }

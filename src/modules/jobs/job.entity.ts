@@ -5,9 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { JobDetail } from './job-detail.entity';
+import { Company } from '../companies/company.entity';
 
 @Entity('jobs')
 export class Job {
@@ -16,7 +19,7 @@ export class Job {
   id: number;
 
   @ApiProperty({ description: 'jobDetail' })
-  @OneToOne(()=> JobDetail, (detail) => detail.job)
+  @OneToOne(() => JobDetail, (detail) => detail.job)
   detail: JobDetail;
 
   @ApiProperty({ description: 'title' })
@@ -47,6 +50,14 @@ export class Job {
   @Column()
   experienceLevel: string;
 
+  @ApiProperty({ description: 'companyId' })
+  @Column({ nullable: true })
+  companyId: number;
+
+  @ManyToOne(() => Company, (company) => company.jobs)
+  @JoinColumn({ name: 'companyId' })
+  company: Company;
+
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()
   createdAt: Date;
@@ -54,4 +65,8 @@ export class Job {
   @ApiProperty({ description: 'updatedAt' })
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ApiProperty({ description: 'Công việc nổi bật hay không', default: false })
+  @Column({ type: 'boolean', default: false })
+  isFeatured: boolean;
 }
