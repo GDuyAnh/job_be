@@ -6,6 +6,7 @@ import { SearchJobDto } from './dto/search-job-request.dto';
 import { JobDetail } from './job-detail.entity';
 import { JobDetailDto } from './dto/job-detail.dto';
 import { CategoryStatsDto } from './dto/category-stats.dto';
+import { LocationStatsDto } from './dto/location-stats.dto';
 import { JobResponseDto } from './dto/search-job-response.dto';
 
 @Injectable()
@@ -56,7 +57,6 @@ export class JobsService {
 
     let jobs;
     if (Object.keys(where).length === 0) {
-      // Không có filter -> lấy toàn bộ jobs + relations
       jobs = await this.jobsRepository.find({
         relations: ['company', 'detail'],
       });
@@ -93,5 +93,40 @@ export class JobsService {
     return result.map(
       (item) => new CategoryStatsDto(item.category, parseInt(item.jobCount)),
     );
+  }
+
+  async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
+    const majorCities = [
+      'HaNoi',
+      'HaiPhong', 
+      'DaNang',
+      'Hue',
+      'HoChiMinh',
+      'CanTho',
+      'BinhDuong',
+      'KhanhHoa'
+    ];
+
+    const result = await this.jobsRepository
+      .createQueryBuilder('job')
+      .select('job.location', 'location')
+      .addSelect('COUNT(job.id)', 'jobCount')
+      .groupBy('job.location')
+      .orderBy('jobCount', 'DESC')
+      .getRawMany();
+
+    const locationMap = new Map<string, number>();
+    result.forEach((item) => {
+      locationMap.set(item.location, parseInt(item.jobCount));
+    });
+
+    const response: LocationStatsDto[] = [];
+
+    majorCities.forEach((city) => {
+      const jobCount = locationMap.get(city) || 0;
+      response.push(new LocationStatsDto(city, jobCount, true));
+    });
+
+    return response;
   }
 }

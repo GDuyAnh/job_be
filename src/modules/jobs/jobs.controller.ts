@@ -6,6 +6,7 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { SearchJobDto } from './dto/search-job-request.dto';
 import { JobDetailDto } from './dto/job-detail.dto';
 import { CategoryStatsDto } from './dto/category-stats.dto';
+import { LocationStatsDto } from './dto/location-stats.dto';
 import { JobResponseDto } from './dto/search-job-response.dto';
 
 @ApiTags('jobs')
@@ -59,6 +60,16 @@ export class JobsController {
   })
   async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
     return this.jobsService.getCategoriesWithJobCount();
+  }
+
+  @Get('/locations')
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách location và số lượng jobs',
+    type: [LocationStatsDto]
+  })
+  async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
+    return this.jobsService.getLocationsWithJobCount();
   }
 
 }
