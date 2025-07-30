@@ -1,37 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class JobResponseDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Job ID' })
   id: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Job title' })
   title: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Job description' })
   description: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Job category' })
   category: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Job location' })
   location: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Type of employment' })
   typeOfEmployment: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Experience level required' })
   experienceLevel: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Company name' })
   companyName: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Company logo' })
   companyLogo: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Salary' })
   salary: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Whether the job is featured' })
   isFeatured: boolean;
 
   constructor(job: any) {

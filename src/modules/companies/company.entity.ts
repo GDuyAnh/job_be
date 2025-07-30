@@ -11,55 +11,55 @@ import { Job } from '../jobs/job.entity';
 
 @Entity('companies')
 export class Company {
-  @ApiProperty({ description: 'ID công ty' })
+  @ApiProperty({ description: 'Company ID' })
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ description: 'Tên công ty' })
+  @ApiProperty({ description: 'Company name' })
   @Column()
   name: string;
 
-  @ApiProperty({ description: 'Logo công ty' })
+  @ApiProperty({ description: 'Company logo' })
   @Column({ nullable: true })
   logo: string;
 
-  @ApiProperty({ description: 'Loại hình tổ chức (Trường công lập, Công giáo, ...)' })
+  @ApiProperty({ description: 'Organization type (Public school, Catholic, etc.)' })
   @Column({ nullable: true })
   organizationType: string;
 
-  @ApiProperty({ description: 'Vị trí đang tuyển (có thể là số lượng hoặc mô tả ngắn)' })
+  @ApiProperty({ description: 'Open positions (can be number or short description)' })
   @Column({ nullable: true })
   openPositions: number;
 
-  @ApiProperty({ description: 'Link mạng xã hội' })
+  @ApiProperty({ description: 'Social media links' })
   @Column({ type: 'json', nullable: true })
   socialLinks: string[];
 
-  @ApiProperty({ description: 'Website công ty' })
+  @ApiProperty({ description: 'Company website' })
   @Column({ nullable: true })
   website: string;
 
-  @ApiProperty({ description: 'Tỉnh/thành phố' })
+  @ApiProperty({ description: 'Province/city' })
   @Column({ nullable: true })
   location: string;
 
-  @ApiProperty({ description: 'Địa chỉ chi tiết' })
+  @ApiProperty({ description: 'Detailed address' })
   @Column({ nullable: true })
   address: string;
 
-  @ApiProperty({ description: 'Quy mô công ty (ví dụ: 50-100 nhân sự)' })
+  @ApiProperty({ description: 'Company size (e.g., 50-100 employees)' })
   @Column({ nullable: true })
   companySize: string;
 
-  @ApiProperty({ description: 'Năm thành lập' })
+  @ApiProperty({ description: 'Founded year' })
   @Column({ type: 'int', nullable: true })
   foundedYear: number;
 
-  @ApiProperty({ description: 'Email công ty' })
+  @ApiProperty({ description: 'Company email' })
   @Column({ nullable: true })
   email: string;
 
-  @ApiProperty({ description: 'Mô tả công ty (rich text)' })
+  @ApiProperty({ description: 'Company description (rich text)' })
   @Column({ type: 'text', nullable: true })
   description: string;
 

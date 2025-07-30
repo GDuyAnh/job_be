@@ -2,19 +2,19 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class LocationStatsDto {
   @ApiProperty({
-    description: 'Tên location',
+    description: 'Location name',
     example: 'HaNoi'
   })
   location: string;
 
   @ApiProperty({
-    description: 'Số lượng jobs thuộc location',
+    description: 'Number of jobs in this location',
     example: 15
   })
   jobCount: number;
 
   @ApiProperty({
-    description: 'Có phải là tỉnh thành lớn hay không',
+    description: 'Whether this is a major city',
     example: true
   })
   isMajorCity: boolean;

@@ -2,13 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CategoryStatsDto {
   @ApiProperty({
-    description: 'Tên category',
-    example: 'Giáo viên ngữ văn'
+    description: 'Category name',
+    example: 'Literature Teacher'
   })
   category: string;
 
   @ApiProperty({
-    description: 'Số lượng jobs thuộc category',
+    description: 'Number of jobs in this category',
     example: 10
   })
   jobCount: number;

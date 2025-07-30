@@ -1,35 +1,44 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsDateString, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateJobDto {
-  @ApiProperty({ description: 'title', example: 'Backend Developer' })
+  @ApiProperty({ description: 'Job title', example: 'Backend Developer' })
   @IsString({ message: 'Title must be a string' })
   @IsNotEmpty({ message: 'Title is required' })
   @Transform(({ value }) => value?.trim())
   title: string;
 
-  @ApiProperty({ description: 'description', example: 'Develop backend services...' })
+  @ApiProperty({
+    description: 'Job description',
+    example: 'Develop backend services...',
+  })
   @IsString({ message: 'Description must be a string' })
   @IsNotEmpty({ message: 'Description is required' })
   description: string;
 
-  @ApiProperty({ description: 'Category' })
+  @ApiProperty({ description: 'Job category' })
   @IsString({ message: 'Category must be a string' })
   @IsNotEmpty({ message: 'Category is required' })
   category: string;
 
-  @ApiProperty({ description: 'Location' })
+  @ApiProperty({ description: 'Job location' })
   @IsString({ message: 'Location must be a string' })
   @IsNotEmpty({ message: 'Location is required' })
   location: string;
 
-  @ApiProperty({ description: 'typeOfEmployment' })
+  @ApiProperty({ description: 'Type of employment' })
   @IsString({ message: 'Type of employment must be a string' })
   @IsNotEmpty({ message: 'Type of employment is required' })
   typeOfEmployment: string;
 
-  @ApiProperty({ description: 'experienceLevel' })
+  @ApiProperty({ description: 'Experience level required' })
   @IsString({ message: 'Experience level must be a string' })
   @IsNotEmpty({ message: 'Experience level is required' })
   experienceLevel: string;
@@ -53,7 +62,7 @@ export class CreateJobDto {
   @IsDateString({}, { message: 'Posted date must be a valid date' })
   postedDate?: Date;
 
-  @ApiProperty({ description: 'Deadline', required: false })
+  @ApiProperty({ description: 'Application deadline', required: false })
   @IsOptional()
   @IsDateString({}, { message: 'Deadline must be a valid date' })
   deadline?: Date;
@@ -68,13 +77,17 @@ export class CreateJobDto {
   @IsString({ message: 'Benefits must be a string' })
   benefits?: string;
 
-  @ApiProperty({ description: 'Detail description', required: false })
+  @ApiProperty({ description: 'Detailed description', required: false })
   @IsOptional()
   @IsString({ message: 'Detail description must be a string' })
   detailDescription?: string;
 
-  @ApiProperty({ description: 'Is featured job', required: false, default: false })
+  @ApiProperty({
+    description: 'Whether the job is featured',
+    required: false,
+    default: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'Is featured must be a boolean' })
   isFeatured?: boolean;
-} 
+}

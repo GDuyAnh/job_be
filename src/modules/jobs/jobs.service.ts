@@ -7,6 +7,12 @@ import { JobDetailDto } from './dto/job-detail.dto';
 import { CategoryStatsDto } from './dto/category-stats.dto';
 import { LocationStatsDto } from './dto/location-stats.dto';
 import { JobResponseDto } from './dto/search-job-response.dto';
+import {
+  ALL_CATEGORIES,
+  ALL_LOCATIONS,
+  MAJOR_CITIES,
+  majorCities,
+} from '../constants';
 
 @Injectable()
 export class JobsService {
@@ -36,10 +42,10 @@ export class JobsService {
     if (dto.keyword?.trim()) {
       where.title = Like(`%${dto.keyword.trim()}%`);
     }
-    if (dto.category && dto.category !== 'All Categories') {
+    if (dto.category && dto.category !== ALL_CATEGORIES) {
       where.category = dto.category;
     }
-    if (dto.location && dto.location !== 'All Locations') {
+    if (dto.location && dto.location !== ALL_LOCATIONS) {
       where.location = dto.location;
     }
     if (dto.typeOfEmployment?.length > 0) {
@@ -48,7 +54,7 @@ export class JobsService {
     if (dto.experienceLevel?.length > 0) {
       where.experienceLevel = In(dto.experienceLevel);
     }
-    if (dto.isFeatured !== undefined) {
+    if (dto.isFeatured !== undefined || dto.isFeatured !== null) {
       where.isFeatured = dto.isFeatured;
     }
 
@@ -91,16 +97,7 @@ export class JobsService {
   }
 
   async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
-    const majorCities = [
-      'HaNoi',
-      'HaiPhong', 
-      'DaNang',
-      'Hue',
-      'HoChiMinh',
-      'CanTho',
-      'BinhDuong',
-      'KhanhHoa'
-    ];
+    const cities = MAJOR_CITIES;
 
     const result = await this.jobsRepository
       .createQueryBuilder('job')
@@ -117,7 +114,7 @@ export class JobsService {
 
     const response: LocationStatsDto[] = [];
 
-    majorCities.forEach((city) => {
+    cities.forEach((city) => {
       const jobCount = locationMap.get(city) || 0;
       response.push(new LocationStatsDto(city, jobCount, true));
     });
