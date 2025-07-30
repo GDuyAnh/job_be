@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Company } from '../company.entity';
-import { CompanyDetail } from '../company-detail.entity';
 
 export class CompanyDetailDto {
- 
   @ApiProperty({ description: 'Tên công ty' })
   name: string;
 
@@ -17,45 +14,42 @@ export class CompanyDetailDto {
   openPositions: number;
 
   // Company detail fields
-  @ApiProperty({ description: 'Link mạng xã hội' })
-  socialLinks: string[];
+  @ApiProperty({ description: 'Link mạng xã hội', nullable: true })
+  socialLinks: string[] | null;
 
-  @ApiProperty({ description: 'Website công ty' })
-  website: string;
+  @ApiProperty({ description: 'Website công ty', nullable: true })
+  website: string | null;
 
-  @ApiProperty({ description: 'Tỉnh/thành phố' })
-  location: string;
+  @ApiProperty({ description: 'Tỉnh/thành phố', nullable: true })
+  location: string | null;
 
-  @ApiProperty({ description: 'Địa chỉ chi tiết' })
-  address: string;
+  @ApiProperty({ description: 'Địa chỉ chi tiết', nullable: true })
+  address: string | null;
 
-  @ApiProperty({ description: 'Quy mô công ty' })
-  companySize: string;
+  @ApiProperty({ description: 'Quy mô công ty', nullable: true })
+  companySize: string | null;
 
-  @ApiProperty({ description: 'Năm thành lập' })
-  foundedYear: number;
+  @ApiProperty({ description: 'Năm thành lập', nullable: true })
+  foundedYear: number | null;
 
   @ApiProperty({ description: 'Email công ty' })
   email: string;
 
-  @ApiProperty({ description: 'Mô tả công ty' })
-  description: string;
+  @ApiProperty({ description: 'Mô tả công ty', nullable: true })
+  description: string | null;
 
-  constructor(company: Company, detail: CompanyDetail) {
+  constructor(company: any) {
     this.name = company.name;
     this.logo = company.logo;
     this.organizationType = company.organizationType;
     this.openPositions = company.openPositions;
-
-    if (detail) {
-      this.socialLinks = detail.socialLinks;
-      this.website = detail.website;
-      this.location = detail.location;
-      this.address = detail.address;
-      this.companySize = detail.companySize;
-      this.foundedYear = detail.foundedYear;
-      this.email = detail.email;
-      this.description = detail.description;
-    }
+    this.socialLinks = company.socialLinks;
+    this.website = company.website;
+    this.location = company.location;
+    this.address = company.address;
+    this.companySize = company.companySize;
+    this.foundedYear = company.foundedYear;
+    this.email = company.email;
+    this.description = company.description;
   }
 } 

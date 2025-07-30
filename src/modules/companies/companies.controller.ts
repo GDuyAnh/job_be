@@ -39,7 +39,7 @@ export class CompaniesController {
     return this.companiesService.searchCompanies(query);
   }
 
-  @Get('/detail/:id')
+  @Get(':id')
   @ApiResponse({
     status: 200,
     description: 'Chi tiết công ty',

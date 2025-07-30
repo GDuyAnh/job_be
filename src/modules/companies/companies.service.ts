@@ -1,22 +1,43 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from './company.entity';
 import { SearchCompanyDto } from './dto/search-company.dto';
-import { CompanyDetail } from './company-detail.entity';
 import { CompanyDetailDto } from './dto/company-detail.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
+import { CreateCompanyDto } from './dto/create-company.dto';
 
 @Injectable()
 export class CompaniesService {
   constructor(
     @InjectRepository(Company)
     private companiesRepository: Repository<Company>,
-    @InjectRepository(CompanyDetail)
-    private companyDetailRepository: Repository<CompanyDetail>,
   ) {}
 
-  async create(data: Partial<Company>): Promise<Company> {
+  async create(data: CreateCompanyDto): Promise<Company> {
+    // Check if email is provided
+    if (!data.email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    // Check if company name already exists
+    const existingCompany = await this.companiesRepository.findOne({
+      where: { name: data.name.trim() }
+    });
+
+    if (existingCompany) {
+      throw new ConflictException('Company name already exists');
+    }
+
+    // Check if email already exists
+    const existingEmail = await this.companiesRepository.findOne({
+      where: { email: data.email }
+    });
+
+    if (existingEmail) {
+      throw new ConflictException('Email already exists');
+    }
+
     const company = this.companiesRepository.create(data);
     return this.companiesRepository.save(company);
   }
@@ -57,10 +78,6 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
-    const detail = await this.companyDetailRepository.findOne({
-      where: { companyId },
-    });
-
-    return new CompanyDetailDto(company, detail);
+    return new CompanyDetailDto(company);
   }
 }

@@ -4,12 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToOne,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { JobDetail } from './job-detail.entity';
 import { Company } from '../companies/company.entity';
 
 @Entity('jobs')
@@ -18,10 +16,7 @@ export class Job {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ description: 'jobDetail' })
-  @OneToOne(() => JobDetail, (detail) => detail.job)
-  detail: JobDetail;
-
+  
   @ApiProperty({ description: 'title' })
   @Column()
   title: string;
@@ -29,10 +24,6 @@ export class Job {
   @ApiProperty({ description: 'description' })
   @Column('text')
   description: string;
-
-  @ApiProperty({ description: 'tagId' })
-  @Column()
-  tagId: number;
 
   @ApiProperty({ description: 'category' })
   @Column()
@@ -69,4 +60,32 @@ export class Job {
   @ApiProperty({ description: 'Công việc nổi bật hay không', default: false })
   @Column({ type: 'boolean', default: false })
   isFeatured: boolean;
+
+  @ApiProperty({ description: 'Image logo (default nếu không có)' })
+  @Column({ nullable: true })
+  imageLogo: string;
+
+  @ApiProperty({ description: 'Banner logo (default nếu không có)' })
+  @Column({ nullable: true })
+  bannerLogo: string;
+
+  @ApiProperty({ description: 'Ngày đăng tin' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  postedDate: Date;
+
+  @ApiProperty({ description: 'Hạn cuối ứng tuyển' })
+  @Column({ type: 'date', nullable: true })
+  deadline: Date;
+
+  @ApiProperty({ description: 'Mức lương' })
+  @Column({ nullable: true })
+  salary: string;
+
+  @ApiProperty({ description: 'Phúc lợi' })
+  @Column({ type: 'text', nullable: true })
+  benefits: string;
+
+  @ApiProperty({ description: 'description in detail' })
+  @Column({ type: 'text', nullable: true })
+  detailDescription: string; 
 }

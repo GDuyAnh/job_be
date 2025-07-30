@@ -42,7 +42,7 @@ export class JobsController {
   //   return this.jobsService.findOne(id);
   // }
 
-  @Get('/detail/:id')
+  @Get(':id')
   @ApiResponse({
     status: 200,
     description: 'Chi tiết công việc',
