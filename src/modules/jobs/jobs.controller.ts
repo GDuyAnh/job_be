@@ -3,7 +3,11 @@ import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import { Job } from './job.entity';
 import { CreateJobDto } from './dto/create-job.dto';
-import { SearchJobDto } from './dto/search-job.dto';
+import { SearchJobDto } from './dto/search-job-request.dto';
+import { JobDetailDto } from './dto/job-detail.dto';
+import { CategoryStatsDto } from './dto/category-stats.dto';
+import { LocationStatsDto } from './dto/location-stats.dto';
+import { JobResponseDto } from './dto/search-job-response.dto';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -28,13 +32,44 @@ export class JobsController {
     description: 'Search Job in Detail',
     type: [Job],
   })
-  async searchJobs(@Query() query: SearchJobDto): Promise<Job[]> {
+  async searchJobs(@Query() query: SearchJobDto): Promise<JobResponseDto[]> {
     return this.jobsService.searchJobs(query);
   }
 
+  // @Get(':id')
+  // @ApiResponse({ status: 200, description: 'Job detail', type: Job })
+  // async findOne(@Param('id') id: number): Promise<Job> {
+  //   return this.jobsService.findOne(id);
+  // }
+
   @Get(':id')
-  @ApiResponse({ status: 200, description: 'Job detail', type: Job })
-  async findOne(@Param('id') id: number): Promise<Job> {
-    return this.jobsService.findOne(id);
+  @ApiResponse({
+    status: 200,
+    description: 'Chi tiết công việc',
+    type: JobDetailDto,
+  })
+  async getJobDetail(@Param('id') id: number): Promise<JobDetailDto> {
+    return this.jobsService.getJobDetail(id);
   }
+
+  @Get('/categories')
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách category và số lượng jobs',
+    type: [CategoryStatsDto]
+  })
+  async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
+    return this.jobsService.getCategoriesWithJobCount();
+  }
+
+  @Get('/locations')
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách location và số lượng jobs',
+    type: [LocationStatsDto]
+  })
+  async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
+    return this.jobsService.getLocationsWithJobCount();
+  }
+
 }

@@ -2,7 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Job } from './job.entity';
-import { SearchJobDto } from './dto/search-job.dto';
+import { SearchJobDto } from './dto/search-job-request.dto';
+import { JobDetailDto } from './dto/job-detail.dto';
+import { CategoryStatsDto } from './dto/category-stats.dto';
+import { LocationStatsDto } from './dto/location-stats.dto';
+import { JobResponseDto } from './dto/search-job-response.dto';
 
 @Injectable()
 export class JobsService {
@@ -26,37 +30,98 @@ export class JobsService {
     return job;
   }
 
-  async searchJobs(dto: SearchJobDto): Promise<Job[]> {
-    console.log('DTO nhận được:', dto);
-
+  async searchJobs(dto: SearchJobDto): Promise<JobResponseDto[]> {
     const where: any = {};
 
-    // Keyword: chỉ lọc nếu có
-    if (dto.keyword && dto.keyword.trim()) {
+    if (dto.keyword?.trim()) {
       where.title = Like(`%${dto.keyword.trim()}%`);
     }
-
-    // Category: bỏ qua nếu chọn All Categories
     if (dto.category && dto.category !== 'All Categories') {
       where.category = dto.category;
     }
-
-    // Location: bỏ qua nếu chọn All Locations
     if (dto.location && dto.location !== 'All Locations') {
       where.location = dto.location;
     }
-
-    // Nếu có typeOfEmployment
-    if (dto.typeOfEmployment) {
+    if (dto.typeOfEmployment?.length > 0) {
       where.typeOfEmployment = In(dto.typeOfEmployment);
     }
-
-    // Nếu có experienceLevel
-    if (dto.experienceLevel) {
+    if (dto.experienceLevel?.length > 0) {
       where.experienceLevel = In(dto.experienceLevel);
     }
+    if (dto.isFeatured !== undefined) {
+      where.isFeatured = dto.isFeatured;
+    }
 
-    console.log('WHERE:', where);
-    return this.jobsRepository.find({ where });
+    let jobs;
+    if (Object.keys(where).length === 0) {
+      jobs = await this.jobsRepository.find({
+        relations: ['company'],
+      });
+    } else {
+      jobs = await this.jobsRepository.find({
+        where,
+        relations: ['company'],
+      });
+    }
+
+    return jobs.map((job) => new JobResponseDto(job));
+  }
+
+  async getJobDetail(jobId: number): Promise<JobDetailDto> {
+    const job = await this.jobsRepository.findOne({ where: { id: jobId } });
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    return new JobDetailDto(job);
+  }
+
+  async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
+    const result = await this.jobsRepository
+      .createQueryBuilder('job')
+      .select('job.category', 'category')
+      .addSelect('COUNT(job.id)', 'jobCount')
+      .groupBy('job.category')
+      .orderBy('jobCount', 'DESC')
+      .getRawMany();
+
+    return result.map(
+      (item) => new CategoryStatsDto(item.category, parseInt(item.jobCount)),
+    );
+  }
+
+  async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
+    const majorCities = [
+      'HaNoi',
+      'HaiPhong', 
+      'DaNang',
+      'Hue',
+      'HoChiMinh',
+      'CanTho',
+      'BinhDuong',
+      'KhanhHoa'
+    ];
+
+    const result = await this.jobsRepository
+      .createQueryBuilder('job')
+      .select('job.location', 'location')
+      .addSelect('COUNT(job.id)', 'jobCount')
+      .groupBy('job.location')
+      .orderBy('jobCount', 'DESC')
+      .getRawMany();
+
+    const locationMap = new Map<string, number>();
+    result.forEach((item) => {
+      locationMap.set(item.location, parseInt(item.jobCount));
+    });
+
+    const response: LocationStatsDto[] = [];
+
+    majorCities.forEach((city) => {
+      const jobCount = locationMap.get(city) || 0;
+      response.push(new LocationStatsDto(city, jobCount, true));
+    });
+
+    return response;
   }
 }

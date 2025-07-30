@@ -1,7 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule, UsersModule, DemoModule, JobsModule } from '@/modules';
+import { AuthModule, UsersModule, DemoModule, JobsModule, CompaniesModule } from '@/modules';
 import { LoggerMiddleware } from '@common/middleware/logger.middleware';
 import appConfig from '@/config/app.config';
 
@@ -25,6 +25,7 @@ import appConfig from '@/config/app.config';
     UsersModule,
     DemoModule,
     JobsModule,
+    CompaniesModule,
   ],
 })
 export class AppModule implements NestModule {

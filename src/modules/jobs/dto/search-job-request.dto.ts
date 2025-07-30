@@ -1,6 +1,6 @@
-import { IsOptional, IsString , IsArray } from 'class-validator';
+import { IsOptional, IsString, IsArray, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose , Transform } from 'class-transformer';
+import { Transform } from 'class-transformer';
 
 export class SearchJobDto {
   @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm theo tiêu đề' })
@@ -18,19 +18,23 @@ export class SearchJobDto {
   @IsString()
   location?: string;
 
-  
   @ApiPropertyOptional({ description: 'Hình thức làm việc' })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   typeOfEmployment?: string[];
-  
-  
+
   @ApiPropertyOptional({ description: 'Kinh nghiệm làm việc' })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   experienceLevel?: string[];
+
+  @ApiPropertyOptional({ description: 'Chỉ lấy các job nổi bật' })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isFeatured?: boolean;
 }
