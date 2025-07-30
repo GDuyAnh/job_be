@@ -1,41 +1,41 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CompanyDetailDto {
-  @ApiProperty({ description: 'Tên công ty' })
+  @ApiProperty({ description: 'Company name' })
   name: string;
 
-  @ApiProperty({ description: 'Logo công ty' })
+  @ApiProperty({ description: 'Company logo' })
   logo: string;
 
-  @ApiProperty({ description: 'Loại hình tổ chức' })
+  @ApiProperty({ description: 'Organization type' })
   organizationType: string;
 
-  @ApiProperty({ description: 'Vị trí đang tuyển' })
+  @ApiProperty({ description: 'Open positions' })
   openPositions: number;
 
   // Company detail fields
-  @ApiProperty({ description: 'Link mạng xã hội', nullable: true })
+  @ApiProperty({ description: 'Social media links', nullable: true })
   socialLinks: string[] | null;
 
-  @ApiProperty({ description: 'Website công ty', nullable: true })
+  @ApiProperty({ description: 'Company website', nullable: true })
   website: string | null;
 
-  @ApiProperty({ description: 'Tỉnh/thành phố', nullable: true })
+  @ApiProperty({ description: 'Province/city', nullable: true })
   location: string | null;
 
-  @ApiProperty({ description: 'Địa chỉ chi tiết', nullable: true })
+  @ApiProperty({ description: 'Detailed address', nullable: true })
   address: string | null;
 
-  @ApiProperty({ description: 'Quy mô công ty', nullable: true })
+  @ApiProperty({ description: 'Company size', nullable: true })
   companySize: string | null;
 
-  @ApiProperty({ description: 'Năm thành lập', nullable: true })
+  @ApiProperty({ description: 'Founded year', nullable: true })
   foundedYear: number | null;
 
-  @ApiProperty({ description: 'Email công ty' })
+  @ApiProperty({ description: 'Company email' })
   email: string;
 
-  @ApiProperty({ description: 'Mô tả công ty', nullable: true })
+  @ApiProperty({ description: 'Company description', nullable: true })
   description: string | null;
 
   constructor(company: any) {

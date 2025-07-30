@@ -12,36 +12,35 @@ import { Company } from '../companies/company.entity';
 
 @Entity('jobs')
 export class Job {
-  @ApiProperty({ description: 'id' })
+  @ApiProperty({ description: 'Job ID' })
   @PrimaryGeneratedColumn()
   id: number;
 
-  
-  @ApiProperty({ description: 'title' })
+  @ApiProperty({ description: 'Job title' })
   @Column()
   title: string;
 
-  @ApiProperty({ description: 'description' })
+  @ApiProperty({ description: 'Job description' })
   @Column('text')
   description: string;
 
-  @ApiProperty({ description: 'category' })
+  @ApiProperty({ description: 'Job category' })
   @Column()
   category: string;
 
-  @ApiProperty({ description: 'location' })
+  @ApiProperty({ description: 'Job location' })
   @Column()
   location: string;
 
-  @ApiProperty({ description: 'typeOfEmployment' })
+  @ApiProperty({ description: 'Type of employment' })
   @Column()
   typeOfEmployment: string;
 
-  @ApiProperty({ description: 'experienceLevel' })
+  @ApiProperty({ description: 'Experience level required' })
   @Column()
   experienceLevel: string;
 
-  @ApiProperty({ description: 'companyId' })
+  @ApiProperty({ description: 'Company ID' })
   @Column({ nullable: true })
   companyId: number;
 
@@ -49,43 +48,43 @@ export class Job {
   @JoinColumn({ name: 'companyId' })
   company: Company;
 
-  @ApiProperty({ description: 'createdAt' })
+  @ApiProperty({ description: 'Created date' })
   @CreateDateColumn()
   createdAt: Date;
 
-  @ApiProperty({ description: 'updatedAt' })
+  @ApiProperty({ description: 'Updated date' })
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ApiProperty({ description: 'Công việc nổi bật hay không', default: false })
+  @ApiProperty({ description: 'Whether the job is featured', default: false })
   @Column({ type: 'boolean', default: false })
   isFeatured: boolean;
 
-  @ApiProperty({ description: 'Image logo (default nếu không có)' })
+  @ApiProperty({ description: 'Image logo (default if not provided)' })
   @Column({ nullable: true })
   imageLogo: string;
 
-  @ApiProperty({ description: 'Banner logo (default nếu không có)' })
+  @ApiProperty({ description: 'Banner logo (default if not provided)' })
   @Column({ nullable: true })
   bannerLogo: string;
 
-  @ApiProperty({ description: 'Ngày đăng tin' })
+  @ApiProperty({ description: 'Posted date' })
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   postedDate: Date;
 
-  @ApiProperty({ description: 'Hạn cuối ứng tuyển' })
+  @ApiProperty({ description: 'Application deadline' })
   @Column({ type: 'date', nullable: true })
   deadline: Date;
 
-  @ApiProperty({ description: 'Mức lương' })
+  @ApiProperty({ description: 'Salary' })
   @Column({ nullable: true })
   salary: string;
 
-  @ApiProperty({ description: 'Phúc lợi' })
+  @ApiProperty({ description: 'Benefits' })
   @Column({ type: 'text', nullable: true })
   benefits: string;
 
-  @ApiProperty({ description: 'description in detail' })
+  @ApiProperty({ description: 'Detailed description' })
   @Column({ type: 'text', nullable: true })
-  detailDescription: string; 
+  detailDescription: string;
 }

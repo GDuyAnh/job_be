@@ -2,49 +2,49 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Company } from '../company.entity';
 
 export class CompanyResponseDto {
-  @ApiProperty({ description: 'ID công ty' })
+  @ApiProperty({ description: 'Company ID' })
   id: number;
 
-  @ApiProperty({ description: 'Tên công ty' })
+  @ApiProperty({ description: 'Company name' })
   name: string;
 
-  @ApiProperty({ description: 'Logo công ty', nullable: true })
+  @ApiProperty({ description: 'Company logo', nullable: true })
   logo: string | null;
 
-  @ApiProperty({ description: 'Loại hình tổ chức', nullable: true })
+  @ApiProperty({ description: 'Organization type', nullable: true })
   organizationType: string | null;
 
-  @ApiProperty({ description: 'Vị trí đang tuyển', nullable: true })
+  @ApiProperty({ description: 'Open positions', nullable: true })
   openPositions: number | null;
 
-  @ApiProperty({ description: 'Link mạng xã hội', nullable: true })
+  @ApiProperty({ description: 'Social media links', nullable: true })
   socialLinks: string[] | null;
 
-  @ApiProperty({ description: 'Website công ty', nullable: true })
+  @ApiProperty({ description: 'Company website', nullable: true })
   website: string | null;
 
-  @ApiProperty({ description: 'Tỉnh/thành phố', nullable: true })
+  @ApiProperty({ description: 'Province/city', nullable: true })
   location: string | null;
 
-  @ApiProperty({ description: 'Địa chỉ chi tiết', nullable: true })
+  @ApiProperty({ description: 'Detailed address', nullable: true })
   address: string | null;
 
-  @ApiProperty({ description: 'Quy mô công ty', nullable: true })
+  @ApiProperty({ description: 'Company size', nullable: true })
   companySize: string | null;
 
-  @ApiProperty({ description: 'Năm thành lập', nullable: true })
+  @ApiProperty({ description: 'Founded year', nullable: true })
   foundedYear: number | null;
 
-  @ApiProperty({ description: 'Email công ty' })
+  @ApiProperty({ description: 'Company email' })
   email: string;
 
-  @ApiProperty({ description: 'Mô tả công ty', nullable: true })
+  @ApiProperty({ description: 'Company description', nullable: true })
   description: string | null;
 
-  @ApiProperty({ description: 'Ngày tạo' })
+  @ApiProperty({ description: 'Created date' })
   createdAt: Date;
 
-  @ApiProperty({ description: 'Ngày cập nhật' })
+  @ApiProperty({ description: 'Updated date' })
   updatedAt: Date;
 
   constructor(company: Company) {
