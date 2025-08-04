@@ -2,17 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Job } from './job.entity';
-import { SearchJobDto } from './dto/search-job-request.dto';
+import { SearchJobDto } from './dto/request/search-job-request.dto';
 import { JobDetailDto } from './dto/job-detail.dto';
 import { CategoryStatsDto } from './dto/category-stats.dto';
 import { LocationStatsDto } from './dto/location-stats.dto';
-import { JobResponseDto } from './dto/search-job-response.dto';
-import {
-  ALL_CATEGORIES,
-  ALL_LOCATIONS,
-  MAJOR_CITIES,
-  majorCities,
-} from '../constants';
+import { JobResponseDto } from './dto/response/search-job-response.dto';
+import { ALL_CATEGORIES, ALL_LOCATIONS, MAJOR_CITIES } from '../constants';
 
 @Injectable()
 export class JobsService {
@@ -74,7 +69,10 @@ export class JobsService {
   }
 
   async getJobDetail(jobId: number): Promise<JobDetailDto> {
-    const job = await this.jobsRepository.findOne({ where: { id: jobId } });
+    const job = await this.jobsRepository.findOne({ 
+      where: { id: jobId },
+      relations: ['company']
+    });
     if (!job) {
       throw new NotFoundException('Job not found');
     }

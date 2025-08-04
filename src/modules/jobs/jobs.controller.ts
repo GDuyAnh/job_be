@@ -3,11 +3,11 @@ import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import { Job } from './job.entity';
 import { CreateJobDto } from './dto/create-job.dto';
-import { SearchJobDto } from './dto/search-job-request.dto';
+import { SearchJobDto } from './dto/request/search-job-request.dto';
 import { JobDetailDto } from './dto/job-detail.dto';
 import { CategoryStatsDto } from './dto/category-stats.dto';
 import { LocationStatsDto } from './dto/location-stats.dto';
-import { JobResponseDto } from './dto/search-job-response.dto';
+import { JobResponseDto } from './dto/response/search-job-response.dto';
 
 @ApiTags('jobs')
 @Controller('jobs')

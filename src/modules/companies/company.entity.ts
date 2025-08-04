@@ -23,25 +23,19 @@ export class Company {
   @Column({ nullable: true })
   logo: string;
 
-  @ApiProperty({ description: 'Organization type (Public school, Catholic, etc.)' })
+  @ApiProperty({
+    description: 'Organization type (Public school, Catholic, etc.)',
+  })
   @Column({ nullable: true })
   organizationType: string;
 
-  @ApiProperty({ description: 'Open positions (can be number or short description)' })
-  @Column({ nullable: true })
+  @ApiProperty({ description: 'Open positions (number)' })
+  @Column({ nullable: true, type: 'int' })
   openPositions: number;
-
-  @ApiProperty({ description: 'Social media links' })
-  @Column({ type: 'json', nullable: true })
-  socialLinks: string[];
 
   @ApiProperty({ description: 'Company website' })
   @Column({ nullable: true })
   website: string;
-
-  @ApiProperty({ description: 'Province/city' })
-  @Column({ nullable: true })
-  location: string;
 
   @ApiProperty({ description: 'Detailed address' })
   @Column({ nullable: true })
@@ -49,7 +43,7 @@ export class Company {
 
   @ApiProperty({ description: 'Company size (e.g., 50-100 employees)' })
   @Column({ nullable: true })
-  companySize: string;
+  companySize: number;
 
   @ApiProperty({ description: 'Founded year' })
   @Column({ type: 'int', nullable: true })
@@ -63,6 +57,22 @@ export class Company {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @ApiProperty({ description: 'Facebook link' })
+  @Column({ nullable: true })
+  facebookLink: string;
+
+  @ApiProperty({ description: 'Twitter link' })
+  @Column({ nullable: true })
+  twitterLink: string;
+
+  @ApiProperty({ description: 'LinkedIn link' })
+  @Column({ nullable: true })
+  linkedInLink: string;
+
+  @ApiProperty({ description: 'Instagram link' })
+  @Column({ nullable: true })
+  instagramLink: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -71,4 +81,4 @@ export class Company {
 
   @OneToMany(() => Job, (job) => job.company)
   jobs: Job[];
-} 
+}

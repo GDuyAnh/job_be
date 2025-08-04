@@ -1,10 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsIn } from 'class-validator';
 
 export class SearchCompanyDto {
-  @ApiProperty({ description: 'Organization type', required: false })
+  @ApiProperty({ 
+    description: 'Organization type to filter companies', 
+    example: 'Public school',
+    required: false 
+  })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Organization type must be a string' })
   organizationType?: string;
 } 
 

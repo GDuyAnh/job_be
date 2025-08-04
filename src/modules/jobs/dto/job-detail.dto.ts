@@ -4,64 +4,150 @@ import {
   IsNotEmpty,
   IsOptional,
   IsDate,
+  IsNumber,
+  IsUrl,
+  IsArray,
 } from 'class-validator';
 
 export class JobDetailDto {
+  @ApiProperty({ description: 'Job ID' })
+  id: number;
+
+  @ApiProperty({ description: 'Job title' })
+  title: string;
+
+  @ApiProperty({ description: 'Job description' })
+  description: string;
+
+  @ApiProperty({ description: 'Job category' })
+  category: string;
+
+  @ApiProperty({ description: 'Job location' })
+  location: string;
+
   @ApiProperty({ description: 'Type of employment' })
-  @IsString({ message: 'Type of employment must be a string' })
-  @IsNotEmpty({ message: 'Type of employment is required' })
+  @IsString()
+  @IsNotEmpty()
   typeOfEmployment: string;
 
   @ApiProperty({ description: 'Experience level required' })
-  @IsString({ message: 'Experience level must be a string' })
-  @IsNotEmpty({ message: 'Experience level is required' })
+  @IsString()
+  @IsNotEmpty()
   experienceLevel: string;
 
-  @ApiProperty({
-    description: 'Image logo (default if not provided)',
-    nullable: true,
-  })
+  @ApiProperty({ description: 'Company name' })
+  companyName: string;
+
+  @ApiProperty({ description: 'Company logo' })
+  companyLogo: string;
+
+  @ApiProperty({ description: 'Organization type', nullable: true })
   @IsOptional()
-  @IsString({ message: 'Image logo must be a string' })
+  @IsString()
+  organizationType: string | null;
+
+  @ApiProperty({ description: 'Founded year', nullable: true })
+  @IsOptional()
+  @IsNumber()
+  foundedYear: number | null;
+
+  @ApiProperty({ description: 'Company address', nullable: true })
+  @IsOptional()
+  @IsString()
+  address: string | null;
+
+  @ApiProperty({ description: 'Company website', nullable: true })
+  @IsOptional()
+  @IsUrl()
+  website: string | null;
+
+  @ApiProperty({ description: 'Facebook link', nullable: true })
+  @IsOptional()
+  @IsUrl()
+  facebookLink: string | null;
+
+  @ApiProperty({ description: 'Instagram link', nullable: true })
+  @IsOptional()
+  @IsUrl()
+  instagramLink: string | null;
+
+  @ApiProperty({ description: 'Twitter link', nullable: true })
+  @IsOptional()
+  @IsUrl()
+  twitterLink: string | null;
+
+  @ApiProperty({ description: 'LinkedIn link', nullable: true })
+  @IsOptional()
+  @IsUrl()
+  linkedInLink: string | null;
+
+  @ApiProperty({ description: 'Whether the job is featured' })
+  isFeatured: boolean;
+
+  @ApiProperty({ description: 'Image logo (default if not provided)', nullable: true })
+  @IsOptional()
+  @IsString()
   imageLogo: string | null;
 
-  @ApiProperty({
-    description: 'Banner logo (default if not provided)',
-    nullable: true,
-  })
+  @ApiProperty({ description: 'Banner logo (default if not provided)', nullable: true })
   @IsOptional()
-  @IsString({ message: 'Banner logo must be a string' })
+  @IsString()
   bannerLogo: string | null;
 
+  @ApiProperty({ description: 'Created date' })
+  createdAt: Date;
+
+  @ApiProperty({ description: 'Updated date' })
+  updatedAt: Date;
+
   @ApiProperty({ description: 'Posted date' })
-  @IsDate({ message: 'Posted date must be a valid date' })
+  @IsDate()
   postedDate: Date;
 
   @ApiProperty({ description: 'Application deadline', nullable: true })
   @IsOptional()
-  @IsDate({ message: 'Deadline must be a valid date' })
+  @IsDate()
   deadline: Date | null;
 
   @ApiProperty({ description: 'Salary', nullable: true })
   @IsOptional()
-  @IsString({ message: 'Salary must be a string' })
+  @IsString()
   salary: string | null;
 
   @ApiProperty({ description: 'Benefits', nullable: true })
   @IsOptional()
-  @IsString({ message: 'Benefits must be a string' })
-  benefits: string | null;
+  @IsArray({ message: 'Benefits must be an array' })
+  @IsString({ each: true, message: 'Each benefit must be a string' })
+  benefits: string[];
 
   @ApiProperty({ description: 'Detailed description', nullable: true })
   @IsOptional()
-  @IsString({ message: 'Detail description must be a string' })
+  @IsString()
   detailDescription: string | null;
 
   constructor(job: any) {
+    this.id = job.id;
+    this.title = job.title;
+    this.description = job.description;
+    this.category = job.category;
+    this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
     this.experienceLevel = job.experienceLevel;
+    this.companyName = job.company?.name || '';
+    this.companyLogo = job.company?.logo || '';
+    this.organizationType = job.company?.organizationType || null;
+    this.foundedYear = job.company?.foundedYear || null;
+    this.address = job.company?.address || null;
+    this.website = job.company?.website || null;
+    this.facebookLink = job.company?.facebookLink || null;
+    this.instagramLink = job.company?.instagramLink || null;
+    this.twitterLink = job.company?.twitterLink || null;
+    this.linkedInLink = job.company?.linkedInLink || null;
+    this.isFeatured = job.isFeatured;
     this.imageLogo = job.imageLogo;
     this.bannerLogo = job.bannerLogo;
+    this.createdAt = job.createdAt;
+    this.updatedAt = job.updatedAt;
     this.postedDate = job.postedDate;
     this.deadline = job.deadline;
     this.salary = job.salary;

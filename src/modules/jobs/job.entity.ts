@@ -81,8 +81,8 @@ export class Job {
   salary: string;
 
   @ApiProperty({ description: 'Benefits' })
-  @Column({ type: 'text', nullable: true })
-  benefits: string;
+  @Column({ type: 'json', nullable: true })
+  benefits: string[];
 
   @ApiProperty({ description: 'Detailed description' })
   @Column({ type: 'text', nullable: true })

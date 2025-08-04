@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsDateString,
   IsBoolean,
+  IsArray,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -72,10 +73,11 @@ export class CreateJobDto {
   @IsString({ message: 'Salary must be a string' })
   salary?: string;
 
-  @ApiProperty({ description: 'Benefits', required: false })
+  @ApiProperty({ description: 'Benefits', required: false, type: [String] })
   @IsOptional()
-  @IsString({ message: 'Benefits must be a string' })
-  benefits?: string;
+  @IsArray({ message: 'Benefits must be an array' })
+  @IsString({ each: true, message: 'Each benefit must be a string' })
+  benefits?: string[];
 
   @ApiProperty({ description: 'Detailed description', required: false })
   @IsOptional()

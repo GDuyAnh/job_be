@@ -17,20 +17,26 @@ export class CompanyResponseDto {
   @ApiProperty({ description: 'Open positions', nullable: true })
   openPositions: number | null;
 
-  @ApiProperty({ description: 'Social media links', nullable: true })
-  socialLinks: string[] | null;
+  @ApiProperty({ description: 'Facebook link', nullable: true })
+  facebookLink: string | null;
+
+  @ApiProperty({ description: 'Twitter link', nullable: true })
+  twitterLink: string | null;
+
+  @ApiProperty({ description: 'LinkedIn link', nullable: true })
+  linkedInLink: string | null;
+
+  @ApiProperty({ description: 'Instagram link', nullable: true })
+  instagramLink: string | null;
 
   @ApiProperty({ description: 'Company website', nullable: true })
   website: string | null;
-
-  @ApiProperty({ description: 'Province/city', nullable: true })
-  location: string | null;
 
   @ApiProperty({ description: 'Detailed address', nullable: true })
   address: string | null;
 
   @ApiProperty({ description: 'Company size', nullable: true })
-  companySize: string | null;
+  companySize: number | null;
 
   @ApiProperty({ description: 'Founded year', nullable: true })
   foundedYear: number | null;
@@ -53,9 +59,11 @@ export class CompanyResponseDto {
     this.logo = company.logo;
     this.organizationType = company.organizationType;
     this.openPositions = company.openPositions;
-    this.socialLinks = company.socialLinks;
+    this.facebookLink = company.facebookLink;
+    this.twitterLink = company.twitterLink;
+    this.linkedInLink = company.linkedInLink;
+    this.instagramLink = company.instagramLink;
     this.website = company.website;
-    this.location = company.location;
     this.address = company.address;
     this.companySize = company.companySize;
     this.foundedYear = company.foundedYear;
@@ -64,4 +72,4 @@ export class CompanyResponseDto {
     this.createdAt = company.createdAt;
     this.updatedAt = company.updatedAt;
   }
-} 
+}
