@@ -36,6 +36,26 @@ export class JobsController {
     return this.jobsService.searchJobs(query);
   }
 
+  @Get('categories')
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách category và số lượng jobs',
+    type: [CategoryStatsDto]
+  })
+  async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
+    return this.jobsService.getCategoriesWithJobCount();
+  }
+
+  @Get('locations')
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách location và số lượng jobs',
+    type: [LocationStatsDto]
+  })
+  async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
+    return this.jobsService.getLocationsWithJobCount();
+  }
+
   // @Get(':id')
   // @ApiResponse({ status: 200, description: 'Job detail', type: Job })
   // async findOne(@Param('id') id: number): Promise<Job> {
@@ -50,26 +70,6 @@ export class JobsController {
   })
   async getJobDetail(@Param('id') id: number): Promise<JobDetailDto> {
     return this.jobsService.getJobDetail(id);
-  }
-
-  @Get('/categories')
-  @ApiResponse({
-    status: 200,
-    description: 'Danh sách category và số lượng jobs',
-    type: [CategoryStatsDto]
-  })
-  async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
-    return this.jobsService.getCategoriesWithJobCount();
-  }
-
-  @Get('/locations')
-  @ApiResponse({
-    status: 200,
-    description: 'Danh sách location và số lượng jobs',
-    type: [LocationStatsDto]
-  })
-  async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
-    return this.jobsService.getLocationsWithJobCount();
   }
 
 }
