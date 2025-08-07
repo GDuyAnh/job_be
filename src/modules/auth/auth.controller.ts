@@ -11,10 +11,10 @@ export class AuthController {
   @Post('login')
   @ApiResponse({ status: 200, description: 'success' })
   async login(@Body() loginDto: LoginDto) {
-    const { username, password } = loginDto;
+    const { email, password } = loginDto;
 
     // Validate user
-    const user = await this.authService.validateUser(username, password);
+    const user = await this.authService.validateUser(email, password);
     if (!user) {
       throw new Error('incorrect login information');
     }
