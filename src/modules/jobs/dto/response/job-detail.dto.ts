@@ -114,11 +114,11 @@ export class JobDetailDto {
   @IsString()
   salary: string | null;
 
-  @ApiProperty({ description: 'Benefits', nullable: true })
+  @ApiProperty({ description: 'Benefit IDs', nullable: true })
   @IsOptional()
   @IsArray({ message: 'Benefits must be an array' })
-  @IsString({ each: true, message: 'Each benefit must be a string' })
-  benefits: string[];
+  @IsNumber({}, { each: true, message: 'Each benefit must be a number' })
+  benefits: number[];
 
   @ApiProperty({ description: 'Detailed description', nullable: true })
   @IsOptional()
@@ -151,7 +151,9 @@ export class JobDetailDto {
     this.postedDate = job.postedDate;
     this.deadline = job.deadline;
     this.salary = job.salary;
-    this.benefits = job.benefits;
+    this.benefits = Array.isArray(job.jobBenefits)
+      ? job.jobBenefits.map((jb: any) => jb.benefitId)
+      : [];
     this.detailDescription = job.detailDescription;
   }
 }

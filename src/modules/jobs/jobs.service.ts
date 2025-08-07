@@ -2,36 +2,57 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Job } from './job.entity';
+import { JobBenefit } from './job-benefit.entity';
 import { SearchJobDto } from './dto/request/search-job-request.dto';
-import { JobDetailDto } from './dto/job-detail.dto';
-import { CategoryStatsDto } from './dto/category-stats.dto';
-import { LocationStatsDto } from './dto/location-stats.dto';
-import { JobResponseDto } from './dto/response/search-job-response.dto';
+import { JobDetailDto } from './dto/response/job-detail.dto';
+import { CategoryStatsDto } from './dto/response/category-stats.dto';
+import { LocationStatsDto } from './dto/response/location-stats.dto';
+import { JobSearchResponseDto } from './dto/response/search-job-response.dto';
 import { ALL_CATEGORIES, ALL_LOCATIONS, MAJOR_CITIES } from '../constants';
+import { CreateJobDto } from './dto/request/create-job.dto';
+import { JobResponseDto } from './dto/response/job-response.dto';
 
 @Injectable()
 export class JobsService {
   constructor(
     @InjectRepository(Job)
     private jobsRepository: Repository<Job>,
+    @InjectRepository(JobBenefit)
+    private jobBenefitRepository: Repository<JobBenefit>,
   ) {}
 
-  async create(data: Partial<Job>): Promise<Job> {
-    const job = this.jobsRepository.create(data);
-    return this.jobsRepository.save(job);
+  async create(data: CreateJobDto): Promise<Job> {
+    const { benefits, ...jobData } = data;
+    // Ensure jobData is a single object
+    const job: Job = this.jobsRepository.create(jobData);
+    const savedJob: Job = await this.jobsRepository.save(job);
+
+    if (Array.isArray(benefits)) {
+      const jobBenefits = benefits.map((benefitId: number) =>
+        this.jobBenefitRepository.create({ jobId: savedJob.id, benefitId }),
+      );
+      await this.jobBenefitRepository.save(jobBenefits);
+    }
+
+    // Attach jobBenefits for DTOs
+    (savedJob as any).jobBenefits = await this.jobBenefitRepository.find({
+      where: { jobId: savedJob.id },
+    });
+
+    return savedJob;
   }
 
-  async findAll(): Promise<Job[]> {
-    return this.jobsRepository.find();
+  async findAll(): Promise<JobResponseDto[]> {
+    const jobs = await this.jobsRepository.find();
+    for (const job of jobs) {
+      job.jobBenefits = await this.jobBenefitRepository.find({
+        where: { jobId: job.id },
+      });
+    }
+    return jobs.map((job) => new JobResponseDto(job));
   }
 
-  async findOne(id: number): Promise<Job> {
-    const job = await this.jobsRepository.findOne({ where: { id } });
-    if (!job) throw new NotFoundException('Job not found');
-    return job;
-  }
-
-  async searchJobs(dto: SearchJobDto): Promise<JobResponseDto[]> {
+  async searchJobs(dto: SearchJobDto): Promise<JobSearchResponseDto[]> {
     const where: any = {};
 
     if (dto.keyword?.trim()) {
@@ -53,7 +74,7 @@ export class JobsService {
       where.isFeatured = dto.isFeatured;
     }
 
-    let jobs;
+    let jobs: Job[];
     if (Object.keys(where).length === 0) {
       jobs = await this.jobsRepository.find({
         relations: ['company'],
@@ -64,19 +85,25 @@ export class JobsService {
         relations: ['company'],
       });
     }
-
-    return jobs.map((job) => new JobResponseDto(job));
+    for (const job of jobs) {
+      job.jobBenefits = await this.jobBenefitRepository.find({
+        where: { jobId: job.id },
+      });
+    }
+    return jobs.map((job) => new JobSearchResponseDto(job));
   }
 
   async getJobDetail(jobId: number): Promise<JobDetailDto> {
-    const job = await this.jobsRepository.findOne({ 
+    const job = await this.jobsRepository.findOne({
       where: { id: jobId },
-      relations: ['company']
+      relations: ['company'],
     });
     if (!job) {
       throw new NotFoundException('Job not found');
     }
-
+    job.jobBenefits = await this.jobBenefitRepository.find({
+      where: { jobId: job.id },
+    });
     return new JobDetailDto(job);
   }
 

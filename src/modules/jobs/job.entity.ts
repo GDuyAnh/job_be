@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from '../companies/company.entity';
+import { JobBenefit } from './job-benefit.entity';
 
 @Entity('jobs')
 export class Job {
@@ -80,9 +81,8 @@ export class Job {
   @Column({ nullable: true })
   salary: string;
 
-  @ApiProperty({ description: 'Benefits' })
-  @Column({ type: 'json', nullable: true })
-  benefits: string[];
+  // Internal use only, not exposed directly in API
+  jobBenefits?: JobBenefit[];
 
   @ApiProperty({ description: 'Detailed description' })
   @Column({ type: 'text', nullable: true })
