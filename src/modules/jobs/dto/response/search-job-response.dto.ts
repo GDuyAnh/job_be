@@ -28,8 +28,14 @@ export class JobSearchResponseDto {
   @ApiProperty({ description: 'Company logo' })
   companyLogo: string;
 
-  @ApiProperty({ description: 'Salary' })
-  salary: string;
+  @ApiProperty({ description: 'Minimum salary', example: 1000 })
+  salaryMin?: number;
+
+  @ApiProperty({ description: 'Maximum salary', example: 3000 })
+  salaryMax?: number;
+
+  @ApiProperty({ description: 'Salary type', example: 1 })
+  salaryType?: number;
 
   @ApiProperty({ description: 'Whether the job is featured' })
   isFeatured: boolean;
@@ -47,7 +53,9 @@ export class JobSearchResponseDto {
     this.experienceLevel = job.experienceLevel;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
-    this.salary = job.detail?.salary || '';
+    this.salaryMin = job.salaryMin ?? 0;
+    this.salaryMax = job.salaryMax ?? 0;
+    this.salaryType = job.salaryType ?? 0;
     this.isFeatured = job.isFeatured;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)

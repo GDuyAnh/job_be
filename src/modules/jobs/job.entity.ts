@@ -74,12 +74,22 @@ export class Job {
   postedDate: Date;
 
   @ApiProperty({ description: 'Application deadline' })
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   deadline: Date;
 
-  @ApiProperty({ description: 'Salary' })
-  @Column({ nullable: true })
-  salary: string;
+  @ApiProperty({ description: 'Salary Min' })
+  @Column({ nullable: false })
+  salaryMin: number;
+
+  @ApiProperty({ description: 'Salary Max' })
+  @Column({ nullable: false })
+  salaryMax: number;
+
+  @ApiProperty({
+    description: 'Salary Type . Example : MONTH , WEEK , NEGOTIABLE ',
+  })
+  @Column({ nullable: false })
+  salaryType: number;
 
   // Internal use only, not exposed directly in API
   jobBenefits?: JobBenefit[];
