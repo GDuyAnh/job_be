@@ -50,6 +50,12 @@ export class CompanyResponseDto {
   @ApiProperty({ description: 'Company description', nullable: true })
   description: string | null
 
+  @ApiProperty({ description: 'Company Insight', nullable: true })
+  insight: string | null
+
+  @ApiProperty({ description: 'Company Overview', nullable: true })
+  overview: string | null
+
   @ApiProperty({ description: 'Created date' })
   createdAt: Date
 
@@ -73,6 +79,8 @@ export class CompanyResponseDto {
     this.foundedYear = company.foundedYear
     this.email = company.email
     this.description = company.description
+    this.insight = company.insight
+    this.overview = company.overview
     this.createdAt = company.createdAt
     this.updatedAt = company.updatedAt
   }

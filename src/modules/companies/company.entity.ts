@@ -57,6 +57,14 @@ export class Company {
   @Column({ nullable: true })
   email: string;
 
+  @ApiProperty({ description: 'Company Insight' })
+  @Column({ type: 'text', nullable: true })
+  insight: string;
+
+  @ApiProperty({ description: 'Company Overview' })
+  @Column({ type: 'text', nullable: true })
+  overview: string;
+
   @ApiProperty({ description: 'Company description (rich text)' })
   @Column({ type: 'text', nullable: true })
   description: string;

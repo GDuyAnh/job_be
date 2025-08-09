@@ -51,6 +51,12 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Company description', nullable: true })
   description: string | null;
 
+  @ApiProperty({ description: 'Company Insight', nullable: true })
+  insight: string | null;
+
+  @ApiProperty({ description: 'Company Overview', nullable: true })
+  overview: string | null;
+
   constructor(company: Company) {
     this.id = company.id;
     this.name = company.name;
@@ -70,5 +76,7 @@ export class CompanyDetailDto {
     this.foundedYear = company.foundedYear ?? null;
     this.email = company.email ?? null;
     this.description = company.description ?? null;
+    this.insight = company.insight ?? null;
+    this.overview = company.overview ?? null;
   }
 }
