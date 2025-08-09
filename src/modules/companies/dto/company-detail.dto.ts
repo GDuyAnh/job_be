@@ -17,6 +17,9 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Number of open positions', nullable: true })
   openPositions: number | null;
 
+  @ApiProperty({ description: 'Whether the company is shown' })
+  isShow: boolean;
+
   // Social media links (divided fields)
   @ApiProperty({ description: 'Facebook link', nullable: true })
   facebookLink: string | null;
@@ -54,6 +57,7 @@ export class CompanyDetailDto {
     this.logo = company.logo;
     this.organizationType = company.organizationType;
     this.openPositions = company.openPositions ?? null;
+    this.isShow = company.isShow;
 
     this.facebookLink = company.facebookLink ?? null;
     this.twitterLink = company.twitterLink ?? null;

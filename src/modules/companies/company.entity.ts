@@ -33,6 +33,10 @@ export class Company {
   @Column({ nullable: true, type: 'int' })
   openPositions: number;
 
+  @ApiProperty({ description: 'Whether the company is shown', default: false })
+  @Column({ type: 'boolean', default: false })
+  isShow: boolean;
+
   @ApiProperty({ description: 'Company website' })
   @Column({ nullable: true })
   website: string;

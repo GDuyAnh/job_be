@@ -77,6 +77,10 @@ export class CompaniesService {
       where.organizationType = dto.organizationType.trim();
     }
 
+    if (dto.isShow !== undefined || dto.isShow !== null) {
+      where.isShow = dto.isShow;
+    }
+
     let companies: Company[];
     if (Object.keys(where).length === 0) {
       companies = await this.companiesRepository.find();

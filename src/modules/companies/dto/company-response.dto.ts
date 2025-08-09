@@ -1,75 +1,81 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Company } from '../company.entity';
+import { ApiProperty } from '@nestjs/swagger'
+import { Company } from '../company.entity'
 
 export class CompanyResponseDto {
   @ApiProperty({ description: 'Company ID' })
-  id: number;
+  id: number
 
   @ApiProperty({ description: 'Company name' })
-  name: string;
+  name: string
 
   @ApiProperty({ description: 'Company logo', nullable: true })
-  logo: string | null;
+  logo: string | null
 
   @ApiProperty({ description: 'Organization type', nullable: true })
-  organizationType: string | null;
+  organizationType: string | null
 
   @ApiProperty({ description: 'Open positions', nullable: true })
-  openPositions: number | null;
+  openPositions: number | null
+
+  @ApiProperty({ description: 'Whether the company is shown' })
+  isShow: boolean
 
   @ApiProperty({ description: 'Facebook link', nullable: true })
-  facebookLink: string | null;
+  facebookLink: string | null
 
   @ApiProperty({ description: 'Twitter link', nullable: true })
-  twitterLink: string | null;
+  twitterLink: string | null
 
   @ApiProperty({ description: 'LinkedIn link', nullable: true })
-  linkedInLink: string | null;
+  linkedInLink: string | null
 
   @ApiProperty({ description: 'Instagram link', nullable: true })
-  instagramLink: string | null;
+  instagramLink: string | null
 
   @ApiProperty({ description: 'Company website', nullable: true })
-  website: string | null;
+  website: string | null
 
   @ApiProperty({ description: 'Detailed address', nullable: true })
-  address: string | null;
+  address: string | null
 
   @ApiProperty({ description: 'Company size', nullable: true })
-  companySize: number | null;
+  companySize: number | null
 
   @ApiProperty({ description: 'Founded year', nullable: true })
-  foundedYear: number | null;
+  foundedYear: number | null
 
   @ApiProperty({ description: 'Company email' })
-  email: string;
+  email: string
 
   @ApiProperty({ description: 'Company description', nullable: true })
-  description: string | null;
+  description: string | null
 
   @ApiProperty({ description: 'Created date' })
-  createdAt: Date;
+  createdAt: Date
 
   @ApiProperty({ description: 'Updated date' })
-  updatedAt: Date;
+  updatedAt: Date
 
   constructor(company: Company) {
-    this.id = company.id;
-    this.name = company.name;
-    this.logo = company.logo;
-    this.organizationType = company.organizationType;
-    this.openPositions = company.openPositions;
-    this.facebookLink = company.facebookLink;
-    this.twitterLink = company.twitterLink;
-    this.linkedInLink = company.linkedInLink;
-    this.instagramLink = company.instagramLink;
-    this.website = company.website;
-    this.address = company.address;
-    this.companySize = company.companySize;
-    this.foundedYear = company.foundedYear;
-    this.email = company.email;
-    this.description = company.description;
-    this.createdAt = company.createdAt;
-    this.updatedAt = company.updatedAt;
+    this.id = company.id
+    this.name = company.name
+    this.logo = company.logo
+    this.organizationType = company.organizationType
+    this.openPositions = company.openPositions
+    this.isShow = company.isShow
+    this.facebookLink = company.facebookLink
+    this.twitterLink = company.twitterLink
+    this.linkedInLink = company.linkedInLink
+    this.instagramLink = company.instagramLink
+    this.website = company.website
+    this.address = company.address
+    this.companySize = company.companySize
+    this.foundedYear = company.foundedYear
+    this.email = company.email
+    this.description = company.description
+    this.createdAt = company.createdAt
+    this.updatedAt = company.updatedAt
   }
 }
+
+
