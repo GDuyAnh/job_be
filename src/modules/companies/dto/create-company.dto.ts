@@ -1,66 +1,84 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsUrl, IsNumber, IsArray, IsEmail } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsUrl,
+  IsNumber,
+  IsEmail,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateCompanyDto {
-  @ApiProperty({ description: 'Tên công ty', example: 'Trường Đại học ABC' })
+  @ApiProperty({ description: 'Company name', example: 'ABC University' })
   @IsString({ message: 'Company name must be a string' })
   @IsNotEmpty({ message: 'Company name is required' })
   @Transform(({ value }) => value?.trim())
   name: string;
 
-  @ApiProperty({ description: 'Email công ty', example: 'contact@company.com' })
+  @ApiProperty({ description: 'Company email', example: 'contact@company.com' })
   @IsEmail({}, { message: 'Email must be a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
   email: string;
 
-  @ApiProperty({ description: 'Logo công ty', example: 'https://example.com/logo.png' })
+  @ApiProperty({ description: 'Company logo', example: 'https://example.com/logo.png' })
   @IsOptional()
   @IsUrl({}, { message: 'Logo must be a valid URL' })
   logo?: string;
 
-  @ApiProperty({ description: 'Loại hình tổ chức', example: 'Trường công lập' })
+  @ApiProperty({ description: 'Organization type', example: 'Public school' })
   @IsOptional()
   @IsString({ message: 'Organization type must be a string' })
   organizationType?: string;
 
-  @ApiProperty({ description: 'Vị trí đang tuyển', example: 5 })
+  @ApiProperty({ description: 'Open positions', example: 5 })
   @IsOptional()
   @IsNumber({}, { message: 'Open positions must be a number' })
   openPositions?: number;
 
-  @ApiProperty({ description: 'Link mạng xã hội', example: ['https://facebook.com/company', 'https://linkedin.com/company'] })
+  // Social media links (split fields)
+  @ApiProperty({ description: 'Facebook link', example: 'https://facebook.com/company' })
   @IsOptional()
-  @IsArray({ message: 'Social links must be an array' })
-  socialLinks?: string[];
+  @IsUrl({}, { message: 'Facebook link must be a valid URL' })
+  facebookLink?: string;
 
-  @ApiProperty({ description: 'Website công ty', example: 'https://company.com' })
+  @ApiProperty({ description: 'Twitter link', example: 'https://twitter.com/company' })
+  @IsOptional()
+  @IsUrl({}, { message: 'Twitter link must be a valid URL' })
+  twitterLink?: string;
+
+  @ApiProperty({ description: 'LinkedIn link', example: 'https://linkedin.com/company' })
+  @IsOptional()
+  @IsUrl({}, { message: 'LinkedIn link must be a valid URL' })
+  linkedInLink?: string;
+
+  @ApiProperty({ description: 'Instagram link', example: 'https://instagram.com/company' })
+  @IsOptional()
+  @IsUrl({}, { message: 'Instagram link must be a valid URL' })
+  instagramLink?: string;
+
+  @ApiProperty({ description: 'Company website', example: 'https://company.com' })
   @IsOptional()
   @IsUrl({}, { message: 'Website must be a valid URL' })
   website?: string;
 
-  @ApiProperty({ description: 'Tỉnh/thành phố', example: 'Ho Chi Minh' })
-  @IsOptional()
-  @IsString({ message: 'Location must be a string' })
-  location?: string;
-
-  @ApiProperty({ description: 'Địa chỉ chi tiết', example: '123 Nguyen Van Linh, District 7' })
+  @ApiProperty({ description: 'Detailed address', example: '123 Nguyen Van Linh, District 7' })
   @IsOptional()
   @IsString({ message: 'Address must be a string' })
   address?: string;
 
-  @ApiProperty({ description: 'Quy mô công ty', example: '50-100 nhân sự' })
+  @ApiProperty({ description: 'Company size', example: '50-100 employees' })
   @IsOptional()
-  @IsString({ message: 'Company size must be a string' })
-  companySize?: string;
+  @IsNumber({}, { message: 'Company size must be a number' })
+  companySize?: number;
 
-  @ApiProperty({ description: 'Năm thành lập', example: 2010 })
+  @ApiProperty({ description: 'Founded year', example: 2010 })
   @IsOptional()
   @IsNumber({}, { message: 'Founded year must be a number' })
   foundedYear?: number;
 
-  @ApiProperty({ description: 'Mô tả công ty', example: 'Công ty chuyên về công nghệ...' })
+  @ApiProperty({ description: 'Company description', example: 'Technology company specializing in...' })
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
-} 
+}

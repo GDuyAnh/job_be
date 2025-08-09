@@ -2,12 +2,13 @@ import { Controller, Post, Get, Param, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiResponse } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import { Job } from './job.entity';
-import { CreateJobDto } from './dto/create-job.dto';
-import { SearchJobDto } from './dto/search-job-request.dto';
-import { JobDetailDto } from './dto/job-detail.dto';
-import { CategoryStatsDto } from './dto/category-stats.dto';
-import { LocationStatsDto } from './dto/location-stats.dto';
-import { JobResponseDto } from './dto/search-job-response.dto';
+import { CreateJobDto } from './dto/request/create-job.dto';
+import { SearchJobDto } from './dto/request/search-job-request.dto';
+import { JobDetailDto } from './dto/response/job-detail.dto';
+import { CategoryStatsDto } from './dto/response/category-stats.dto';
+import { LocationStatsDto } from './dto/response/location-stats.dto';
+import { JobResponseDto } from './dto/response/job-response.dto';
+import { JobSearchResponseDto } from './dto/response/search-job-response.dto';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -22,7 +23,7 @@ export class JobsController {
 
   @Get()
   @ApiResponse({ status: 200, description: 'List jobs', type: [Job] })
-  async findAll(): Promise<Job[]> {
+  async findAll(): Promise<JobResponseDto[]> {
     return this.jobsService.findAll();
   }
 
@@ -32,44 +33,39 @@ export class JobsController {
     description: 'Search Job in Detail',
     type: [Job],
   })
-  async searchJobs(@Query() query: SearchJobDto): Promise<JobResponseDto[]> {
+  async searchJobs(
+    @Query() query: SearchJobDto,
+  ): Promise<JobSearchResponseDto[]> {
     return this.jobsService.searchJobs(query);
   }
 
-  // @Get(':id')
-  // @ApiResponse({ status: 200, description: 'Job detail', type: Job })
-  // async findOne(@Param('id') id: number): Promise<Job> {
-  //   return this.jobsService.findOne(id);
-  // }
-
-  @Get(':id')
+  @Get('categories')
   @ApiResponse({
     status: 200,
-    description: 'Chi tiết công việc',
-    type: JobDetailDto,
-  })
-  async getJobDetail(@Param('id') id: number): Promise<JobDetailDto> {
-    return this.jobsService.getJobDetail(id);
-  }
-
-  @Get('/categories')
-  @ApiResponse({
-    status: 200,
-    description: 'Danh sách category và số lượng jobs',
-    type: [CategoryStatsDto]
+    description: 'List of categories and job counts',
+    type: [CategoryStatsDto],
   })
   async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
     return this.jobsService.getCategoriesWithJobCount();
   }
 
-  @Get('/locations')
+  @Get('locations')
   @ApiResponse({
     status: 200,
-    description: 'Danh sách location và số lượng jobs',
-    type: [LocationStatsDto]
+    description: 'List of locations and job counts',
+    type: [LocationStatsDto],
   })
   async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
     return this.jobsService.getLocationsWithJobCount();
   }
 
+  @Get(':id')
+  @ApiResponse({
+    status: 200,
+    description: 'Job details',
+    type: JobDetailDto,
+  })
+  async getJobDetail(@Param('id') id: number): Promise<JobDetailDto> {
+    return this.jobsService.getJobDetail(id);
+  }
 }

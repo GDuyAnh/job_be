@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from './company.entity';
@@ -6,6 +11,7 @@ import { SearchCompanyDto } from './dto/search-company.dto';
 import { CompanyDetailDto } from './dto/company-detail.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
 import { CreateCompanyDto } from './dto/create-company.dto';
+import { ALL_ORGANIZATION_TYPES } from '../constants';
 
 @Injectable()
 export class CompaniesService {
@@ -20,9 +26,16 @@ export class CompaniesService {
       throw new BadRequestException('Email is required');
     }
 
+    // Check if name is provided and not empty after trimming
+    if (!data.name || data.name.trim() === '') {
+      throw new BadRequestException(
+        'Company name is required and cannot be empty',
+      );
+    }
+
     // Check if company name already exists
     const existingCompany = await this.companiesRepository.findOne({
-      where: { name: data.name.trim() }
+      where: { name: data.name.trim() },
     });
 
     if (existingCompany) {
@@ -31,7 +44,7 @@ export class CompaniesService {
 
     // Check if email already exists
     const existingEmail = await this.companiesRepository.findOne({
-      where: { email: data.email }
+      where: { email: data.email },
     });
 
     if (existingEmail) {
@@ -56,8 +69,12 @@ export class CompaniesService {
   async searchCompanies(dto: SearchCompanyDto): Promise<CompanyResponseDto[]> {
     const where: any = {};
 
-    if (dto.organizationType && dto.organizationType !== 'Tất cả') {
-      where.organizationType = dto.organizationType;
+    if (
+      dto.organizationType &&
+      dto.organizationType.trim() !== '' &&
+      dto.organizationType !== ALL_ORGANIZATION_TYPES
+    ) {
+      where.organizationType = dto.organizationType.trim();
     }
 
     let companies: Company[];
