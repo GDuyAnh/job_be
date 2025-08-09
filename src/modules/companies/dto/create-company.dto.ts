@@ -6,6 +6,7 @@ import {
   IsUrl,
   IsNumber,
   IsEmail,
+  IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -35,6 +36,11 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsNumber({}, { message: 'Open positions must be a number' })
   openPositions?: number;
+
+  @ApiProperty({ description: 'Whether the company is shown', example: false, required: false })
+  @IsOptional()
+  @IsBoolean({ message: 'isShow must be a boolean' })
+  isShow?: boolean;
 
   // Social media links (split fields)
   @ApiProperty({ description: 'Facebook link', example: 'https://facebook.com/company' })
@@ -81,4 +87,14 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
+
+   @ApiProperty({ description: 'Company Insight', example: 'We value innovation and teamwork' })
+   @IsOptional()
+   @IsString({ message: 'Insight must be a string' })
+   insight?: string;
+
+   @ApiProperty({ description: 'Company Overview', example: 'Founded in 2010, we have ...' })
+   @IsOptional()
+   @IsString({ message: 'Overview must be a string' })
+   overview?: string;
 }

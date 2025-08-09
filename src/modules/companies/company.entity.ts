@@ -33,6 +33,10 @@ export class Company {
   @Column({ nullable: true, type: 'int' })
   openPositions: number;
 
+  @ApiProperty({ description: 'Whether the company is shown', default: false })
+  @Column({ type: 'boolean', default: false })
+  isShow: boolean;
+
   @ApiProperty({ description: 'Company website' })
   @Column({ nullable: true })
   website: string;
@@ -52,6 +56,14 @@ export class Company {
   @ApiProperty({ description: 'Company email' })
   @Column({ nullable: true })
   email: string;
+
+  @ApiProperty({ description: 'Company Insight' })
+  @Column({ type: 'text', nullable: true })
+  insight: string;
+
+  @ApiProperty({ description: 'Company Overview' })
+  @Column({ type: 'text', nullable: true })
+  overview: string;
 
   @ApiProperty({ description: 'Company description (rich text)' })
   @Column({ type: 'text', nullable: true })

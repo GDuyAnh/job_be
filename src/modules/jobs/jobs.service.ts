@@ -8,7 +8,12 @@ import { JobDetailDto } from './dto/response/job-detail.dto';
 import { CategoryStatsDto } from './dto/response/category-stats.dto';
 import { LocationStatsDto } from './dto/response/location-stats.dto';
 import { JobSearchResponseDto } from './dto/response/search-job-response.dto';
-import { ALL_CATEGORIES, ALL_LOCATIONS, MAJOR_CITIES } from '../constants';
+import {
+  ALL_CATEGORIES,
+  ALL_LOCATIONS,
+  MAJOR_CITIES,
+  MAJOR_CITIES_IMG,
+} from '../constants';
 import { CreateJobDto } from './dto/request/create-job.dto';
 import { JobResponseDto } from './dto/response/job-response.dto';
 
@@ -21,25 +26,70 @@ export class JobsService {
     private jobBenefitRepository: Repository<JobBenefit>,
   ) {}
 
-  async create(data: CreateJobDto): Promise<Job> {
+  async create(data: CreateJobDto): Promise<JobResponseDto> {
     const { benefits, ...jobData } = data;
-    // Ensure jobData is a single object
+
+    // 1. Tạo job
     const job: Job = this.jobsRepository.create(jobData);
     const savedJob: Job = await this.jobsRepository.save(job);
 
-    if (Array.isArray(benefits)) {
+    // 2. Lưu JobBenefits nếu có
+    if (Array.isArray(benefits) && benefits.length > 0) {
       const jobBenefits = benefits.map((benefitId: number) =>
         this.jobBenefitRepository.create({ jobId: savedJob.id, benefitId }),
       );
       await this.jobBenefitRepository.save(jobBenefits);
     }
 
-    // Attach jobBenefits for DTOs
-    (savedJob as any).jobBenefits = await this.jobBenefitRepository.find({
+    // 3. Lấy lại job kèm quan hệ
+    const jobWithRelations = await this.jobsRepository.findOne({
+      where: { id: savedJob.id },
+      relations: ['company'],
+    });
+
+    // 4. Lấy danh sách benefit
+    jobWithRelations.jobBenefits = await this.jobBenefitRepository.find({
       where: { jobId: savedJob.id },
     });
 
-    return savedJob;
+    // 5. Map sang DTO
+    return new JobResponseDto(jobWithRelations);
+  }
+
+  async update(id: number, data: CreateJobDto): Promise<JobResponseDto> {
+    const job = await this.jobsRepository.findOne({
+      where: { id },
+      relations: ['company'],
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${id} not found`);
+    }
+
+    const { benefits, ...jobData } = data;
+
+    // Cập nhật thông tin job
+    Object.assign(job, jobData);
+    const updatedJob = await this.jobsRepository.save(job);
+
+    // Xoá các jobBenefit cũ
+    await this.jobBenefitRepository.delete({ jobId: id });
+
+    // Thêm lại jobBenefits mới nếu có
+    if (Array.isArray(benefits)) {
+      const jobBenefits = benefits.map((benefitId: number) =>
+        this.jobBenefitRepository.create({ jobId: updatedJob.id, benefitId }),
+      );
+      await this.jobBenefitRepository.save(jobBenefits);
+    }
+
+    // Gắn jobBenefits vào object trả về
+    updatedJob.jobBenefits = await this.jobBenefitRepository.find({
+      where: { jobId: updatedJob.id },
+    });
+
+    // Trả về DTO
+    return new JobResponseDto(updatedJob);
   }
 
   async findAll(): Promise<JobResponseDto[]> {
@@ -123,6 +173,7 @@ export class JobsService {
 
   async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
     const cities = MAJOR_CITIES;
+    const cityImages = MAJOR_CITIES_IMG;
 
     const result = await this.jobsRepository
       .createQueryBuilder('job')
@@ -139,9 +190,10 @@ export class JobsService {
 
     const response: LocationStatsDto[] = [];
 
-    cities.forEach((city) => {
+    cities.forEach((city, index) => {
       const jobCount = locationMap.get(city) || 0;
-      response.push(new LocationStatsDto(city, jobCount, true));
+      const image = cityImages[index] || null;
+      response.push(new LocationStatsDto(city, jobCount, true, image));
     });
 
     return response;
