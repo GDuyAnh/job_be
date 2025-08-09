@@ -87,4 +87,14 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
+
+   @ApiProperty({ description: 'Company Insight', example: 'We value innovation and teamwork' })
+   @IsOptional()
+   @IsString({ message: 'Insight must be a string' })
+   insight?: string;
+
+   @ApiProperty({ description: 'Company Overview', example: 'Founded in 2010, we have ...' })
+   @IsOptional()
+   @IsString({ message: 'Overview must be a string' })
+   overview?: string;
 }
