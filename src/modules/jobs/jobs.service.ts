@@ -8,7 +8,12 @@ import { JobDetailDto } from './dto/response/job-detail.dto';
 import { CategoryStatsDto } from './dto/response/category-stats.dto';
 import { LocationStatsDto } from './dto/response/location-stats.dto';
 import { JobSearchResponseDto } from './dto/response/search-job-response.dto';
-import { ALL_CATEGORIES, ALL_LOCATIONS, MAJOR_CITIES } from '../constants';
+import {
+  ALL_CATEGORIES,
+  ALL_LOCATIONS,
+  MAJOR_CITIES,
+  MAJOR_CITIES_IMG,
+} from '../constants';
 import { CreateJobDto } from './dto/request/create-job.dto';
 import { JobResponseDto } from './dto/response/job-response.dto';
 
@@ -123,6 +128,7 @@ export class JobsService {
 
   async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
     const cities = MAJOR_CITIES;
+    const cityImages = MAJOR_CITIES_IMG;
 
     const result = await this.jobsRepository
       .createQueryBuilder('job')
@@ -139,9 +145,12 @@ export class JobsService {
 
     const response: LocationStatsDto[] = [];
 
-    cities.forEach((city) => {
-      const jobCount = locationMap.get(city.toString()) || 0;
-      response.push(new LocationStatsDto(city.toString(), jobCount, true));
+
+    cities.forEach((city, index) => {
+      const jobCount = locationMap.get(city) || 0;
+      const image = cityImages[index] || null;
+      response.push(new LocationStatsDto(city, jobCount, true, image));
+
     });
 
     return response;
