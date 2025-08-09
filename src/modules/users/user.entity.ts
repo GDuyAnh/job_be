@@ -29,6 +29,10 @@ export class User {
   @Column()
   fullName: string;
 
+  @ApiProperty({ description: 'role', default: 'USER' })
+  @Column({ type: 'varchar', length: 20, default: 'USER' })
+  role: string;
+
   @ApiProperty({ description: 'isActive' })
   @Column({ default: true })
   isActive: boolean;

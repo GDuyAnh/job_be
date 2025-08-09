@@ -84,12 +84,18 @@ export class JobDetailDto {
   @ApiProperty({ description: 'Whether the job is featured' })
   isFeatured: boolean;
 
-  @ApiProperty({ description: 'Image logo (default if not provided)', nullable: true })
+  @ApiProperty({
+    description: 'Image logo (default if not provided)',
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   imageLogo: string | null;
 
-  @ApiProperty({ description: 'Banner logo (default if not provided)', nullable: true })
+  @ApiProperty({
+    description: 'Banner logo (default if not provided)',
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   bannerLogo: string | null;
@@ -109,10 +115,22 @@ export class JobDetailDto {
   @IsDate()
   deadline: Date | null;
 
-  @ApiProperty({ description: 'Salary', nullable: true })
+  @ApiProperty({ description: 'Salary Min' })
   @IsOptional()
-  @IsString()
-  salary: string | null;
+  @IsNumber()
+  salaryMin: number;
+
+  @ApiProperty({ description: 'Salary Max' })
+  @IsOptional()
+  @IsNumber()
+  salaryMax: number;
+
+  @ApiProperty({
+    description: 'Salary Type . Example : MONTH , WEEK , NEGOTIABLE ',
+  })
+  @IsOptional()
+  @IsNumber()
+  salaryType: number;
 
   @ApiProperty({ description: 'Benefit IDs', nullable: true })
   @IsOptional()
@@ -150,7 +168,9 @@ export class JobDetailDto {
     this.updatedAt = job.updatedAt;
     this.postedDate = job.postedDate;
     this.deadline = job.deadline;
-    this.salary = job.salary;
+    this.salaryMin = job.salaryMin;
+    this.salaryMax = job.salaryMax;
+    this.salaryType = job.salaryType;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)
       : [];

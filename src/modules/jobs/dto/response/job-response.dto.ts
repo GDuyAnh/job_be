@@ -52,8 +52,14 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Application deadline' })
   deadline: Date;
 
-  @ApiProperty({ description: 'Salary' })
-  salary: string;
+  @ApiProperty({ description: 'Minimum salary', example: 1000 })
+  salaryMin?: number;
+
+  @ApiProperty({ description: 'Maximum salary', example: 3000 })
+  salaryMax?: number;
+
+  @ApiProperty({ description: 'Salary type', example: 1 })
+  salaryType?: number;
 
   @ApiProperty({ description: 'Benefit IDs', type: [Number], required: false })
   benefits: number[];
@@ -79,7 +85,9 @@ export class JobResponseDto {
     this.bannerLogo = job.bannerLogo;
     this.postedDate = job.postedDate;
     this.deadline = job.deadline;
-    this.salary = job.salary;
+    this.salaryMin = job.salaryMin ?? 0;
+    this.salaryMax = job.salaryMax ?? 0;
+    this.salaryType = job.salaryType ?? 0;
     this.detailDescription = job.detailDescription;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)

@@ -69,10 +69,20 @@ export class CreateJobDto {
   @IsDateString({}, { message: 'Deadline must be a valid date' })
   deadline?: Date;
 
-  @ApiProperty({ description: 'Salary', required: false })
+  @ApiProperty({ description: 'Salary Min', required: false })
   @IsOptional()
-  @IsString({ message: 'Salary must be a string' })
-  salary?: string;
+  @IsNumber()
+  salaryMin?: number;
+
+  @ApiProperty({ description: 'Salary Max', required: false })
+  @IsOptional()
+  @IsNumber()
+  salaryMax?: number;
+
+  @ApiProperty({ description: 'Salary Type', required: false })
+  @IsOptional()
+  @IsNumber()
+  salaryType?: number;
 
   @ApiProperty({ description: 'Benefits', required: false, type: [Number] })
   @IsOptional()
