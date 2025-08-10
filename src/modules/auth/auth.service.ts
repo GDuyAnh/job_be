@@ -36,4 +36,10 @@ export class AuthService {
       },
     };
   }
+
+  async getMe(userId: number) {
+    const user = await this.usersService.findById(userId);
+    const { password, ...result } = user;
+    return result;
+  }
 }

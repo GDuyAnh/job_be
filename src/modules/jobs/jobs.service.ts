@@ -140,8 +140,8 @@ export class JobsService {
     const response: LocationStatsDto[] = [];
 
     cities.forEach((city) => {
-      const jobCount = locationMap.get(city) || 0;
-      response.push(new LocationStatsDto(city, jobCount, true));
+      const jobCount = locationMap.get(city.toString()) || 0;
+      response.push(new LocationStatsDto(city.toString(), jobCount, true));
     });
 
     return response;
