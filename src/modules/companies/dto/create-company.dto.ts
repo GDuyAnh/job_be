@@ -8,7 +8,7 @@ import {
   IsEmail,
   IsBoolean,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateCompanyDto {
   @ApiProperty({ description: 'Company name', example: 'ABC University' })
@@ -22,58 +22,83 @@ export class CreateCompanyDto {
   @IsNotEmpty({ message: 'Email is required' })
   email: string;
 
-  @ApiProperty({ description: 'Company logo', example: 'https://example.com/logo.png' })
+  @ApiProperty({
+    description: 'Company logo',
+    example: 'https://example.com/logo.png',
+  })
   @IsOptional()
   @IsUrl({}, { message: 'Logo must be a valid URL' })
   logo?: string;
 
-  @ApiProperty({ description: 'Organization type', example: 'Public school' })
+  @ApiProperty({ description: 'Organization type ID', example: 1 })
   @IsOptional()
-  @IsString({ message: 'Organization type must be a string' })
-  organizationType?: string;
+  @IsNumber({}, { message: 'Organization type must be a number' })
+  @Type(() => Number)
+  organizationType?: number;
 
   @ApiProperty({ description: 'Open positions', example: 5 })
   @IsOptional()
   @IsNumber({}, { message: 'Open positions must be a number' })
   openPositions?: number;
 
-  @ApiProperty({ description: 'Whether the company is shown', example: false, required: false })
+  @ApiProperty({
+    description: 'Whether the company is shown',
+    example: false,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean({ message: 'isShow must be a boolean' })
   isShow?: boolean;
 
-  // Social media links (split fields)
-  @ApiProperty({ description: 'Facebook link', example: 'https://facebook.com/company' })
+  @ApiProperty({
+    description: 'Facebook link',
+    example: 'https://facebook.com/company',
+  })
   @IsOptional()
   @IsUrl({}, { message: 'Facebook link must be a valid URL' })
   facebookLink?: string;
 
-  @ApiProperty({ description: 'Twitter link', example: 'https://twitter.com/company' })
+  @ApiProperty({
+    description: 'Twitter link',
+    example: 'https://twitter.com/company',
+  })
   @IsOptional()
   @IsUrl({}, { message: 'Twitter link must be a valid URL' })
   twitterLink?: string;
 
-  @ApiProperty({ description: 'LinkedIn link', example: 'https://linkedin.com/company' })
+  @ApiProperty({
+    description: 'LinkedIn link',
+    example: 'https://linkedin.com/company',
+  })
   @IsOptional()
   @IsUrl({}, { message: 'LinkedIn link must be a valid URL' })
   linkedInLink?: string;
 
-  @ApiProperty({ description: 'Instagram link', example: 'https://instagram.com/company' })
+  @ApiProperty({
+    description: 'Instagram link',
+    example: 'https://instagram.com/company',
+  })
   @IsOptional()
   @IsUrl({}, { message: 'Instagram link must be a valid URL' })
   instagramLink?: string;
 
-  @ApiProperty({ description: 'Company website', example: 'https://company.com' })
+  @ApiProperty({
+    description: 'Company website',
+    example: 'https://company.com',
+  })
   @IsOptional()
   @IsUrl({}, { message: 'Website must be a valid URL' })
   website?: string;
 
-  @ApiProperty({ description: 'Detailed address', example: '123 Nguyen Van Linh, District 7' })
+  @ApiProperty({
+    description: 'Detailed address',
+    example: '123 Nguyen Van Linh, District 7',
+  })
   @IsOptional()
   @IsString({ message: 'Address must be a string' })
   address?: string;
 
-  @ApiProperty({ description: 'Company size', example: '50-100 employees' })
+  @ApiProperty({ description: 'Company size', example: 100 })
   @IsOptional()
   @IsNumber({}, { message: 'Company size must be a number' })
   companySize?: number;
@@ -83,18 +108,27 @@ export class CreateCompanyDto {
   @IsNumber({}, { message: 'Founded year must be a number' })
   foundedYear?: number;
 
-  @ApiProperty({ description: 'Company description', example: 'Technology company specializing in...' })
+  @ApiProperty({
+    description: 'Company description',
+    example: 'Technology company specializing in...',
+  })
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
 
-   @ApiProperty({ description: 'Company Insight', example: 'We value innovation and teamwork' })
-   @IsOptional()
-   @IsString({ message: 'Insight must be a string' })
-   insight?: string;
+  @ApiProperty({
+    description: 'Company Insight',
+    example: 'We value innovation and teamwork',
+  })
+  @IsOptional()
+  @IsString({ message: 'Insight must be a string' })
+  insight?: string;
 
-   @ApiProperty({ description: 'Company Overview', example: 'Founded in 2010, we have ...' })
-   @IsOptional()
-   @IsString({ message: 'Overview must be a string' })
-   overview?: string;
+  @ApiProperty({
+    description: 'Company Overview',
+    example: 'Founded in 2010, we have ...',
+  })
+  @IsOptional()
+  @IsString({ message: 'Overview must be a string' })
+  overview?: string;
 }

@@ -11,40 +11,47 @@ import {
 
 export class JobDetailDto {
   @ApiProperty({ description: 'Job ID' })
+  @IsNumber()
   id: number;
 
   @ApiProperty({ description: 'Job title' })
+  @IsString()
+  @IsNotEmpty()
   title: string;
 
   @ApiProperty({ description: 'Job description' })
+  @IsString()
+  @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ description: 'Job category' })
-  category: string;
+  @ApiProperty({ description: 'Job category ID' })
+  @IsNumber()
+  category: number;
 
-  @ApiProperty({ description: 'Job location' })
-  location: string;
+  @ApiProperty({ description: 'Job location ID' })
+  @IsNumber()
+  location: number;
 
-  @ApiProperty({ description: 'Type of employment' })
-  @IsString()
-  @IsNotEmpty()
-  typeOfEmployment: string;
+  @ApiProperty({ description: 'Type of employment ID' })
+  @IsNumber()
+  typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level required' })
-  @IsString()
-  @IsNotEmpty()
-  experienceLevel: string;
+  @ApiProperty({ description: 'Experience level ID' })
+  @IsNumber()
+  experienceLevel: number;
 
   @ApiProperty({ description: 'Company name' })
+  @IsString()
   companyName: string;
 
   @ApiProperty({ description: 'Company logo' })
+  @IsString()
   companyLogo: string;
 
-  @ApiProperty({ description: 'Organization type', nullable: true })
+  @ApiProperty({ description: 'Organization type ID', nullable: true })
   @IsOptional()
-  @IsString()
-  organizationType: string | null;
+  @IsNumber()
+  organizationType: number | null;
 
   @ApiProperty({ description: 'Founded year', nullable: true })
   @IsOptional()
@@ -126,7 +133,7 @@ export class JobDetailDto {
   salaryMax: number;
 
   @ApiProperty({
-    description: 'Salary Type . Example : MONTH , WEEK , NEGOTIABLE ',
+    description: 'Salary Type. Example: 1 = MONTH, 2 = WEEK, 3 = NEGOTIABLE',
   })
   @IsOptional()
   @IsNumber()
@@ -138,7 +145,7 @@ export class JobDetailDto {
   @IsNumber({}, { each: true, message: 'Each benefit must be a number' })
   benefits: number[];
 
-  @ApiProperty({ description: 'Detailed description', nullable: true })
+  @ApiProperty({ description: 'Detailed description (HTML)', nullable: true })
   @IsOptional()
   @IsString()
   detailDescription: string | null;

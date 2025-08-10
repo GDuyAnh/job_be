@@ -24,10 +24,11 @@ export class Company {
   logo: string;
 
   @ApiProperty({
-    description: 'Organization type (Public school, Catholic, etc.)',
+    description: 'Organization type ID (1: Public school, 2: Catholic, etc.)',
+    example: 1,
   })
-  @Column({ nullable: true })
-  organizationType: string;
+  @Column({ type: 'int', nullable: true })
+  organizationType: number;
 
   @ApiProperty({ description: 'Open positions (number)' })
   @Column({ nullable: true, type: 'int' })

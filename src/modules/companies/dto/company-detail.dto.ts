@@ -11,8 +11,12 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Company logo' })
   logo: string;
 
-  @ApiProperty({ description: 'Organization type (e.g., Public school, Catholic)' })
-  organizationType: string;
+  @ApiProperty({
+    description: 'Organization type (ID)',
+    nullable: true,
+    example: 1,
+  })
+  organizationType: number | null;
 
   @ApiProperty({ description: 'Number of open positions', nullable: true })
   openPositions: number | null;
@@ -39,7 +43,10 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Detailed address', nullable: true })
   address: string | null;
 
-  @ApiProperty({ description: 'Company size (e.g., 50-100 employees)', nullable: true })
+  @ApiProperty({
+    description: 'Company size (e.g., 50-100 employees)',
+    nullable: true,
+  })
   companySize: number | null;
 
   @ApiProperty({ description: 'Founded year', nullable: true })

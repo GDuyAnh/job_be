@@ -5,7 +5,7 @@ export class CategoryStatsDto {
     description: 'Category name',
     example: 'Literature Teacher'
   })
-  category: string;
+  category: number;
 
   @ApiProperty({
     description: 'Number of jobs in this category',
@@ -13,7 +13,7 @@ export class CategoryStatsDto {
   })
   jobCount: number;
 
-  constructor(category: string, jobCount: number) {
+  constructor(category: number, jobCount: number) {
     this.category = category;
     this.jobCount = jobCount;
   }

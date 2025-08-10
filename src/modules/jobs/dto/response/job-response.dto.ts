@@ -10,17 +10,17 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Job description' })
   description: string;
 
-  @ApiProperty({ description: 'Job category' })
-  category: string;
+  @ApiProperty({ description: 'Job category ID' })
+  category: number;
 
-  @ApiProperty({ description: 'Job location' })
-  location: string;
+  @ApiProperty({ description: 'Job location ID' })
+  location: number;
 
-  @ApiProperty({ description: 'Type of employment' })
-  typeOfEmployment: string;
+  @ApiProperty({ description: 'Type of employment ID' })
+  typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level required' })
-  experienceLevel: string;
+  @ApiProperty({ description: 'Experience level ID' })
+  experienceLevel: number;
 
   @ApiProperty({ description: 'Company ID' })
   companyId: number;
@@ -53,18 +53,21 @@ export class JobResponseDto {
   deadline: Date;
 
   @ApiProperty({ description: 'Minimum salary', example: 1000 })
-  salaryMin?: number;
+  salaryMin: number;
 
   @ApiProperty({ description: 'Maximum salary', example: 3000 })
-  salaryMax?: number;
+  salaryMax: number;
 
-  @ApiProperty({ description: 'Salary type', example: 1 })
-  salaryType?: number;
+  @ApiProperty({
+    description: 'Salary type. Example: 1 = MONTH, 2 = WEEK, 3 = NEGOTIABLE',
+    example: 1,
+  })
+  salaryType: number;
 
   @ApiProperty({ description: 'Benefit IDs', type: [Number], required: false })
   benefits: number[];
 
-  @ApiProperty({ description: 'Detailed description' })
+  @ApiProperty({ description: 'Detailed description (HTML)' })
   detailDescription: string;
 
   constructor(job: any) {

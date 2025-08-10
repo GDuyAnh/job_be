@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class LocationStatsDto {
   @ApiProperty({
-    description: 'Location name',
-    example: 'HaNoi',
+    description: 'Location ID',
+    example: 1,
   })
-  location: string;
+  location: number;
 
   @ApiProperty({
     description: 'Number of jobs in this location',
@@ -23,18 +23,15 @@ export class LocationStatsDto {
     description: 'Image URL representing this location',
     example:
       'https://cdn-media.sforum.vn/storage/app/media/wp-content/uploads/2024/01/dia-diem-du-lich-o-ha-noi-thumb.jpg',
+    required: false,
+    nullable: true,
   })
-  image?: string;
+  image?: string | null;
 
-  constructor(
-    location: string,
-    jobCount: number,
-    isMajorCity: boolean,
-    image?: string,
-  ) {
-    this.location = location;
-    this.jobCount = jobCount;
-    this.isMajorCity = isMajorCity;
-    this.image = image;
+  constructor(data: Partial<LocationStatsDto>) {
+    this.location = data.location;
+    this.jobCount = data.jobCount;
+    this.isMajorCity = data.isMajorCity ?? false;
+    this.image = data.image ?? null;
   }
 }

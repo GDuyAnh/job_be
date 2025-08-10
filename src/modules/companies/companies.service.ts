@@ -71,10 +71,10 @@ export class CompaniesService {
 
     if (
       dto.organizationType &&
-      dto.organizationType.trim() !== '' &&
+      dto.organizationType !== undefined &&
       dto.organizationType !== ALL_ORGANIZATION_TYPES
     ) {
-      where.organizationType = dto.organizationType.trim();
+      where.organizationType = dto.organizationType;
     }
 
     if (dto.isShow !== undefined || dto.isShow !== null) {

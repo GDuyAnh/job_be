@@ -1,13 +1,4 @@
-export const MAJOR_CITIES = [
-  '12',
-  '13',
-  '21',
-  '20',
-  '29',
-  '33',
-  '17',
-  '25',
-] as const;
+export const MAJOR_CITIES = [12, 13, 21, 20, 29, 33, 17, 25] as const;
 export const MAJOR_CITIES_IMG = [
   'https://cdn-media.sforum.vn/storage/app/media/wp-content/uploads/2024/01/dia-diem-du-lich-o-ha-noi-thumb.jpg',
   'https://cdn-media.sforum.vn/storage/app/media/ctv_seo4/danh-lam-thang-canh-hai-phong-thumbnail.jpg',
@@ -18,6 +9,6 @@ export const MAJOR_CITIES_IMG = [
   'https://cdn-media.sforum.vn/storage/app/media/ctvseo_16/danh%20lam%20th%E1%BA%AFng%20c%E1%BA%A3nh%20Ngh%E1%BB%87%20An/danh-lam-thang-canh-nghe-an-thumbnail.jpg',
   'https://cdn-media.sforum.vn/storage/app/media/wp-content/uploads/2024/03/nhung-dia-diem-du-lich-o-nha-trang-thumb.jpg',
 ];
-export const ALL_CATEGORIES = 'All Categories';
-export const ALL_LOCATIONS = 'All Locations';
-export const ALL_ORGANIZATION_TYPES = 'All Companies';
+export const ALL_CATEGORIES = 0;
+export const ALL_LOCATIONS = 0;
+export const ALL_ORGANIZATION_TYPES = 0;

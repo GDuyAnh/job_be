@@ -7,6 +7,7 @@ import {
   Param,
   Put,
   Query,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
@@ -53,5 +54,15 @@ export class JobsController {
     @Query() query: SearchJobDto,
   ): Promise<JobSearchResponseDto[]> {
     return this.jobsService.searchJobs(query);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Job deleted' })
+  async delete(@Param('id') id: number) {
+    await this.jobsService.delete(id);
+    return { message: `Job with ${id} deleted successfully` };
   }
 }

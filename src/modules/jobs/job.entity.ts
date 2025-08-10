@@ -27,19 +27,19 @@ export class Job {
 
   @ApiProperty({ description: 'Job category' })
   @Column()
-  category: string;
+  category: number;
 
   @ApiProperty({ description: 'Job location' })
   @Column()
-  location: string;
+  location: number;
 
   @ApiProperty({ description: 'Type of employment' })
   @Column()
-  typeOfEmployment: string;
+  typeOfEmployment: number;
 
   @ApiProperty({ description: 'Experience level required' })
   @Column()
-  experienceLevel: string;
+  experienceLevel: number;
 
   @ApiProperty({ description: 'Company ID' })
   @Column({ nullable: true })

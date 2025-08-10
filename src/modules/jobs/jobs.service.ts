@@ -108,38 +108,47 @@ export class JobsService {
     if (dto.keyword?.trim()) {
       where.title = Like(`%${dto.keyword.trim()}%`);
     }
-    if (dto.category && dto.category !== ALL_CATEGORIES) {
+
+    if (
+      dto.category !== undefined &&
+      dto.category !== null &&
+      dto.category !== ALL_CATEGORIES
+    ) {
       where.category = dto.category;
     }
-    if (dto.location && dto.location !== ALL_LOCATIONS) {
+
+    if (
+      dto.location !== undefined &&
+      dto.location !== null &&
+      dto.location !== ALL_LOCATIONS
+    ) {
       where.location = dto.location;
     }
+
     if (dto.typeOfEmployment?.length > 0) {
       where.typeOfEmployment = In(dto.typeOfEmployment);
     }
+
     if (dto.experienceLevel?.length > 0) {
       where.experienceLevel = In(dto.experienceLevel);
     }
-    if (dto.isFeatured !== undefined || dto.isFeatured !== null) {
+
+    // boolean
+    if (dto.isFeatured !== undefined && dto.isFeatured !== null) {
       where.isFeatured = dto.isFeatured;
     }
 
-    let jobs: Job[];
-    if (Object.keys(where).length === 0) {
-      jobs = await this.jobsRepository.find({
-        relations: ['company'],
-      });
-    } else {
-      jobs = await this.jobsRepository.find({
-        where,
-        relations: ['company'],
-      });
-    }
+    const jobs = await this.jobsRepository.find({
+      where,
+      relations: ['company'],
+    });
+
     for (const job of jobs) {
       job.jobBenefits = await this.jobBenefitRepository.find({
         where: { jobId: job.id },
       });
     }
+
     return jobs.map((job) => new JobSearchResponseDto(job));
   }
 
@@ -167,7 +176,11 @@ export class JobsService {
       .getRawMany();
 
     return result.map(
-      (item) => new CategoryStatsDto(item.category, parseInt(item.jobCount)),
+      (item) =>
+        new CategoryStatsDto(
+          Number(item.category),
+          parseInt(item.jobCount, 10),
+        ),
     );
   }
 
@@ -183,21 +196,45 @@ export class JobsService {
       .orderBy('jobCount', 'DESC')
       .getRawMany();
 
-    const locationMap = new Map<string, number>();
+    const locationMap = new Map<number, number>();
     result.forEach((item) => {
-      locationMap.set(item.location, parseInt(item.jobCount));
+      locationMap.set(Number(item.location), parseInt(item.jobCount, 10));
     });
 
     const response: LocationStatsDto[] = [];
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 6700a0e (Recover work from stash@{0})
     cities.forEach((city, index) => {
-      const jobCount = locationMap.get(city) || 0;
+      const jobCount = locationMap.get(Number(city)) || 0;
       const image = cityImages[index] || null;
+<<<<<<< HEAD
       response.push(new LocationStatsDto(city, jobCount, true, image));
 
+=======
+      response.push(
+        new LocationStatsDto({
+          location: city,
+          jobCount: jobCount,
+          isMajorCity: true,
+          image: image,
+        }),
+      );
+>>>>>>> 6700a0e (Recover work from stash@{0})
     });
 
     return response;
+  }
+
+  async delete(id: number): Promise<void> {
+    const job = await this.jobsRepository.findOne({ where: { id } });
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${id} not found`);
+    }
+
+    await this.jobBenefitRepository.delete({ jobId: id });
+    await this.jobsRepository.delete(id);
   }
 }
