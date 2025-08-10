@@ -202,18 +202,11 @@ export class JobsService {
     });
 
     const response: LocationStatsDto[] = [];
-<<<<<<< HEAD
 
-
-=======
->>>>>>> 6700a0e (Recover work from stash@{0})
     cities.forEach((city, index) => {
       const jobCount = locationMap.get(Number(city)) || 0;
       const image = cityImages[index] || null;
-<<<<<<< HEAD
-      response.push(new LocationStatsDto(city, jobCount, true, image));
 
-=======
       response.push(
         new LocationStatsDto({
           location: city,
@@ -222,7 +215,6 @@ export class JobsService {
           image: image,
         }),
       );
->>>>>>> 6700a0e (Recover work from stash@{0})
     });
 
     return response;
