@@ -12,14 +12,17 @@ export class CompanyResponseDto {
   logo: string | null;
 
   @ApiProperty({
+    description: 'Number of open positions (jobs)',
+    nullable: true,
+  })
+  openPositions?: number;
+
+  @ApiProperty({
     description: 'Organization type (ID)',
     nullable: true,
     example: 1,
   })
   organizationType: number | null;
-
-  @ApiProperty({ description: 'Open positions', nullable: true })
-  openPositions: number | null;
 
   @ApiProperty({ description: 'Whether the company is shown' })
   isShow: boolean;
@@ -66,12 +69,11 @@ export class CompanyResponseDto {
   @ApiProperty({ description: 'Updated date' })
   updatedAt: Date;
 
-  constructor(company: Company) {
+  constructor(company: Company , openPositions?: number) {
     this.id = company.id;
     this.name = company.name;
     this.logo = company.logo;
     this.organizationType = company.organizationType;
-    this.openPositions = company.openPositions;
     this.isShow = company.isShow;
     this.facebookLink = company.facebookLink;
     this.twitterLink = company.twitterLink;
@@ -87,5 +89,7 @@ export class CompanyResponseDto {
     this.overview = company.overview;
     this.createdAt = company.createdAt;
     this.updatedAt = company.updatedAt;
+
+    this.openPositions = openPositions ?? 0;
   }
 }

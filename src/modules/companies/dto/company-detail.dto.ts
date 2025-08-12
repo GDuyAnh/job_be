@@ -18,9 +18,6 @@ export class CompanyDetailDto {
   })
   organizationType: number | null;
 
-  @ApiProperty({ description: 'Number of open positions', nullable: true })
-  openPositions: number | null;
-
   @ApiProperty({ description: 'Whether the company is shown' })
   isShow: boolean;
 
@@ -69,7 +66,6 @@ export class CompanyDetailDto {
     this.name = company.name;
     this.logo = company.logo;
     this.organizationType = company.organizationType;
-    this.openPositions = company.openPositions ?? null;
     this.isShow = company.isShow;
 
     this.facebookLink = company.facebookLink ?? null;

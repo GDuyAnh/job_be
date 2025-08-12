@@ -30,10 +30,6 @@ export class Company {
   @Column({ type: 'int', nullable: true })
   organizationType: number;
 
-  @ApiProperty({ description: 'Open positions (number)' })
-  @Column({ nullable: true, type: 'int' })
-  openPositions: number;
-
   @ApiProperty({ description: 'Whether the company is shown', default: false })
   @Column({ type: 'boolean', default: false })
   isShow: boolean;
@@ -46,7 +42,7 @@ export class Company {
   @Column({ nullable: true })
   address: string;
 
-  @ApiProperty({ description: 'Company size (e.g., 50-100 employees)' })
+  @ApiProperty({ description: 'Company size (e.g., 123 employees)' })
   @Column({ nullable: true })
   companySize: number;
 

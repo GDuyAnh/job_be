@@ -13,6 +13,16 @@ export class SearchCompanyDto {
   @Type(() => Number)
   organizationType?: number;
 
+  @ApiProperty({
+    description: 'Location type ID to filter companies',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'Location type must be a number' })
+  @Type(() => Number)
+  location?: number;
+
   @ApiPropertyOptional({ description: 'Only get shown company' })
   @IsOptional()
   @IsBoolean()

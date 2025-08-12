@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Job } from './job.entity';
@@ -16,80 +20,54 @@ import {
 } from '../constants';
 import { CreateJobDto } from './dto/request/create-job.dto';
 import { JobResponseDto } from './dto/response/job-response.dto';
+import { Company } from '../companies/company.entity';
 
 @Injectable()
 export class JobsService {
   constructor(
     @InjectRepository(Job)
     private jobsRepository: Repository<Job>,
+    @InjectRepository(Company)
+    private companiesRepository: Repository<Company>,
     @InjectRepository(JobBenefit)
     private jobBenefitRepository: Repository<JobBenefit>,
   ) {}
 
   async create(data: CreateJobDto): Promise<JobResponseDto> {
+    await this.validateJobData(data);
+    await this.ensureCompanyExists(data.companyId);
+
     const { benefits, ...jobData } = data;
 
     // 1. Tạo job
-    const job: Job = this.jobsRepository.create(jobData);
-    const savedJob: Job = await this.jobsRepository.save(job);
+    const savedJob = await this.jobsRepository.save(
+      this.jobsRepository.create(jobData),
+    );
 
-    // 2. Lưu JobBenefits nếu có
-    if (Array.isArray(benefits) && benefits.length > 0) {
-      const jobBenefits = benefits.map((benefitId: number) =>
-        this.jobBenefitRepository.create({ jobId: savedJob.id, benefitId }),
-      );
-      await this.jobBenefitRepository.save(jobBenefits);
-    }
+    // 2. Cập nhật benefits
+    await this.updateJobBenefits(savedJob.id, benefits);
 
-    // 3. Lấy lại job kèm quan hệ
-    const jobWithRelations = await this.jobsRepository.findOne({
-      where: { id: savedJob.id },
-      relations: ['company'],
-    });
-
-    // 4. Lấy danh sách benefit
-    jobWithRelations.jobBenefits = await this.jobBenefitRepository.find({
-      where: { jobId: savedJob.id },
-    });
-
-    // 5. Map sang DTO
-    return new JobResponseDto(jobWithRelations);
+    // 3. Trả về DTO
+    return this.buildJobResponse(savedJob.id);
   }
 
   async update(id: number, data: CreateJobDto): Promise<JobResponseDto> {
-    const job = await this.jobsRepository.findOne({
-      where: { id },
-      relations: ['company'],
-    });
+    await this.validateJobData(data);
+    const job = await this.findJobOrThrow(id);
 
-    if (!job) {
-      throw new NotFoundException(`Job with ID ${id} not found`);
+    if (data.companyId !== undefined) {
+      await this.ensureCompanyExists(data.companyId);
     }
 
     const { benefits, ...jobData } = data;
 
-    // Cập nhật thông tin job
-    Object.assign(job, jobData);
-    const updatedJob = await this.jobsRepository.save(job);
+    // Cập nhật job
+    await this.jobsRepository.save({ ...job, ...jobData });
 
-    // Xoá các jobBenefit cũ
-    await this.jobBenefitRepository.delete({ jobId: id });
+    // Cập nhật benefits
+    await this.updateJobBenefits(id, benefits);
 
-    // Thêm lại jobBenefits mới nếu có
-    if (Array.isArray(benefits)) {
-      const jobBenefits = benefits.map((benefitId: number) =>
-        this.jobBenefitRepository.create({ jobId: updatedJob.id, benefitId }),
-      );
-      await this.jobBenefitRepository.save(jobBenefits);
-    }
-
-    // Gắn jobBenefits vào object trả về
-    updatedJob.jobBenefits = await this.jobBenefitRepository.find({
-      where: { jobId: updatedJob.id },
-    });
-
-    // Trả về DTO
-    return new JobResponseDto(updatedJob);
+    return this.buildJobResponse(id);
   }
 
   async findAll(): Promise<JobResponseDto[]> {
@@ -228,5 +206,99 @@ export class JobsService {
 
     await this.jobBenefitRepository.delete({ jobId: id });
     await this.jobsRepository.delete(id);
+  }
+
+  /* ================= Helper Methods ================= */
+
+  private async ensureCompanyExists(companyId: number): Promise<void> {
+    const exists = await this.companiesRepository.exists({
+      where: { id: companyId },
+    });
+    if (!exists) {
+      throw new NotFoundException(`Company with ID ${companyId} not found`);
+    }
+  }
+
+  private async findJobOrThrow(id: number): Promise<Job> {
+    const job = await this.jobsRepository.findOne({
+      where: { id },
+      relations: ['company'],
+    });
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${id} not found`);
+    }
+    return job;
+  }
+
+  private async updateJobBenefits(
+    jobId: number,
+    benefits?: number[],
+  ): Promise<void> {
+    await this.jobBenefitRepository.delete({ jobId });
+
+    if (Array.isArray(benefits) && benefits.length > 0) {
+      const jobBenefits = benefits.map((benefitId) =>
+        this.jobBenefitRepository.create({ jobId, benefitId }),
+      );
+      await this.jobBenefitRepository.save(jobBenefits);
+    }
+  }
+
+  private async buildJobResponse(jobId: number): Promise<JobResponseDto> {
+    const jobWithRelations = await this.jobsRepository.findOne({
+      where: { id: jobId },
+      relations: ['company'],
+    });
+
+    if (!jobWithRelations) {
+      throw new NotFoundException(`Job with ID ${jobId} not found`);
+    }
+
+    jobWithRelations.jobBenefits = await this.jobBenefitRepository.find({
+      where: { jobId },
+    });
+
+    return new JobResponseDto(jobWithRelations);
+  }
+
+  private async validateJobData(jobData: CreateJobDto) {
+    // Nếu không có postedDate thì mặc định = hôm nay
+    if (!jobData.postedDate) {
+      jobData.postedDate = new Date();
+    } else {
+      jobData.postedDate = new Date(jobData.postedDate);
+    }
+
+    // Nếu FE gửi deadline dưới dạng string thì parse sang Date
+    jobData.deadline = new Date(jobData.deadline);
+
+    // Validate salary >= 0
+    if (jobData.salaryMin < 0 || jobData.salaryMax < 0) {
+      throw new BadRequestException('Salary must be non-negative');
+    }
+
+    // salaryMin <= salaryMax
+    if (jobData.salaryMin > jobData.salaryMax) {
+      throw new BadRequestException(
+        'Minimum salary cannot be greater than maximum salary',
+      );
+    }
+
+    // deadline >= postedDate
+    if (jobData.deadline < jobData.postedDate) {
+      throw new BadRequestException(
+        'Deadline cannot be earlier than posted date',
+      );
+    }
+
+    // deadline <= postedDate + 1 tháng
+    const oneMonthLater = new Date(jobData.postedDate);
+    oneMonthLater.setMonth(jobData.postedDate.getMonth() + 1);
+
+    if (jobData.deadline > oneMonthLater) {
+      throw new BadRequestException(
+        'Deadline cannot be more than 1 month after posted date',
+      );
+    }
   }
 }

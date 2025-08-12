@@ -6,13 +6,21 @@ import {
   Body,
   Query,
   BadRequestException,
+  Put,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { SearchCompanyDto } from './dto/search-company.dto';
 import { CompanyDetailDto } from './dto/company-detail.dto';
 import { CompanyResponseDto } from './dto/company-response.dto';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@/modules/auth/guards/roles.guard';
+import { Roles } from '@/modules/constants/roles.decorator';
+import { RoleStatus } from '@/enum/role';
 
 @ApiTags('companies')
 @Controller('companies')
@@ -20,32 +28,24 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Post()
-  @ApiResponse({ status: 201, description: 'Company created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
+  @ApiBearerAuth()
   @ApiResponse({
-    status: 409,
-    description: 'Conflict - company name or email already exists',
+    status: 201,
+    description: 'Company created successfully',
+    type: CompanyDetailDto,
   })
   async create(@Body() createCompanyDto: CreateCompanyDto) {
     return this.companiesService.create(createCompanyDto);
   }
 
   @Get()
-  @ApiResponse({
-    status: 200,
-    description: 'List of all companies',
-    type: [CompanyResponseDto],
-  })
   async findAll(): Promise<CompanyResponseDto[]> {
     return this.companiesService.findAll();
   }
 
   @Get('search')
-  @ApiResponse({
-    status: 200,
-    description: 'Search companies by organization type',
-    type: [CompanyResponseDto],
-  })
   async searchCompanies(
     @Query() query: SearchCompanyDto,
   ): Promise<CompanyResponseDto[]> {
@@ -58,10 +58,7 @@ export class CompaniesController {
     description: 'Company detail information',
     type: CompanyDetailDto,
   })
-  @ApiResponse({
-    status: 404,
-    description: 'Company not found',
-  })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   async getCompanyDetail(
     @Param('id') companyId: string,
   ): Promise<CompanyDetailDto> {
@@ -70,5 +67,29 @@ export class CompaniesController {
       throw new BadRequestException('Invalid company ID');
     }
     return this.companiesService.getCompanyDetail(id);
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
+  @ApiBearerAuth()
+  async updateCompany(
+    @Param('id') companyId: string,
+    @Body() updateCompanyDto: CreateCompanyDto,
+  ) {
+    const id = parseInt(companyId, 10);
+    if (isNaN(id)) {
+      throw new BadRequestException('Invalid company ID');
+    }
+    return this.companiesService.update(id, updateCompanyDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
+  @ApiBearerAuth()
+  async deleteCompany(@Param('id', ParseIntPipe) companyId: number) {
+    await this.companiesService.delete(companyId);
+    return { message: `Company with ${companyId} deleted successfully` };
   }
 }

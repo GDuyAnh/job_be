@@ -36,11 +36,6 @@ export class CreateCompanyDto {
   @Type(() => Number)
   organizationType?: number;
 
-  @ApiProperty({ description: 'Open positions', example: 5 })
-  @IsOptional()
-  @IsNumber({}, { message: 'Open positions must be a number' })
-  openPositions?: number;
-
   @ApiProperty({
     description: 'Whether the company is shown',
     example: false,
