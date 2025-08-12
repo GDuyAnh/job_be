@@ -5,7 +5,6 @@ import {
   Param,
   Body,
   Query,
-  BadRequestException,
   Put,
   Delete,
   UseGuards,
@@ -60,36 +59,39 @@ export class CompaniesController {
   })
   @ApiResponse({ status: 404, description: 'Company not found' })
   async getCompanyDetail(
-    @Param('id') companyId: string,
+    @Param('id', ParseIntPipe) companyId: number,
   ): Promise<CompanyDetailDto> {
-    const id = parseInt(companyId, 10);
-    if (isNaN(id)) {
-      throw new BadRequestException('Invalid company ID');
-    }
-    return this.companiesService.getCompanyDetail(id);
+    return this.companiesService.getCompanyDetail(companyId);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
+  @Roles(RoleStatus.ADMIN)
   @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company updated successfully',
+    type: CompanyDetailDto,
+  })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   async updateCompany(
-    @Param('id') companyId: string,
+    @Param('id', ParseIntPipe) companyId: number,
     @Body() updateCompanyDto: CreateCompanyDto,
   ) {
-    const id = parseInt(companyId, 10);
-    if (isNaN(id)) {
-      throw new BadRequestException('Invalid company ID');
-    }
-    return this.companiesService.update(id, updateCompanyDto);
+    return this.companiesService.update(companyId, updateCompanyDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
   @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   async deleteCompany(@Param('id', ParseIntPipe) companyId: number) {
     await this.companiesService.delete(companyId);
-    return { message: `Company with ${companyId} deleted successfully` };
+    return { message: `Company with ID ${companyId} deleted successfully` };
   }
 }

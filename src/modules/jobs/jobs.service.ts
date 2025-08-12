@@ -262,36 +262,30 @@ export class JobsService {
   }
 
   private async validateJobData(jobData: CreateJobDto) {
-    // Nếu không có postedDate thì mặc định = hôm nay
     if (!jobData.postedDate) {
       jobData.postedDate = new Date();
     } else {
       jobData.postedDate = new Date(jobData.postedDate);
     }
 
-    // Nếu FE gửi deadline dưới dạng string thì parse sang Date
     jobData.deadline = new Date(jobData.deadline);
 
-    // Validate salary >= 0
     if (jobData.salaryMin < 0 || jobData.salaryMax < 0) {
       throw new BadRequestException('Salary must be non-negative');
     }
 
-    // salaryMin <= salaryMax
     if (jobData.salaryMin > jobData.salaryMax) {
       throw new BadRequestException(
         'Minimum salary cannot be greater than maximum salary',
       );
     }
 
-    // deadline >= postedDate
     if (jobData.deadline < jobData.postedDate) {
       throw new BadRequestException(
         'Deadline cannot be earlier than posted date',
       );
     }
 
-    // deadline <= postedDate + 1 tháng
     const oneMonthLater = new Date(jobData.postedDate);
     oneMonthLater.setMonth(jobData.postedDate.getMonth() + 1);
 

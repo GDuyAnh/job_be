@@ -13,6 +13,7 @@ import { CompanyResponseDto } from './dto/company-response.dto';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { ALL_LOCATIONS, ALL_ORGANIZATION_TYPES } from '../constants';
 import { Job } from '../jobs/job.entity';
+import { CompanyJobSummaryDto } from './dto/company-job-summary.dto';
 
 @Injectable()
 export class CompaniesService {
@@ -56,8 +57,18 @@ export class CompaniesService {
   }
 
   async findAll(): Promise<CompanyResponseDto[]> {
-    const companies = await this.companiesRepository.find();
-    return companies.map((company) => new CompanyResponseDto(company));
+    const companies = await this.companiesRepository
+      .createQueryBuilder('company')
+      .leftJoin('company.jobs', 'job')
+      .select('company')
+      .addSelect('COUNT(job.id)', 'openPositions')
+      .groupBy('company.id')
+      .getRawAndEntities();
+
+    return companies.entities.map((company, index) => {
+      const count = parseInt(companies.raw[index].openPositions, 10) || 0;
+      return new CompanyResponseDto(company, count);
+    });
   }
 
   async searchCompanies(dto: SearchCompanyDto): Promise<CompanyResponseDto[]> {
@@ -115,14 +126,28 @@ export class CompaniesService {
   }
 
   async getCompanyDetail(companyId: number): Promise<CompanyDetailDto> {
+    // 1. Find Company
     const company = await this.companiesRepository.findOne({
       where: { id: companyId },
     });
+
     if (!company) {
       throw new NotFoundException('Company not found');
     }
 
-    return new CompanyDetailDto(company);
+    // 2. Find all jobs related to company
+    const jobs = await this.jobsRepository.find({
+      where: { companyId: companyId },
+      order: {
+        postedDate: 'DESC',
+      },
+    });
+
+    // 3. Transform jobs into CompanyJobSummaryDto
+    const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
+
+    // 4. Return CompanyDetailDto with Jobs
+    return new CompanyDetailDto(company, jobSummaries);
   }
 
   async update(

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from '../company.entity';
+import { CompanyJobSummaryDto } from './company-job-summary.dto';
 
 export class CompanyDetailDto {
   @ApiProperty({ description: 'Company ID' })
@@ -21,7 +22,6 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Whether the company is shown' })
   isShow: boolean;
 
-  // Social media links (divided fields)
   @ApiProperty({ description: 'Facebook link', nullable: true })
   facebookLink: string | null;
 
@@ -61,7 +61,13 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Company Overview', nullable: true })
   overview: string | null;
 
-  constructor(company: Company) {
+  @ApiProperty({
+    description: 'List of jobs belonging to this company',
+    type: [CompanyJobSummaryDto],
+  })
+  jobs: CompanyJobSummaryDto[];
+
+  constructor(company: Company, jobs?: CompanyJobSummaryDto[]) {
     this.id = company.id;
     this.name = company.name;
     this.logo = company.logo;
@@ -81,5 +87,7 @@ export class CompanyDetailDto {
     this.description = company.description ?? null;
     this.insight = company.insight ?? null;
     this.overview = company.overview ?? null;
+
+    this.jobs = jobs || [];
   }
 }
