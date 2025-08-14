@@ -4,6 +4,13 @@ import { Transform, Type } from 'class-transformer';
 
 export class SearchCompanyDto {
   @ApiProperty({
+    description: 'Search keyword for company name',
+    required: false,
+  })
+  @IsOptional()
+  keyword?: string;
+
+  @ApiProperty({
     description: 'Organization type ID to filter companies',
     example: 1,
     required: false,

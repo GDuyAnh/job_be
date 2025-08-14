@@ -48,4 +48,6 @@ lerna-debug.log*
 
 # Temporary folders
 tmp/
-temp/ 
+temp/
+# Yarn Lock
+yarn.lock

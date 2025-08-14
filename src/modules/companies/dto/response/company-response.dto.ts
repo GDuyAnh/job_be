@@ -1,16 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Company } from '../company.entity';
-import { CompanyJobSummaryDto } from './company-job-summary.dto';
+import { Company } from '../../company.entity';
+import { CompanyImageDto } from './company-image.dto';
 
-export class CompanyDetailDto {
+export class CompanyResponseDto {
   @ApiProperty({ description: 'Company ID' })
   id: number;
 
   @ApiProperty({ description: 'Company name' })
   name: string;
 
-  @ApiProperty({ description: 'Company logo' })
-  logo: string;
+  @ApiProperty({ description: 'Company logo', nullable: true })
+  logo: string | null;
+
+  @ApiProperty({
+    description: 'Number of open positions (jobs)',
+    nullable: true,
+  })
+  openPositions?: number;
 
   @ApiProperty({
     description: 'Organization type (ID)',
@@ -40,17 +46,14 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Detailed address', nullable: true })
   address: string | null;
 
-  @ApiProperty({
-    description: 'Company size (e.g., 50-100 employees)',
-    nullable: true,
-  })
+  @ApiProperty({ description: 'Company size', nullable: true })
   companySize: number | null;
 
   @ApiProperty({ description: 'Founded year', nullable: true })
   foundedYear: number | null;
 
-  @ApiProperty({ description: 'Company email', nullable: true })
-  email: string | null;
+  @ApiProperty({ description: 'Company email' })
+  email: string;
 
   @ApiProperty({ description: 'Company description', nullable: true })
   description: string | null;
@@ -61,33 +64,45 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Company Overview', nullable: true })
   overview: string | null;
 
-  @ApiProperty({
-    description: 'List of jobs belonging to this company',
-    type: [CompanyJobSummaryDto],
-  })
-  jobs: CompanyJobSummaryDto[];
+  @ApiProperty({ description: 'Created date' })
+  createdAt: Date;
 
-  constructor(company: Company, jobs?: CompanyJobSummaryDto[]) {
+  @ApiProperty({ description: 'Updated date' })
+  updatedAt: Date;
+
+  @ApiProperty({
+    description: 'List of images about company',
+    type: [CompanyImageDto],
+  })
+  companyImages: CompanyImageDto[];
+
+  constructor(company: Company, openPositions?: number) {
     this.id = company.id;
     this.name = company.name;
     this.logo = company.logo;
     this.organizationType = company.organizationType;
     this.isShow = company.isShow;
+    this.facebookLink = company.facebookLink;
+    this.twitterLink = company.twitterLink;
+    this.linkedInLink = company.linkedInLink;
+    this.instagramLink = company.instagramLink;
+    this.website = company.website;
+    this.address = company.address;
+    this.companySize = company.companySize;
+    this.foundedYear = company.foundedYear;
+    this.email = company.email;
+    this.description = company.description;
+    this.insight = company.insight;
+    this.overview = company.overview;
+    this.createdAt = company.createdAt;
+    this.updatedAt = company.updatedAt;
 
-    this.facebookLink = company.facebookLink ?? null;
-    this.twitterLink = company.twitterLink ?? null;
-    this.linkedInLink = company.linkedInLink ?? null;
-    this.instagramLink = company.instagramLink ?? null;
+    this.openPositions = openPositions ?? 0;
 
-    this.website = company.website ?? null;
-    this.address = company.address ?? null;
-    this.companySize = company.companySize ?? null;
-    this.foundedYear = company.foundedYear ?? null;
-    this.email = company.email ?? null;
-    this.description = company.description ?? null;
-    this.insight = company.insight ?? null;
-    this.overview = company.overview ?? null;
-
-    this.jobs = jobs || [];
+    this.companyImages =
+      company.companyImages?.map((img) => ({
+        id: img.id,
+        url: img.url,
+      })) ?? [];
   }
 }
