@@ -25,28 +25,30 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Description is required' })
   description: string;
 
-  @ApiProperty({ description: 'Job category' })
-  @IsString({ message: 'Category must be a string' })
-  @IsNotEmpty({ message: 'Category is required' })
-  category: string;
+  @ApiProperty({ description: 'Job category', example: 1 })
+  @Transform(({ value }) => Number(value))
+  @IsNumber({}, { message: 'Category must be a number' })
+  category: number;
 
-  @ApiProperty({ description: 'Job location' })
-  @IsString({ message: 'Location must be a string' })
-  @IsNotEmpty({ message: 'Location is required' })
-  location: string;
+  @ApiProperty({ description: 'Job location', example: 1 })
+  @Transform(({ value }) => Number(value))
+  @IsNumber({}, { message: 'Location must be a number' })
+  location: number;
 
-  @ApiProperty({ description: 'Type of employment' })
-  @IsString({ message: 'Type of employment must be a string' })
-  @IsNotEmpty({ message: 'Type of employment is required' })
-  typeOfEmployment: string;
+  @ApiProperty({ description: 'Type of employment', example: 1 })
+  @Transform(({ value }) => Number(value))
+  @IsNumber({}, { message: 'Type of employment must be a number' })
+  typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level required' })
-  @IsString({ message: 'Experience level must be a string' })
-  @IsNotEmpty({ message: 'Experience level is required' })
-  experienceLevel: string;
+  @ApiProperty({ description: 'Experience level required', example: 1 })
+  @Transform(({ value }) => Number(value))
+  @IsNumber({}, { message: 'Experience level must be a number' })
+  experienceLevel: number;
 
   @ApiProperty({ description: 'Company ID', required: false })
   @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Company ID must be a number' })
   companyId?: number;
 
   @ApiProperty({ description: 'Image logo', required: false })
@@ -69,14 +71,28 @@ export class CreateJobDto {
   @IsDateString({}, { message: 'Deadline must be a valid date' })
   deadline?: Date;
 
-  @ApiProperty({ description: 'Salary', required: false })
+  @ApiProperty({ description: 'Salary Min', required: false })
   @IsOptional()
-  @IsString({ message: 'Salary must be a string' })
-  salary?: string;
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Salary Min must be a number' })
+  salaryMin?: number;
+
+  @ApiProperty({ description: 'Salary Max', required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Salary Max must be a number' })
+  salaryMax?: number;
+
+  @ApiProperty({ description: 'Salary Type', required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Salary Type must be a number' })
+  salaryType?: number;
 
   @ApiProperty({ description: 'Benefits', required: false, type: [Number] })
   @IsOptional()
   @IsArray({ message: 'Benefits must be an array' })
+  @Transform(({ value }) => (Array.isArray(value) ? value.map(Number) : value))
   @IsNumber({}, { each: true, message: 'Each benefit must be a number' })
   benefits?: number[];
 

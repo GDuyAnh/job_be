@@ -9,6 +9,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse } from '@nestjs/swagger';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@/modules/auth/guards/roles.guard';
+import { Roles } from '@/modules/constants/roles.decorator';
+import { RoleStatus } from '@/enum/role';
 
 @ApiTags('demo')
 @Controller('demo')
@@ -85,5 +90,13 @@ export class DemoController {
       data,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Get('admin-only/ping')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiResponse({ status: 200, description: 'admin success' })
+  async adminOnly() {
+    return { message: 'ADMIN route OK' }
   }
 }

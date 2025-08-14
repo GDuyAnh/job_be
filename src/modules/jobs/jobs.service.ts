@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Job } from './job.entity';
@@ -8,38 +12,62 @@ import { JobDetailDto } from './dto/response/job-detail.dto';
 import { CategoryStatsDto } from './dto/response/category-stats.dto';
 import { LocationStatsDto } from './dto/response/location-stats.dto';
 import { JobSearchResponseDto } from './dto/response/search-job-response.dto';
-import { ALL_CATEGORIES, ALL_LOCATIONS, MAJOR_CITIES } from '../constants';
+import {
+  ALL_CATEGORIES,
+  ALL_LOCATIONS,
+  MAJOR_CITIES,
+  MAJOR_CITIES_IMG,
+} from '../constants';
 import { CreateJobDto } from './dto/request/create-job.dto';
 import { JobResponseDto } from './dto/response/job-response.dto';
+import { Company } from '../companies/company.entity';
 
 @Injectable()
 export class JobsService {
   constructor(
     @InjectRepository(Job)
     private jobsRepository: Repository<Job>,
+    @InjectRepository(Company)
+    private companiesRepository: Repository<Company>,
     @InjectRepository(JobBenefit)
     private jobBenefitRepository: Repository<JobBenefit>,
   ) {}
 
-  async create(data: CreateJobDto): Promise<Job> {
-    const { benefits, ...jobData } = data;
-    // Ensure jobData is a single object
-    const job: Job = this.jobsRepository.create(jobData);
-    const savedJob: Job = await this.jobsRepository.save(job);
+  async create(data: CreateJobDto): Promise<JobResponseDto> {
+    await this.validateJobData(data);
+    await this.ensureCompanyExists(data.companyId);
 
-    if (Array.isArray(benefits)) {
-      const jobBenefits = benefits.map((benefitId: number) =>
-        this.jobBenefitRepository.create({ jobId: savedJob.id, benefitId }),
-      );
-      await this.jobBenefitRepository.save(jobBenefits);
+    const { benefits, ...jobData } = data;
+
+    // 1. Tạo job
+    const savedJob = await this.jobsRepository.save(
+      this.jobsRepository.create(jobData),
+    );
+
+    // 2. Cập nhật benefits
+    await this.updateJobBenefits(savedJob.id, benefits);
+
+    // 3. Trả về DTO
+    return this.buildJobResponse(savedJob.id);
+  }
+
+  async update(id: number, data: CreateJobDto): Promise<JobResponseDto> {
+    await this.validateJobData(data);
+    const job = await this.findJobOrThrow(id);
+
+    if (data.companyId !== undefined) {
+      await this.ensureCompanyExists(data.companyId);
     }
 
-    // Attach jobBenefits for DTOs
-    (savedJob as any).jobBenefits = await this.jobBenefitRepository.find({
-      where: { jobId: savedJob.id },
-    });
+    const { benefits, ...jobData } = data;
 
-    return savedJob;
+    // Cập nhật job
+    await this.jobsRepository.save({ ...job, ...jobData });
+
+    // Cập nhật benefits
+    await this.updateJobBenefits(id, benefits);
+
+    return this.buildJobResponse(id);
   }
 
   async findAll(): Promise<JobResponseDto[]> {
@@ -58,38 +86,47 @@ export class JobsService {
     if (dto.keyword?.trim()) {
       where.title = Like(`%${dto.keyword.trim()}%`);
     }
-    if (dto.category && dto.category !== ALL_CATEGORIES) {
+
+    if (
+      dto.category !== undefined &&
+      dto.category !== null &&
+      dto.category !== ALL_CATEGORIES
+    ) {
       where.category = dto.category;
     }
-    if (dto.location && dto.location !== ALL_LOCATIONS) {
+
+    if (
+      dto.location !== undefined &&
+      dto.location !== null &&
+      dto.location !== ALL_LOCATIONS
+    ) {
       where.location = dto.location;
     }
+
     if (dto.typeOfEmployment?.length > 0) {
       where.typeOfEmployment = In(dto.typeOfEmployment);
     }
+
     if (dto.experienceLevel?.length > 0) {
       where.experienceLevel = In(dto.experienceLevel);
     }
-    if (dto.isFeatured !== undefined || dto.isFeatured !== null) {
+
+    // boolean
+    if (dto.isFeatured !== undefined && dto.isFeatured !== null) {
       where.isFeatured = dto.isFeatured;
     }
 
-    let jobs: Job[];
-    if (Object.keys(where).length === 0) {
-      jobs = await this.jobsRepository.find({
-        relations: ['company'],
-      });
-    } else {
-      jobs = await this.jobsRepository.find({
-        where,
-        relations: ['company'],
-      });
-    }
+    const jobs = await this.jobsRepository.find({
+      where,
+      relations: ['company'],
+    });
+
     for (const job of jobs) {
       job.jobBenefits = await this.jobBenefitRepository.find({
         where: { jobId: job.id },
       });
     }
+
     return jobs.map((job) => new JobSearchResponseDto(job));
   }
 
@@ -117,12 +154,17 @@ export class JobsService {
       .getRawMany();
 
     return result.map(
-      (item) => new CategoryStatsDto(item.category, parseInt(item.jobCount)),
+      (item) =>
+        new CategoryStatsDto(
+          Number(item.category),
+          parseInt(item.jobCount, 10),
+        ),
     );
   }
 
   async getLocationsWithJobCount(): Promise<LocationStatsDto[]> {
     const cities = MAJOR_CITIES;
+    const cityImages = MAJOR_CITIES_IMG;
 
     const result = await this.jobsRepository
       .createQueryBuilder('job')
@@ -132,18 +174,125 @@ export class JobsService {
       .orderBy('jobCount', 'DESC')
       .getRawMany();
 
-    const locationMap = new Map<string, number>();
+    const locationMap = new Map<number, number>();
     result.forEach((item) => {
-      locationMap.set(item.location, parseInt(item.jobCount));
+      locationMap.set(Number(item.location), parseInt(item.jobCount, 10));
     });
 
     const response: LocationStatsDto[] = [];
 
-    cities.forEach((city) => {
-      const jobCount = locationMap.get(city.toString()) || 0;
-      response.push(new LocationStatsDto(city.toString(), jobCount, true));
+    cities.forEach((city, index) => {
+      const jobCount = locationMap.get(Number(city)) || 0;
+      const image = cityImages[index] || null;
+
+      response.push(
+        new LocationStatsDto({
+          location: city,
+          jobCount: jobCount,
+          isMajorCity: true,
+          image: image,
+        }),
+      );
     });
 
     return response;
+  }
+
+  async delete(id: number): Promise<void> {
+    const job = await this.jobsRepository.findOne({ where: { id } });
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${id} not found`);
+    }
+
+    await this.jobBenefitRepository.delete({ jobId: id });
+    await this.jobsRepository.delete(id);
+  }
+
+  /* ================= Helper Methods ================= */
+
+  private async ensureCompanyExists(companyId: number): Promise<void> {
+    const exists = await this.companiesRepository.exists({
+      where: { id: companyId },
+    });
+    if (!exists) {
+      throw new NotFoundException(`Company with ID ${companyId} not found`);
+    }
+  }
+
+  private async findJobOrThrow(id: number): Promise<Job> {
+    const job = await this.jobsRepository.findOne({
+      where: { id },
+      relations: ['company'],
+    });
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${id} not found`);
+    }
+    return job;
+  }
+
+  private async updateJobBenefits(
+    jobId: number,
+    benefits?: number[],
+  ): Promise<void> {
+    await this.jobBenefitRepository.delete({ jobId });
+
+    if (Array.isArray(benefits) && benefits.length > 0) {
+      const jobBenefits = benefits.map((benefitId) =>
+        this.jobBenefitRepository.create({ jobId, benefitId }),
+      );
+      await this.jobBenefitRepository.save(jobBenefits);
+    }
+  }
+
+  private async buildJobResponse(jobId: number): Promise<JobResponseDto> {
+    const jobWithRelations = await this.jobsRepository.findOne({
+      where: { id: jobId },
+      relations: ['company'],
+    });
+
+    if (!jobWithRelations) {
+      throw new NotFoundException(`Job with ID ${jobId} not found`);
+    }
+
+    jobWithRelations.jobBenefits = await this.jobBenefitRepository.find({
+      where: { jobId },
+    });
+
+    return new JobResponseDto(jobWithRelations);
+  }
+
+  private async validateJobData(jobData: CreateJobDto) {
+    if (!jobData.postedDate) {
+      jobData.postedDate = new Date();
+    } else {
+      jobData.postedDate = new Date(jobData.postedDate);
+    }
+
+    jobData.deadline = new Date(jobData.deadline);
+
+    if (jobData.salaryMin < 0 || jobData.salaryMax < 0) {
+      throw new BadRequestException('Salary must be non-negative');
+    }
+
+    if (jobData.salaryMin > jobData.salaryMax) {
+      throw new BadRequestException(
+        'Minimum salary cannot be greater than maximum salary',
+      );
+    }
+
+    if (jobData.deadline < jobData.postedDate) {
+      throw new BadRequestException(
+        'Deadline cannot be earlier than posted date',
+      );
+    }
+
+    const oneMonthLater = new Date(jobData.postedDate);
+    oneMonthLater.setMonth(jobData.postedDate.getMonth() + 1);
+
+    if (jobData.deadline > oneMonthLater) {
+      throw new BadRequestException(
+        'Deadline cannot be more than 1 month after posted date',
+      );
+    }
   }
 }

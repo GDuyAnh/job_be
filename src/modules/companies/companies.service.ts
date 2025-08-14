@@ -7,33 +7,39 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from './company.entity';
-import { SearchCompanyDto } from './dto/search-company.dto';
-import { CompanyDetailDto } from './dto/company-detail.dto';
-import { CompanyResponseDto } from './dto/company-response.dto';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { ALL_ORGANIZATION_TYPES } from '../constants';
+import { SearchCompanyDto } from './dto/request/search-company.dto';
+import { CompanyDetailDto } from './dto/response/company-detail.dto';
+import { CompanyResponseDto } from './dto/response/company-response.dto';
+import { CreateCompanyDto } from './dto/request/create-company.dto';
+import { ALL_LOCATIONS, ALL_ORGANIZATION_TYPES } from '../constants';
+import { Job } from '../jobs/job.entity';
+import { CompanyJobSummaryDto } from './dto/response/company-job-summary.dto';
+import { CompanyImage } from './company-image.entity';
 
 @Injectable()
 export class CompaniesService {
   constructor(
     @InjectRepository(Company)
     private companiesRepository: Repository<Company>,
+
+    @InjectRepository(Job)
+    private jobsRepository: Repository<Job>,
+
+    @InjectRepository(CompanyImage)
+    private companyImageRepository: Repository<CompanyImage>,
   ) {}
 
-  async create(data: CreateCompanyDto): Promise<Company> {
-    // Check if email is provided
+  async create(data: CreateCompanyDto): Promise<CompanyResponseDto> {
     if (!data.email) {
       throw new BadRequestException('Email is required');
     }
 
-    // Check if name is provided and not empty after trimming
     if (!data.name || data.name.trim() === '') {
       throw new BadRequestException(
         'Company name is required and cannot be empty',
       );
     }
 
-    // Check if company name already exists
     const existingCompany = await this.companiesRepository.findOne({
       where: { name: data.name.trim() },
     });
@@ -42,7 +48,6 @@ export class CompaniesService {
       throw new ConflictException('Company name already exists');
     }
 
-    // Check if email already exists
     const existingEmail = await this.companiesRepository.findOne({
       where: { email: data.email },
     });
@@ -51,50 +56,201 @@ export class CompaniesService {
       throw new ConflictException('Email already exists');
     }
 
-    const company = this.companiesRepository.create(data);
-    return this.companiesRepository.save(company);
-  }
+    const { companyImages, ...companyData } = data;
 
-  async findAll(): Promise<CompanyResponseDto[]> {
-    const companies = await this.companiesRepository.find();
-    return companies.map((company) => new CompanyResponseDto(company));
-  }
+    const company = this.companiesRepository.create(companyData);
+    const savedCompany = await this.companiesRepository.save(company);
 
-  async findOne(id: number): Promise<Company> {
-    const company = await this.companiesRepository.findOne({ where: { id } });
-    if (!company) throw new NotFoundException('Company not found');
-    return company;
+    if (companyImages && companyImages.length > 0) {
+      const images = companyImages.map((imageDto) => {
+        return this.companyImageRepository.create({
+          url: imageDto.url,
+          company: savedCompany,
+        });
+      });
+      await this.companyImageRepository.save(images);
+      savedCompany.companyImages = images;
+    }
+
+    return new CompanyResponseDto(savedCompany);
   }
 
   async searchCompanies(dto: SearchCompanyDto): Promise<CompanyResponseDto[]> {
-    const where: any = {};
+    const noFilterKeyword = !dto.keyword?.trim();
+    const noFilterLocation = !dto.location || dto.location === ALL_LOCATIONS;
+    const noFilterOrganizationType =
+      !dto.organizationType || dto.organizationType === ALL_ORGANIZATION_TYPES;
 
     if (
-      dto.organizationType &&
-      dto.organizationType.trim() !== '' &&
-      dto.organizationType !== ALL_ORGANIZATION_TYPES
+      noFilterKeyword &&
+      noFilterLocation &&
+      noFilterOrganizationType &&
+      dto.isShow === undefined
     ) {
-      where.organizationType = dto.organizationType.trim();
+      const companies = await this.companiesRepository
+        .createQueryBuilder('company')
+        .leftJoin('company.jobs', 'job')
+        .select('company')
+        .addSelect('COUNT(job.id)', 'openPositions')
+        .groupBy('company.id')
+        .getRawAndEntities();
+
+      return companies.entities.map((company, index) => {
+        const count = parseInt(companies.raw[index].openPositions, 10) || 0;
+        return new CompanyResponseDto(company, count);
+      });
     }
 
-    let companies: Company[];
-    if (Object.keys(where).length === 0) {
-      companies = await this.companiesRepository.find();
-    } else {
-      companies = await this.companiesRepository.find({ where });
+    const qb = this.companiesRepository
+      .createQueryBuilder('company')
+      .leftJoin('company.jobs', 'job')
+      .select('company')
+      .addSelect('COUNT(job.id)', 'openPositions');
+
+    if (!noFilterKeyword) {
+      qb.andWhere('LOWER(company.name) LIKE LOWER(:keyword)', {
+        keyword: `%${dto.keyword.trim()}%`,
+      });
     }
 
-    return companies.map((company) => new CompanyResponseDto(company));
+    if (!noFilterOrganizationType) {
+      qb.andWhere('company.organizationType = :organizationType', {
+        organizationType: dto.organizationType,
+      });
+    }
+
+    if (!noFilterLocation) {
+      qb.andWhere('job.location = :location', { location: dto.location });
+    }
+
+    if (dto.isShow !== undefined && dto.isShow !== null) {
+      qb.andWhere('company.isShow = :isShow', { isShow: dto.isShow });
+    }
+
+    qb.groupBy('company.id');
+
+    const companies = await qb.getRawAndEntities();
+
+    return companies.entities.map((company, index) => {
+      const count = parseInt(companies.raw[index].openPositions, 10) || 0;
+      return new CompanyResponseDto(company, count);
+    });
   }
 
   async getCompanyDetail(companyId: number): Promise<CompanyDetailDto> {
+    // 1. Find Company với relations companyImages
     const company = await this.companiesRepository.findOne({
       where: { id: companyId },
+      relations: ['companyImages'],
     });
+
     if (!company) {
       throw new NotFoundException('Company not found');
     }
 
-    return new CompanyDetailDto(company);
+    // 2. Find all jobs related to company
+    const jobs = await this.jobsRepository.find({
+      where: { companyId: companyId },
+      order: {
+        postedDate: 'DESC',
+      },
+    });
+
+    // 3. Transform jobs into CompanyJobSummaryDto
+    const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
+
+    // 4. Return CompanyDetailDto with Jobs and Images
+    return new CompanyDetailDto(company, jobSummaries);
+  }
+
+  async update(
+    companyId: number,
+    data: CreateCompanyDto,
+  ): Promise<CompanyResponseDto> {
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+      relations: ['companyImages'],
+    });
+
+    if (!company) {
+      throw new NotFoundException(`Company with ID ${companyId} not found`);
+    }
+
+    if (!data.name || data.name.trim() === '') {
+      throw new BadRequestException(
+        'Company name is required and cannot be empty',
+      );
+    }
+
+    const existingCompany = await this.companiesRepository.findOne({
+      where: { name: data.name.trim() },
+    });
+
+    if (existingCompany && existingCompany.id !== companyId) {
+      throw new ConflictException('Company name already exists');
+    }
+
+    if (!data.email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    const existingEmail = await this.companiesRepository.findOne({
+      where: { email: data.email },
+    });
+
+    if (existingEmail && existingEmail.id !== companyId) {
+      throw new ConflictException('Email already exists');
+    }
+
+    const { companyImages, ...companyData } = data;
+
+    Object.assign(company, companyData);
+    const updated = await this.companiesRepository.save(company);
+
+    if (companyImages !== undefined) {
+      if (company.companyImages && company.companyImages.length > 0) {
+        await this.companyImageRepository.remove(company.companyImages);
+      }
+
+      if (companyImages.length > 0) {
+        const newImages = companyImages.map((imageDto) => {
+          return this.companyImageRepository.create({
+            url: imageDto.url,
+            company: updated,
+          });
+        });
+
+        await this.companyImageRepository.save(newImages);
+        updated.companyImages = newImages;
+      }
+    }
+
+    return new CompanyResponseDto(updated);
+  }
+
+  async delete(id: number): Promise<void> {
+    const company = await this.companiesRepository.findOne({
+      where: { id },
+      relations: ['companyImages'],
+    });
+
+    if (!company) {
+      throw new NotFoundException(`Company with ID ${id} not found`);
+    }
+
+    const jobCount = await this.jobsRepository.count({
+      where: { companyId: id },
+    });
+
+    if (jobCount > 0) {
+      throw new BadRequestException('Can not delete company with active jobs');
+    }
+
+    // Xóa company images trước (cascade sẽ tự động xóa nhưng để chắc chắn)
+    if (company.companyImages && company.companyImages.length > 0) {
+      await this.companyImageRepository.remove(company.companyImages);
+    }
+
+    await this.companiesRepository.delete(id);
   }
 }

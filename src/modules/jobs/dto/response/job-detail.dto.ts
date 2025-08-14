@@ -11,40 +11,51 @@ import {
 
 export class JobDetailDto {
   @ApiProperty({ description: 'Job ID' })
+  @IsNumber()
   id: number;
 
   @ApiProperty({ description: 'Job title' })
+  @IsString()
+  @IsNotEmpty()
   title: string;
 
   @ApiProperty({ description: 'Job description' })
+  @IsString()
+  @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ description: 'Job category' })
-  category: string;
+  @ApiProperty({ description: 'Job category ID' })
+  @IsNumber()
+  category: number;
 
-  @ApiProperty({ description: 'Job location' })
-  location: string;
+  @ApiProperty({ description: 'Job location ID' })
+  @IsNumber()
+  location: number;
 
-  @ApiProperty({ description: 'Type of employment' })
-  @IsString()
-  @IsNotEmpty()
-  typeOfEmployment: string;
+  @ApiProperty({ description: 'Type of employment ID' })
+  @IsNumber()
+  typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level required' })
-  @IsString()
-  @IsNotEmpty()
-  experienceLevel: string;
+  @ApiProperty({ description: 'Experience level ID' })
+  @IsNumber()
+  experienceLevel: number;
+
+  @ApiProperty({ description: 'Company Id' })
+  @IsNumber()
+  companyId: number;
 
   @ApiProperty({ description: 'Company name' })
+  @IsString()
   companyName: string;
 
   @ApiProperty({ description: 'Company logo' })
+  @IsString()
   companyLogo: string;
 
-  @ApiProperty({ description: 'Organization type', nullable: true })
+  @ApiProperty({ description: 'Organization type ID', nullable: true })
   @IsOptional()
-  @IsString()
-  organizationType: string | null;
+  @IsNumber()
+  organizationType: number | null;
 
   @ApiProperty({ description: 'Founded year', nullable: true })
   @IsOptional()
@@ -84,12 +95,18 @@ export class JobDetailDto {
   @ApiProperty({ description: 'Whether the job is featured' })
   isFeatured: boolean;
 
-  @ApiProperty({ description: 'Image logo (default if not provided)', nullable: true })
+  @ApiProperty({
+    description: 'Image logo (default if not provided)',
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   imageLogo: string | null;
 
-  @ApiProperty({ description: 'Banner logo (default if not provided)', nullable: true })
+  @ApiProperty({
+    description: 'Banner logo (default if not provided)',
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   bannerLogo: string | null;
@@ -109,10 +126,22 @@ export class JobDetailDto {
   @IsDate()
   deadline: Date | null;
 
-  @ApiProperty({ description: 'Salary', nullable: true })
+  @ApiProperty({ description: 'Salary Min' })
   @IsOptional()
-  @IsString()
-  salary: string | null;
+  @IsNumber()
+  salaryMin: number;
+
+  @ApiProperty({ description: 'Salary Max' })
+  @IsOptional()
+  @IsNumber()
+  salaryMax: number;
+
+  @ApiProperty({
+    description: 'Salary Type. Example: 1 = MONTH, 2 = WEEK, 3 = NEGOTIABLE',
+  })
+  @IsOptional()
+  @IsNumber()
+  salaryType: number;
 
   @ApiProperty({ description: 'Benefit IDs', nullable: true })
   @IsOptional()
@@ -120,7 +149,7 @@ export class JobDetailDto {
   @IsNumber({}, { each: true, message: 'Each benefit must be a number' })
   benefits: number[];
 
-  @ApiProperty({ description: 'Detailed description', nullable: true })
+  @ApiProperty({ description: 'Detailed description (HTML)', nullable: true })
   @IsOptional()
   @IsString()
   detailDescription: string | null;
@@ -133,6 +162,7 @@ export class JobDetailDto {
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
     this.experienceLevel = job.experienceLevel;
+    this.companyId = job.companyId;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
     this.organizationType = job.company?.organizationType || null;
@@ -150,7 +180,9 @@ export class JobDetailDto {
     this.updatedAt = job.updatedAt;
     this.postedDate = job.postedDate;
     this.deadline = job.deadline;
-    this.salary = job.salary;
+    this.salaryMin = job.salaryMin;
+    this.salaryMax = job.salaryMax;
+    this.salaryType = job.salaryType;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)
       : [];

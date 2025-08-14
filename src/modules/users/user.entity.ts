@@ -33,7 +33,11 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  @ApiProperty({ description: 'role', enum: RoleStatus, default: RoleStatus.USER })
+  @ApiProperty({
+    description: 'role',
+    enum: RoleStatus,
+    default: RoleStatus.USER,
+  })
   @Column({
     type: 'enum',
     enum: RoleStatus,
