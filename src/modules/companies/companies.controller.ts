@@ -12,10 +12,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { SearchCompanyDto } from './dto/search-company.dto';
-import { CompanyDetailDto } from './dto/company-detail.dto';
-import { CompanyResponseDto } from './dto/company-response.dto';
+import { CreateCompanyDto } from './dto/request/create-company.dto';
+import { SearchCompanyDto } from './dto/request/search-company.dto';
+import { CompanyDetailDto } from './dto/response/company-detail.dto';
+import { CompanyResponseDto } from './dto/response/company-response.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 import { Roles } from '@/modules/constants/roles.decorator';
@@ -40,11 +40,6 @@ export class CompaniesController {
   }
 
   @Get()
-  async findAll(): Promise<CompanyResponseDto[]> {
-    return this.companiesService.findAll();
-  }
-
-  @Get('search')
   async searchCompanies(
     @Query() query: SearchCompanyDto,
   ): Promise<CompanyResponseDto[]> {

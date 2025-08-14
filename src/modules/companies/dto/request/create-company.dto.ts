@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -7,8 +7,20 @@ import {
   IsNumber,
   IsEmail,
   IsBoolean,
+  ValidateNested,
+  IsArray,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
+
+export class CreateCompanyImageDto {
+  @ApiProperty({
+    description: 'Image URL',
+    example: 'https://example.com/company-image.jpg',
+  })
+  @IsUrl({}, { message: 'Image URL must be a valid URL' })
+  @IsNotEmpty({ message: 'Image URL is required' })
+  url: string;
+}
 
 export class CreateCompanyDto {
   @ApiProperty({ description: 'Company name', example: 'ABC University' })
@@ -126,4 +138,18 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsString({ message: 'Overview must be a string' })
   overview?: string;
+
+  @ApiPropertyOptional({
+    description: 'List of company images',
+    type: [CreateCompanyImageDto],
+    example: [
+      { url: 'https://example.com/image1.jpg' },
+      { url: 'https://example.com/image2.jpg' },
+    ],
+  })
+  @IsOptional()
+  @IsArray({ message: 'Company images must be an array' })
+  @ValidateNested({ each: true })
+  @Type(() => CreateCompanyImageDto)
+  companyImages?: CreateCompanyImageDto[];
 }

@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Job } from '../jobs/job.entity';
+import { CompanyImage } from './company-image.entity';
 
 @Entity('companies')
 export class Company {
@@ -90,4 +91,7 @@ export class Company {
 
   @OneToMany(() => Job, (job) => job.company)
   jobs: Job[];
+
+  @OneToMany(() => CompanyImage, (image) => image.company, { cascade: true })
+  companyImages: CompanyImage[];
 }

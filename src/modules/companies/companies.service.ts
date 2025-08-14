@@ -7,13 +7,14 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from './company.entity';
-import { SearchCompanyDto } from './dto/search-company.dto';
-import { CompanyDetailDto } from './dto/company-detail.dto';
-import { CompanyResponseDto } from './dto/company-response.dto';
-import { CreateCompanyDto } from './dto/create-company.dto';
+import { SearchCompanyDto } from './dto/request/search-company.dto';
+import { CompanyDetailDto } from './dto/response/company-detail.dto';
+import { CompanyResponseDto } from './dto/response/company-response.dto';
+import { CreateCompanyDto } from './dto/request/create-company.dto';
 import { ALL_LOCATIONS, ALL_ORGANIZATION_TYPES } from '../constants';
 import { Job } from '../jobs/job.entity';
-import { CompanyJobSummaryDto } from './dto/company-job-summary.dto';
+import { CompanyJobSummaryDto } from './dto/response/company-job-summary.dto';
+import { CompanyImage } from './company-image.entity';
 
 @Injectable()
 export class CompaniesService {
@@ -23,9 +24,12 @@ export class CompaniesService {
 
     @InjectRepository(Job)
     private jobsRepository: Repository<Job>,
+
+    @InjectRepository(CompanyImage)
+    private companyImageRepository: Repository<CompanyImage>,
   ) {}
 
-  async create(data: CreateCompanyDto): Promise<Company> {
+  async create(data: CreateCompanyDto): Promise<CompanyResponseDto> {
     if (!data.email) {
       throw new BadRequestException('Email is required');
     }
@@ -52,31 +56,33 @@ export class CompaniesService {
       throw new ConflictException('Email already exists');
     }
 
-    const company = this.companiesRepository.create(data);
-    return this.companiesRepository.save(company);
-  }
+    const { companyImages, ...companyData } = data;
 
-  async findAll(): Promise<CompanyResponseDto[]> {
-    const companies = await this.companiesRepository
-      .createQueryBuilder('company')
-      .leftJoin('company.jobs', 'job')
-      .select('company')
-      .addSelect('COUNT(job.id)', 'openPositions')
-      .groupBy('company.id')
-      .getRawAndEntities();
+    const company = this.companiesRepository.create(companyData);
+    const savedCompany = await this.companiesRepository.save(company);
 
-    return companies.entities.map((company, index) => {
-      const count = parseInt(companies.raw[index].openPositions, 10) || 0;
-      return new CompanyResponseDto(company, count);
-    });
+    if (companyImages && companyImages.length > 0) {
+      const images = companyImages.map((imageDto) => {
+        return this.companyImageRepository.create({
+          url: imageDto.url,
+          company: savedCompany,
+        });
+      });
+      await this.companyImageRepository.save(images);
+      savedCompany.companyImages = images;
+    }
+
+    return new CompanyResponseDto(savedCompany);
   }
 
   async searchCompanies(dto: SearchCompanyDto): Promise<CompanyResponseDto[]> {
+    const noFilterKeyword = !dto.keyword?.trim();
     const noFilterLocation = !dto.location || dto.location === ALL_LOCATIONS;
     const noFilterOrganizationType =
       !dto.organizationType || dto.organizationType === ALL_ORGANIZATION_TYPES;
 
     if (
+      noFilterKeyword &&
       noFilterLocation &&
       noFilterOrganizationType &&
       dto.isShow === undefined
@@ -100,6 +106,12 @@ export class CompaniesService {
       .leftJoin('company.jobs', 'job')
       .select('company')
       .addSelect('COUNT(job.id)', 'openPositions');
+
+    if (!noFilterKeyword) {
+      qb.andWhere('LOWER(company.name) LIKE LOWER(:keyword)', {
+        keyword: `%${dto.keyword.trim()}%`,
+      });
+    }
 
     if (!noFilterOrganizationType) {
       qb.andWhere('company.organizationType = :organizationType', {
@@ -126,9 +138,10 @@ export class CompaniesService {
   }
 
   async getCompanyDetail(companyId: number): Promise<CompanyDetailDto> {
-    // 1. Find Company
+    // 1. Find Company với relations companyImages
     const company = await this.companiesRepository.findOne({
       where: { id: companyId },
+      relations: ['companyImages'],
     });
 
     if (!company) {
@@ -146,7 +159,7 @@ export class CompaniesService {
     // 3. Transform jobs into CompanyJobSummaryDto
     const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
 
-    // 4. Return CompanyDetailDto with Jobs
+    // 4. Return CompanyDetailDto with Jobs and Images
     return new CompanyDetailDto(company, jobSummaries);
   }
 
@@ -156,7 +169,9 @@ export class CompaniesService {
   ): Promise<CompanyResponseDto> {
     const company = await this.companiesRepository.findOne({
       where: { id: companyId },
+      relations: ['companyImages'],
     });
+
     if (!company) {
       throw new NotFoundException(`Company with ID ${companyId} not found`);
     }
@@ -178,6 +193,7 @@ export class CompaniesService {
     if (!data.email) {
       throw new BadRequestException('Email is required');
     }
+
     const existingEmail = await this.companiesRepository.findOne({
       where: { email: data.email },
     });
@@ -186,13 +202,38 @@ export class CompaniesService {
       throw new ConflictException('Email already exists');
     }
 
-    Object.assign(company, data);
+    const { companyImages, ...companyData } = data;
+
+    Object.assign(company, companyData);
     const updated = await this.companiesRepository.save(company);
+
+    if (companyImages !== undefined) {
+      if (company.companyImages && company.companyImages.length > 0) {
+        await this.companyImageRepository.remove(company.companyImages);
+      }
+
+      if (companyImages.length > 0) {
+        const newImages = companyImages.map((imageDto) => {
+          return this.companyImageRepository.create({
+            url: imageDto.url,
+            company: updated,
+          });
+        });
+
+        await this.companyImageRepository.save(newImages);
+        updated.companyImages = newImages;
+      }
+    }
+
     return new CompanyResponseDto(updated);
   }
 
   async delete(id: number): Promise<void> {
-    const company = await this.companiesRepository.findOne({ where: { id } });
+    const company = await this.companiesRepository.findOne({
+      where: { id },
+      relations: ['companyImages'],
+    });
+
     if (!company) {
       throw new NotFoundException(`Company with ID ${id} not found`);
     }
@@ -200,8 +241,14 @@ export class CompaniesService {
     const jobCount = await this.jobsRepository.count({
       where: { companyId: id },
     });
+
     if (jobCount > 0) {
       throw new BadRequestException('Can not delete company with active jobs');
+    }
+
+    // Xóa company images trước (cascade sẽ tự động xóa nhưng để chắc chắn)
+    if (company.companyImages && company.companyImages.length > 0) {
+      await this.companyImageRepository.remove(company.companyImages);
     }
 
     await this.companiesRepository.delete(id);

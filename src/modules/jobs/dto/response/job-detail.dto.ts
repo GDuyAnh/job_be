@@ -40,6 +40,10 @@ export class JobDetailDto {
   @IsNumber()
   experienceLevel: number;
 
+  @ApiProperty({ description: 'Company Id' })
+  @IsNumber()
+  companyId: number;
+
   @ApiProperty({ description: 'Company name' })
   @IsString()
   companyName: string;
@@ -158,6 +162,7 @@ export class JobDetailDto {
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
     this.experienceLevel = job.experienceLevel;
+    this.companyId = job.companyId;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
     this.organizationType = job.company?.organizationType || null;
