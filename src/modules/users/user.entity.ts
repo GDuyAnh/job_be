@@ -45,6 +45,9 @@ export class User {
   })
   role: RoleStatus;
 
+  @Column({ default: 1 })
+  companyId: number;
+
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()
   createdAt: Date;
