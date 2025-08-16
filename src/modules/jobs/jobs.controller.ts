@@ -30,7 +30,7 @@ export class JobsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
+  @Roles(RoleStatus.COMPANY)
   @ApiBearerAuth()
   @ApiResponse({ status: 201, description: 'Job created' })
   async create(@Body() createJobDto: CreateJobDto) {
@@ -39,7 +39,7 @@ export class JobsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
+  @Roles(RoleStatus.COMPANY)
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Job updated' })
   async update(@Param('id') id: number, @Body() updateJobDto: CreateJobDto) {
