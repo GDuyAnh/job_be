@@ -64,6 +64,9 @@ export class JobResponseDto {
   })
   salaryType: number;
 
+  @ApiProperty({ description: 'Salary type value', example: 10 })
+  salaryTypeValue: number;
+
   @ApiProperty({ description: 'Benefit IDs', type: [Number], required: false })
   benefits: number[];
 
@@ -91,6 +94,7 @@ export class JobResponseDto {
     this.salaryMin = job.salaryMin ?? 0;
     this.salaryMax = job.salaryMax ?? 0;
     this.salaryType = job.salaryType ?? 0;
+    this.salaryTypeValue = job.salaryTypeValue ?? 0;
     this.detailDescription = job.detailDescription;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)

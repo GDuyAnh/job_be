@@ -51,6 +51,13 @@ export class JobSearchResponseDto {
   @ApiProperty({ description: 'Salary type ID', example: 1, required: false })
   salaryType?: number;
 
+  @ApiProperty({
+    description: 'Salary Type Value',
+    example: 1,
+    required: false,
+  })
+  salaryTypeValue?: number;
+
   @ApiProperty({ description: 'Whether the job is featured', example: true })
   isFeatured: boolean;
 
@@ -75,6 +82,7 @@ export class JobSearchResponseDto {
     this.salaryMin = job.salaryMin ?? null;
     this.salaryMax = job.salaryMax ?? null;
     this.salaryType = job.salaryType ?? null;
+    this.salaryTypeValue = job.salaryTypeValue ?? null;
     this.isFeatured = job.isFeatured ?? false;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)

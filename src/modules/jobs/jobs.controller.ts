@@ -92,7 +92,7 @@ export class JobsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
+  @Roles(RoleStatus.COMPANY)
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Job deleted' })
   async delete(@Param('id') id: number) {

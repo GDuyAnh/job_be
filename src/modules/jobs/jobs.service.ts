@@ -116,8 +116,7 @@ export class JobsService {
       where.isFeatured = dto.isFeatured;
     }
 
-    if (
-      dto.companyId !== undefined &&
+    if (dto.companyId !== undefined &&
       dto.companyId !== null
     ) {
       where.companyId = dto.companyId;
