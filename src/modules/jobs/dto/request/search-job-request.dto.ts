@@ -52,4 +52,11 @@ export class SearchJobDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   isFeatured?: boolean;
+
+  @ApiPropertyOptional({ description: 'CompanyId (number ID)' })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : value))
+  @IsNumber({}, { message: 'CompanyId must be a number' })
+  companyId?: number;
+
 }
