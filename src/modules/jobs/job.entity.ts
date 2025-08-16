@@ -91,6 +91,12 @@ export class Job {
   @Column({ nullable: false })
   salaryType: number;
 
+  @ApiProperty({
+    description: 'Salary Type Value . Example : 100000 ',
+  })
+  @Column({ default: 0 })
+  salaryTypeValue: number;
+
   // Internal use only, not exposed directly in API
   jobBenefits?: JobBenefit[];
 

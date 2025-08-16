@@ -143,6 +143,11 @@ export class JobDetailDto {
   @IsNumber()
   salaryType: number;
 
+  @ApiProperty({ description: 'Salary Type Value' })
+  @IsOptional()
+  @IsNumber()
+  salaryTypeValue: number;
+
   @ApiProperty({ description: 'Benefit IDs', nullable: true })
   @IsOptional()
   @IsArray({ message: 'Benefits must be an array' })
@@ -183,6 +188,7 @@ export class JobDetailDto {
     this.salaryMin = job.salaryMin;
     this.salaryMax = job.salaryMax;
     this.salaryType = job.salaryType;
+    this.salaryTypeValue = job.salaryTypeValue ?? 0;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)
       : [];
