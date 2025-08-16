@@ -116,6 +116,13 @@ export class JobsService {
       where.isFeatured = dto.isFeatured;
     }
 
+    if (
+      dto.companyId !== undefined &&
+      dto.companyId !== null
+    ) {
+      where.companyId = dto.companyId;
+    }
+
     const jobs = await this.jobsRepository.find({
       where,
       relations: ['company'],
