@@ -89,6 +89,12 @@ export class CreateJobDto {
   @IsNumber({}, { message: 'Salary Type must be a number' })
   salaryType?: number;
 
+  @ApiProperty({ description: 'Salary Type Value', required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Salary Type Value must be a number' })
+  salaryTypeValue?: number;
+
   @ApiProperty({ description: 'Benefits', required: false, type: [Number] })
   @IsOptional()
   @IsArray({ message: 'Benefits must be an array' })
