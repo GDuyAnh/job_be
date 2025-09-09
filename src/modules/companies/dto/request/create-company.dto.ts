@@ -58,6 +58,16 @@ export class CreateCompanyDto {
   isShow?: boolean;
 
   @ApiProperty({
+    description: 'Company approval status - true if waiting for admin approval',
+    example: true,
+    required: false,
+    default: true
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isWaiting must be a boolean' })
+  isWaiting?: boolean;
+
+  @ApiProperty({
     description: 'Facebook link',
     example: 'https://facebook.com/company',
   })

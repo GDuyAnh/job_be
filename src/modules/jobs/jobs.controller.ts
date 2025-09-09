@@ -8,6 +8,8 @@ import {
   Put,
   Query,
   Delete,
+  ParseIntPipe,
+  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
@@ -22,6 +24,7 @@ import { RoleStatus } from '@/enum/role';
 import { CategoryStatsDto } from './dto/response/category-stats.dto';
 import { LocationStatsDto } from './dto/response/location-stats.dto';
 import { JobDetailDto } from './dto/response/job-detail.dto';
+import { SearchJobAdminDto } from './dto/request/search-job-request-admin.dto';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -50,6 +53,18 @@ export class JobsController {
   @ApiResponse({ status: 200, description: 'List jobs' })
   async findAll(): Promise<JobResponseDto[]> {
     return this.jobsService.findAll();
+  }
+
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Admin list jobs ( filter by isWaiting )',
+  })
+  async adminList(@Query() query: SearchJobAdminDto) {
+    return this.jobsService.listForAdmin(query);
   }
 
   @Get('search')
@@ -98,5 +113,17 @@ export class JobsController {
   async delete(@Param('id') id: number) {
     await this.jobsService.delete(id);
     return { message: `Job with ${id} deleted successfully` };
+  }
+
+  @Patch(':id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Job approved successfully',
+  })
+  async approveJobs(@Param('id', ParseIntPipe) jobId: number) {
+    return this.jobsService.approve(jobId);
   }
 }

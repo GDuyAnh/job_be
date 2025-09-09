@@ -2,7 +2,7 @@ import { IsOptional, IsNumber, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 
-export class SearchCompanyDto {
+export class SearchCompanyAdminDto {
   @ApiProperty({
     description: 'Search keyword for company name',
     required: false,
@@ -36,4 +36,11 @@ export class SearchCompanyDto {
   @Transform(({ value }) => value === 'true' || value === true)
   isShow?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Filter by approval status ( ADMIN Only )',
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isWaiting?: boolean;
 }

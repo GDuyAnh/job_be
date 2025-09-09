@@ -4,9 +4,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { RoleStatus } from '@/enum/role';
+import { Job } from '../jobs/job.entity';
 
 @Entity('users')
 export class User {
@@ -45,10 +47,6 @@ export class User {
   })
   role: RoleStatus;
 
-  @ApiProperty({ description: 'companyId' })
-  @Column({ default: 0 })
-  companyId: number;
-
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()
   createdAt: Date;
@@ -56,4 +54,7 @@ export class User {
   @ApiProperty({ description: 'updatedAt' })
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => Job, (job) => job.user)
+  jobs: Job[];
 }

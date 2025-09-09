@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Like, Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Job } from './job.entity';
 import { JobBenefit } from './job-benefit.entity';
 import { SearchJobDto } from './dto/request/search-job-request.dto';
@@ -21,6 +21,7 @@ import {
 import { CreateJobDto } from './dto/request/create-job.dto';
 import { JobResponseDto } from './dto/response/job-response.dto';
 import { Company } from '../companies/company.entity';
+import { SearchJobAdminDto } from './dto/request/search-job-request-admin.dto';
 
 @Injectable()
 export class JobsService {
@@ -38,6 +39,8 @@ export class JobsService {
     await this.ensureCompanyExists(data.companyId);
 
     const { benefits, ...jobData } = data;
+
+    jobData.isWaiting = true;
 
     // 1. Tạo job
     const savedJob = await this.jobsRepository.save(
@@ -61,6 +64,8 @@ export class JobsService {
 
     const { benefits, ...jobData } = data;
 
+    jobData.isWaiting = true;
+
     // Cập nhật job
     await this.jobsRepository.save({ ...job, ...jobData });
 
@@ -71,7 +76,9 @@ export class JobsService {
   }
 
   async findAll(): Promise<JobResponseDto[]> {
-    const jobs = await this.jobsRepository.find();
+    const jobs = await this.jobsRepository.find({
+      where: { isWaiting: false },
+    });
     for (const job of jobs) {
       job.jobBenefits = await this.jobBenefitRepository.find({
         where: { jobId: job.id },
@@ -81,51 +88,66 @@ export class JobsService {
   }
 
   async searchJobs(dto: SearchJobDto): Promise<JobSearchResponseDto[]> {
-    const where: any = {};
+    const qb = this.jobsRepository
+      .createQueryBuilder('job')
+      .leftJoinAndSelect('job.company', 'company');
 
+    // keyword: title/description (case-insensitive)
     if (dto.keyword?.trim()) {
-      where.title = Like(`%${dto.keyword.trim()}%`);
+      qb.andWhere(
+        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.description) LIKE LOWER(:kw))',
+        { kw: `%${dto.keyword.trim()}%` },
+      );
     }
 
+    // category
     if (
       dto.category !== undefined &&
       dto.category !== null &&
       dto.category !== ALL_CATEGORIES
     ) {
-      where.category = dto.category;
+      qb.andWhere('job.category = :c', { c: dto.category });
     }
 
+    // location
     if (
       dto.location !== undefined &&
       dto.location !== null &&
       dto.location !== ALL_LOCATIONS
     ) {
-      where.location = dto.location;
+      qb.andWhere('job.location = :l', { l: dto.location });
     }
 
+    // typeOfEmployment (array)
     if (dto.typeOfEmployment?.length > 0) {
-      where.typeOfEmployment = In(dto.typeOfEmployment);
+      qb.andWhere('job.typeOfEmployment IN (:...toe)', {
+        toe: dto.typeOfEmployment,
+      });
     }
 
+    // experienceLevel (array)
     if (dto.experienceLevel?.length > 0) {
-      where.experienceLevel = In(dto.experienceLevel);
+      qb.andWhere('job.experienceLevel IN (:...exp)', {
+        exp: dto.experienceLevel,
+      });
     }
 
-    // boolean
+    // isFeatured
     if (dto.isFeatured !== undefined && dto.isFeatured !== null) {
-      where.isFeatured = dto.isFeatured;
+      qb.andWhere('job.isFeatured = :f', { f: dto.isFeatured });
     }
 
-    if (dto.companyId !== undefined &&
-      dto.companyId !== null
-    ) {
-      where.companyId = dto.companyId;
+    // companyId
+    if (dto.companyId !== undefined && dto.companyId !== null) {
+      qb.andWhere('job.companyId = :cid', { cid: dto.companyId });
     }
 
-    const jobs = await this.jobsRepository.find({
-      where,
-      relations: ['company'],
-    });
+    // Viewer: CHỈ thấy job đã duyệt
+    qb.andWhere('job.isWaiting = :w', { w: false });
+
+    qb.orderBy('job.postedDate', 'DESC');
+
+    const jobs = await qb.getMany();
 
     for (const job of jobs) {
       job.jobBenefits = await this.jobBenefitRepository.find({
@@ -141,7 +163,7 @@ export class JobsService {
       where: { id: jobId },
       relations: ['company'],
     });
-    if (!job) {
+    if (!job || job.isWaiting) {
       throw new NotFoundException('Job not found');
     }
     job.jobBenefits = await this.jobBenefitRepository.find({
@@ -214,6 +236,102 @@ export class JobsService {
     await this.jobsRepository.delete(id);
   }
 
+  async listForAdmin(dto: SearchJobAdminDto): Promise<JobSearchResponseDto[]> {
+    const qb = this.jobsRepository
+      .createQueryBuilder('job')
+      .leftJoinAndSelect('job.company', 'company');
+
+    // keyword: title/description (case-insensitive)
+    if (dto.keyword?.trim()) {
+      qb.andWhere(
+        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.description) LIKE LOWER(:kw))',
+        { kw: `%${dto.keyword.trim()}%` },
+      );
+    }
+
+    // category
+    if (
+      dto.category !== undefined &&
+      dto.category !== null &&
+      dto.category !== ALL_CATEGORIES
+    ) {
+      qb.andWhere('job.category = :c', { c: dto.category });
+    }
+
+    // location
+    if (
+      dto.location !== undefined &&
+      dto.location !== null &&
+      dto.location !== ALL_LOCATIONS
+    ) {
+      qb.andWhere('job.location = :l', { l: dto.location });
+    }
+
+    // typeOfEmployment (array)
+    if (dto.typeOfEmployment?.length > 0) {
+      qb.andWhere('job.typeOfEmployment IN (:...toe)', {
+        toe: dto.typeOfEmployment,
+      });
+    }
+
+    // experienceLevel (array)
+    if (dto.experienceLevel?.length > 0) {
+      qb.andWhere('job.experienceLevel IN (:...exp)', {
+        exp: dto.experienceLevel,
+      });
+    }
+
+    // isFeatured
+    if (dto.isFeatured !== undefined && dto.isFeatured !== null) {
+      qb.andWhere('job.isFeatured = :f', { f: dto.isFeatured });
+    }
+
+    // companyId
+    if (dto.companyId !== undefined && dto.companyId !== null) {
+      qb.andWhere('job.companyId = :cid', { cid: dto.companyId });
+    }
+
+    // Admin: chỉ lọc theo isWaiting nếu được truyền (nếu không truyền → trả cả pending & approved)
+    if (typeof dto.isWaiting === 'boolean') {
+      qb.andWhere('job.isWaiting = :w', { w: dto.isWaiting });
+    }
+
+    // (Tuỳ chọn) nếu SearchJobAdminDto có thêm userId:
+    // if (dto.userId) { qb.andWhere('job.userId = :uid', { uid: dto.userId }); }
+
+    qb.orderBy('job.postedDate', 'DESC');
+
+    const jobs = await qb.getMany();
+
+    for (const job of jobs) {
+      job.jobBenefits = await this.jobBenefitRepository.find({
+        where: { jobId: job.id },
+      });
+    }
+
+    return jobs.map((job) => new JobSearchResponseDto(job));
+  }
+
+  async approve(id: number): Promise<JobResponseDto> {
+    // 1. Tìm job
+    const job = await this.jobsRepository.findOne({ where: { id } });
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    // 2. Chỉ khi pending mới approve
+    if (!job.isWaiting) {
+      throw new BadRequestException('Job has already been approved');
+    }
+
+    // 3. Cập nhật trạng thái sang đã duyệt
+    job.isWaiting = false;
+
+    const updated = await this.jobsRepository.save(job);
+
+    // 4. Trả về DTO chuẩn
+    return this.buildJobResponse(updated.id);
+  }
   /* ================= Helper Methods ================= */
 
   private async ensureCompanyExists(companyId: number): Promise<void> {

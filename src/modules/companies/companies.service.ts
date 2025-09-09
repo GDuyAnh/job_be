@@ -15,6 +15,7 @@ import { ALL_LOCATIONS, ALL_ORGANIZATION_TYPES } from '../constants';
 import { Job } from '../jobs/job.entity';
 import { CompanyJobSummaryDto } from './dto/response/company-job-summary.dto';
 import { CompanyImage } from './company-image.entity';
+import { SearchCompanyAdminDto } from './dto/request/search-company-admin.dto';
 
 @Injectable()
 export class CompaniesService {
@@ -58,6 +59,8 @@ export class CompaniesService {
 
     const { companyImages, ...companyData } = data;
 
+    companyData.isWaiting = true;
+
     const company = this.companiesRepository.create(companyData);
     const savedCompany = await this.companiesRepository.save(company);
 
@@ -92,6 +95,7 @@ export class CompaniesService {
         .leftJoin('company.jobs', 'job')
         .select('company')
         .addSelect('COUNT(job.id)', 'openPositions')
+        .where('company.IsWaiting =:w', { w: false })
         .groupBy('company.id')
         .getRawAndEntities();
 
@@ -144,7 +148,7 @@ export class CompaniesService {
       relations: ['companyImages'],
     });
 
-    if (!company) {
+    if (!company || company.isWaiting) {
       throw new NotFoundException('Company not found');
     }
 
@@ -204,6 +208,8 @@ export class CompaniesService {
 
     const { companyImages, ...companyData } = data;
 
+    companyData.isWaiting = true;
+
     Object.assign(company, companyData);
     const updated = await this.companiesRepository.save(company);
 
@@ -252,5 +258,68 @@ export class CompaniesService {
     }
 
     await this.companiesRepository.delete(id);
+  }
+
+  async listForAdmin(
+    dto: SearchCompanyAdminDto,
+  ): Promise<CompanyResponseDto[]> {
+    const noFilterKeyword = !dto.keyword?.trim();
+    const noFilterLocation = !dto.location || dto.location === ALL_LOCATIONS;
+    const noFilterOrganizationType =
+      !dto.organizationType || dto.organizationType === ALL_ORGANIZATION_TYPES;
+
+    const qb = this.companiesRepository
+      .createQueryBuilder('company')
+      .leftJoin('company.jobs', 'job')
+      .select('company')
+      .addSelect('COUNT(job.id)', 'openPositions');
+
+    if (!noFilterKeyword) {
+      qb.andWhere('LOWER(company.name) LIKE LOWER(:keyword)', {
+        keyword: `%${dto.keyword.trim()}%`,
+      });
+    }
+
+    if (!noFilterOrganizationType) {
+      qb.andWhere('company.organizationType = :organizationType', {
+        organizationType: dto.organizationType,
+      });
+    }
+
+    if (!noFilterLocation) {
+      qb.andWhere('job.location = :location', { location: dto.location });
+    }
+
+    if (dto.isShow !== undefined && dto.isShow !== null) {
+      qb.andWhere('company.isShow = :isShow', { isShow: dto.isShow });
+    }
+
+    if (typeof dto.isWaiting === 'boolean') {
+      qb.andWhere('company.isWaiting = :w', { w: dto.isWaiting });
+    }
+
+    qb.groupBy('company.id');
+
+    const companies = await qb.getRawAndEntities();
+
+    return companies.entities.map((company, index) => {
+      const count = parseInt(companies.raw[index].openPositions, 10) || 0;
+      return new CompanyResponseDto(company, count);
+    });
+  }
+
+  async approve(companyId: number): Promise<CompanyResponseDto> {
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+      relations: ['companyImages'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    company.isWaiting = false;
+    const updatedCompany = await this.companiesRepository.save(company);
+    return new CompanyResponseDto(updatedCompany);
   }
 }

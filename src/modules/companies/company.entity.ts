@@ -35,6 +35,14 @@ export class Company {
   @Column({ type: 'boolean', default: false })
   isShow: boolean;
 
+  @ApiProperty({
+    description:
+      'Company approval status - true if waiting for admin approval ',
+    default: true,
+  })
+  @Column({ type: 'boolean', default: true })
+  isWaiting: boolean;
+
   @ApiProperty({ description: 'Company website' })
   @Column({ nullable: true })
   website: string;

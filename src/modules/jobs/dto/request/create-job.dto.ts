@@ -115,4 +115,14 @@ export class CreateJobDto {
   @IsOptional()
   @IsBoolean({ message: 'Is featured must be a boolean' })
   isFeatured?: boolean;
+
+  @ApiProperty({
+    description: 'Job approval status - true if waiting for admin approval',
+    example: true,
+    required: false,
+    default: true
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isWaiting must be a boolean' })
+  isWaiting?: boolean;
 }
