@@ -10,6 +10,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from '../companies/company.entity';
 import { JobBenefit } from './job-benefit.entity';
+import { User } from '../users/user.entity';
 
 @Entity('jobs')
 export class Job {
@@ -41,6 +42,14 @@ export class Job {
   @Column()
   experienceLevel: number;
 
+  @ApiProperty({ description: 'User ID' })
+  @Column({ nullable: true })
+  userId: number;
+
+  @ManyToOne(() => User, (user) => user.jobs)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
   @ApiProperty({ description: 'Company ID' })
   @Column({ nullable: true })
   companyId: number;
@@ -56,6 +65,13 @@ export class Job {
   @ApiProperty({ description: 'Updated date' })
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Job approval status - true if waiting for admin approval ',
+    default: true,
+  })
+  @Column({ type: 'boolean', default: true })
+  isWaiting: boolean;
 
   @ApiProperty({ description: 'Whether the job is featured', default: false })
   @Column({ type: 'boolean', default: false })

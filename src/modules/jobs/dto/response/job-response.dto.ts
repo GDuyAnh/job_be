@@ -37,6 +37,11 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Updated date' })
   updatedAt: Date;
 
+  @ApiProperty({
+    description: 'Job approval status , true if waiting for admin to approve',
+  })
+  isWaiting: boolean;
+
   @ApiProperty({ description: 'Whether the job is featured' })
   isFeatured: boolean;
 
@@ -86,6 +91,7 @@ export class JobResponseDto {
     this.companyLogo = job.company?.logo || '';
     this.createdAt = job.createdAt;
     this.updatedAt = job.updatedAt;
+    this.isWaiting = job.isWaiting;
     this.isFeatured = job.isFeatured;
     this.imageLogo = job.imageLogo;
     this.bannerLogo = job.bannerLogo;
