@@ -30,7 +30,7 @@ export class CompaniesController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.COMPANY)
+  @Roles(RoleStatus.USER, RoleStatus.ADMIN, RoleStatus.COMPANY)
   @ApiBearerAuth()
   @ApiResponse({
     status: 201,
