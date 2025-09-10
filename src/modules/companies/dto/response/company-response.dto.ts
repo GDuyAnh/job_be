@@ -9,6 +9,10 @@ export class CompanyResponseDto {
   @ApiProperty({ description: 'Company name' })
   name: string;
 
+  @ApiProperty({ description: 'Company mst' })
+  mst: number;
+  
+
   @ApiProperty({ description: 'Company logo', nullable: true })
   logo: string | null;
 
@@ -84,6 +88,7 @@ export class CompanyResponseDto {
   constructor(company: Company, openPositions?: number) {
     this.id = company.id;
     this.name = company.name;
+    this.mst = company.mst;
     this.logo = company.logo;
     this.organizationType = company.organizationType;
     this.isShow = company.isShow;

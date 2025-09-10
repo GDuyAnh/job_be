@@ -45,11 +45,17 @@ export class CreateJobDto {
   @IsNumber({}, { message: 'Experience level must be a number' })
   experienceLevel: number;
 
-  @ApiProperty({ description: 'Company ID', required: false })
+  @ApiProperty({ description: 'Company ID', required: true })
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
   @IsNumber({}, { message: 'Company ID must be a number' })
   companyId?: number;
+
+  @ApiProperty({ description: 'User ID', required: true })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'User ID must be a number' })
+  userId?: number;
 
   @ApiProperty({ description: 'Image logo', required: false })
   @IsOptional()

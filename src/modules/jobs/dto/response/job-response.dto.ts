@@ -25,6 +25,9 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Company ID' })
   companyId: number;
 
+  @ApiProperty({ description: 'User ID' })
+  userId: number;
+
   @ApiProperty({ description: 'Company name', required: false })
   companyName?: string;
 
@@ -87,6 +90,7 @@ export class JobResponseDto {
     this.typeOfEmployment = job.typeOfEmployment;
     this.experienceLevel = job.experienceLevel;
     this.companyId = job.companyId;
+    this.userId = job.userId;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
     this.createdAt = job.createdAt;

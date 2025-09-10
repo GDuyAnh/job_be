@@ -20,6 +20,10 @@ export class Company {
   @Column()
   name: string;
 
+  @ApiProperty({ description: 'Company mst' })
+  @Column()
+  mst: number;
+
   @ApiProperty({ description: 'Company logo' })
   @Column({ nullable: true })
   logo: string;

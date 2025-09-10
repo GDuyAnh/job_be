@@ -28,6 +28,11 @@ export class CreateCompanyDto {
   @IsNotEmpty({ message: 'Company name is required' })
   @Transform(({ value }) => value?.trim())
   name: string;
+  
+  @ApiProperty({ description: 'MST type ', example: 123456789 })
+  @IsNumber({}, { message: 'Organization MST must be a number' })
+  @Type(() => Number)
+  mst: number;
 
   @ApiProperty({ description: 'Company email', example: 'contact@company.com' })
   @IsEmail({}, { message: 'Email must be a valid email address' })

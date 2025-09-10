@@ -33,7 +33,7 @@ export class JobsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.COMPANY)
+  @Roles(RoleStatus.COMPANY, RoleStatus.ADMIN, RoleStatus.USER)
   @ApiBearerAuth()
   @ApiResponse({ status: 201, description: 'Job created' })
   async create(@Body() createJobDto: CreateJobDto) {
