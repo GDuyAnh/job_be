@@ -64,8 +64,6 @@ export class JobsService {
 
     const { benefits, ...jobData } = data;
 
-    jobData.isWaiting = true;
-
     // Cập nhật job
     await this.jobsRepository.save({ ...job, ...jobData });
 

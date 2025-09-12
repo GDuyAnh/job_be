@@ -73,9 +73,21 @@ export class CompaniesController {
     return this.companiesService.getCompanyDetail(companyId);
   }
 
+  @Get('/mst/:mst')
+  @ApiResponse({
+    status: 200,
+    description: 'Company detail information by MST',
+    type: CompanyDetailDto,
+  })
+  async getCompanyByMst(
+    @Param('mst', ParseIntPipe) mst: number,
+  ): Promise<CompanyDetailDto> {
+    return this.companiesService.getCompanyDetailByMst(mst);
+  }
+
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
+  @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,

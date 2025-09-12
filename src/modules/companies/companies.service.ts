@@ -16,6 +16,8 @@ import { Job } from '../jobs/job.entity';
 import { CompanyJobSummaryDto } from './dto/response/company-job-summary.dto';
 import { CompanyImage } from './company-image.entity';
 import { SearchCompanyAdminDto } from './dto/request/search-company-admin.dto';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
+import { log } from 'console';
 
 @Injectable()
 export class CompaniesService {
@@ -167,6 +169,32 @@ export class CompaniesService {
     return new CompanyDetailDto(company, jobSummaries);
   }
 
+  async getCompanyDetailByMst(mst: number): Promise<CompanyDetailDto> {
+    // 1. Find company based on MST + Company Image
+    const company = await this.companiesRepository.findOne({
+      where: { mst },
+      relations: ['companyImages'],
+    });
+    console.log('Company', company);
+
+    if (!company || company.isWaiting) {
+      throw new NotFoundException('Company not found');
+    }
+
+    // 2. Find all jobs related to company
+    const jobs = await this.jobsRepository.find({
+      where: { companyId: company.id },
+      order: {
+        postedDate: 'DESC',
+      },
+    });
+
+    // 3. Transform jobs into CompanyJobSummaryDto
+    const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
+
+    return new CompanyDetailDto(company, jobSummaries);
+  }
+
   async update(
     companyId: number,
     data: CreateCompanyDto,
@@ -208,8 +236,7 @@ export class CompaniesService {
 
     const { companyImages, ...companyData } = data;
 
-    companyData.isWaiting = true;
-
+  
     Object.assign(company, companyData);
     const updated = await this.companiesRepository.save(company);
 

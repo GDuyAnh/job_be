@@ -20,6 +20,9 @@ export class CompanyDetailDto {
   })
   organizationType: number | null;
 
+  @ApiProperty({ description: 'Company MST' })
+  mst: number | null;
+
   @ApiProperty({ description: 'Whether the company is shown' })
   isShow: boolean;
 
@@ -79,6 +82,7 @@ export class CompanyDetailDto {
     this.name = company.name;
     this.logo = company.logo;
     this.organizationType = company.organizationType;
+    this.mst = company.mst;
     this.isShow = company.isShow;
 
     this.facebookLink = company.facebookLink ?? null;
