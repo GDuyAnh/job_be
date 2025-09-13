@@ -63,6 +63,17 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    // Remove password for security
+    delete user.password;
+    return user;
+  }
+
+  async findByIdWithPassword(id: number): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    // Keep password for JWT generation
     return user;
   }
 
