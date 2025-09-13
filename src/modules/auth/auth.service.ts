@@ -43,4 +43,5 @@ export class AuthService {
     const { password, ...result } = user;
     return result;
   }
+
 }
