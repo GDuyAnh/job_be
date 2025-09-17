@@ -170,6 +170,21 @@ export class JobsService {
     return new JobDetailDto(job);
   }
 
+  async getJobsByUserId(userId: number): Promise<JobResponseDto[]> {
+    const jobs = await this.jobsRepository.find({
+      where: { userId: userId },
+      relations: ['company'],
+    });
+
+    for (const job of jobs) {
+      job.jobBenefits = await this.jobBenefitRepository.find({
+        where: { jobId: job.id },
+      });
+    }
+
+    return jobs.map((job) => new JobResponseDto(job));
+  }
+
   async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
     const result = await this.jobsRepository
       .createQueryBuilder('job')

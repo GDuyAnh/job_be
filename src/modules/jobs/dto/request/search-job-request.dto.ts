@@ -59,4 +59,10 @@ export class SearchJobDto {
   @IsNumber({}, { message: 'CompanyId must be a number' })
   companyId?: number;
 
+  @ApiPropertyOptional({ description: 'UserId (number ID)' })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? Number(value) : value))
+  @IsNumber({}, { message: 'UserId must be a number' })
+  userId?: number;
+
 }
