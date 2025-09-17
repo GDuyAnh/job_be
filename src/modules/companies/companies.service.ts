@@ -16,8 +16,6 @@ import { Job } from '../jobs/job.entity';
 import { CompanyJobSummaryDto } from './dto/response/company-job-summary.dto';
 import { CompanyImage } from './company-image.entity';
 import { SearchCompanyAdminDto } from './dto/request/search-company-admin.dto';
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
-import { log } from 'console';
 
 @Injectable()
 export class CompaniesService {
@@ -95,14 +93,33 @@ export class CompaniesService {
       const companies = await this.companiesRepository
         .createQueryBuilder('company')
         .leftJoin('company.jobs', 'job')
+        .leftJoin('company.companyImages', 'companyImages') // ✅ chỉ join, không select
         .select('company')
         .addSelect('COUNT(job.id)', 'openPositions')
         .where('company.IsWaiting =:w', { w: false })
         .groupBy('company.id')
         .getRawAndEntities();
 
+      // Load companyImages riêng cho từng company
+      const companyIds = companies.entities.map((company) => company.id);
+      const companyImagesMap = new Map<number, any[]>();
+      
+      if (companyIds.length > 0) {
+        const companyImages = await this.companiesRepository
+          .createQueryBuilder('company')
+          .leftJoinAndSelect('company.companyImages', 'companyImages')
+          .where('company.id IN (:...ids)', { ids: companyIds })
+          .getMany();
+        
+        companyImages.forEach((company) => {
+          companyImagesMap.set(company.id, company.companyImages || []);
+        });
+      }
+
       return companies.entities.map((company, index) => {
         const count = parseInt(companies.raw[index].openPositions, 10) || 0;
+        // Gán companyImages từ map
+        company.companyImages = companyImagesMap.get(company.id) || [];
         return new CompanyResponseDto(company, count);
       });
     }
@@ -110,6 +127,7 @@ export class CompaniesService {
     const qb = this.companiesRepository
       .createQueryBuilder('company')
       .leftJoin('company.jobs', 'job')
+      .leftJoin('company.companyImages', 'companyImages') // ✅ chỉ join, không select
       .select('company')
       .addSelect('COUNT(job.id)', 'openPositions');
 
@@ -137,8 +155,26 @@ export class CompaniesService {
 
     const companies = await qb.getRawAndEntities();
 
+    // Load companyImages riêng cho từng company
+    const companyIds = companies.entities.map((company) => company.id);
+    const companyImagesMap = new Map<number, any[]>();
+    
+    if (companyIds.length > 0) {
+      const companyImages = await this.companiesRepository
+        .createQueryBuilder('company')
+        .leftJoinAndSelect('company.companyImages', 'companyImages')
+        .where('company.id IN (:...ids)', { ids: companyIds })
+        .getMany();
+      
+      companyImages.forEach((company) => {
+        companyImagesMap.set(company.id, company.companyImages || []);
+      });
+    }
+
     return companies.entities.map((company, index) => {
       const count = parseInt(companies.raw[index].openPositions, 10) || 0;
+      // Gán companyImages từ map
+      company.companyImages = companyImagesMap.get(company.id) || [];
       return new CompanyResponseDto(company, count);
     });
   }

@@ -95,6 +95,19 @@ export class JobsController {
     return this.jobsService.getLocationsWithJobCount();
   }
 
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.USER, RoleStatus.COMPANY, RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Get jobs by user ID',
+    type: [JobResponseDto],
+  })
+  async getJobsByUserId(@Param('userId', ParseIntPipe) userId: number): Promise<JobResponseDto[]> {
+    return this.jobsService.getJobsByUserId(userId);
+  }
+
   @Get(':id')
   @ApiResponse({
     status: 200,
