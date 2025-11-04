@@ -22,7 +22,7 @@ export class Company {
 
   @ApiProperty({ description: 'Company mst' })
   @Column()
-  mst: number;
+  mst: string;
 
   @ApiProperty({ description: 'Company logo' })
   @Column({ nullable: true })
@@ -42,9 +42,9 @@ export class Company {
   @ApiProperty({
     description:
       'Company approval status - true if waiting for admin approval ',
-    default: true,
+    default: false,
   })
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: false })
   isWaiting: boolean;
 
   @ApiProperty({ description: 'Company website' })

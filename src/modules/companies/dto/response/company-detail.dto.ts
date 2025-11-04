@@ -21,7 +21,7 @@ export class CompanyDetailDto {
   organizationType: number | null;
 
   @ApiProperty({ description: 'Company MST' })
-  mst: number | null;
+  mst: string | null;
 
   @ApiProperty({ description: 'Whether the company is shown' })
   isShow: boolean;

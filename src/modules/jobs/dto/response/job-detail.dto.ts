@@ -40,6 +40,21 @@ export class JobDetailDto {
   @IsNumber()
   experienceLevel: number;
 
+  @ApiProperty({ description: 'Required qualification ID', nullable: true })
+  @IsOptional()
+  @IsNumber()
+  requiredQualification: number | null;
+
+  @ApiProperty({ description: 'Gender requirement ID', nullable: true })
+  @IsOptional()
+  @IsNumber()
+  gender: number | null;
+
+  @ApiProperty({ description: 'Grade requirement ID', nullable: true })
+  @IsOptional()
+  @IsNumber()
+  grade: number | null;
+
   @ApiProperty({ description: 'Company Id' })
   @IsNumber()
   companyId: number;
@@ -159,6 +174,11 @@ export class JobDetailDto {
   @IsString()
   detailDescription: string | null;
 
+  @ApiProperty({ description: 'Contact email for job application', nullable: true })
+  @IsOptional()
+  @IsString()
+  email: string | null;
+
   constructor(job: any) {
     this.id = job.id;
     this.title = job.title;
@@ -167,6 +187,9 @@ export class JobDetailDto {
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
     this.experienceLevel = job.experienceLevel;
+    this.requiredQualification = job.requiredQualification || null;
+    this.gender = job.gender || null;
+    this.grade = job.grade || null;
     this.companyId = job.companyId;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
@@ -193,5 +216,6 @@ export class JobDetailDto {
       ? job.jobBenefits.map((jb: any) => jb.benefitId)
       : [];
     this.detailDescription = job.detailDescription;
+    this.email = job.email || null;
   }
 }

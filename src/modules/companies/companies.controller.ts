@@ -80,7 +80,7 @@ export class CompaniesController {
     type: CompanyDetailDto,
   })
   async getCompanyByMst(
-    @Param('mst', ParseIntPipe) mst: number,
+    @Param('mst') mst: string,
   ): Promise<CompanyDetailDto> {
     return this.companiesService.getCompanyDetailByMst(mst);
   }

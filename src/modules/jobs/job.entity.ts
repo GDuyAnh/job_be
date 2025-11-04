@@ -42,6 +42,18 @@ export class Job {
   @Column()
   experienceLevel: number;
 
+  @ApiProperty({ description: 'Required qualification' })
+  @Column({ nullable: true })
+  requiredQualification: number;
+
+  @ApiProperty({ description: 'Gender requirement' })
+  @Column({ nullable: true })
+  gender: number;
+
+  @ApiProperty({ description: 'Grade requirement' })
+  @Column({ nullable: true })
+  grade: number;
+
   @ApiProperty({ description: 'User ID' })
   @Column({ nullable: true })
   userId: number;
@@ -68,9 +80,9 @@ export class Job {
 
   @ApiProperty({
     description: 'Job approval status - true if waiting for admin approval ',
-    default: true,
+    default: false,
   })
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: false })
   isWaiting: boolean;
 
   @ApiProperty({ description: 'Whether the job is featured', default: false })
@@ -119,4 +131,8 @@ export class Job {
   @ApiProperty({ description: 'Detailed description' })
   @Column({ type: 'text', nullable: true })
   detailDescription: string;
+
+  @ApiProperty({ description: 'Contact email for job application' })
+  @Column({ nullable: true })
+  email: string;
 }

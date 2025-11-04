@@ -45,6 +45,24 @@ export class CreateJobDto {
   @IsNumber({}, { message: 'Experience level must be a number' })
   experienceLevel: number;
 
+  @ApiProperty({ description: 'Required qualification', example: 1, required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Required qualification must be a number' })
+  requiredQualification?: number;
+
+  @ApiProperty({ description: 'Gender requirement', example: 1, required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Gender must be a number' })
+  gender?: number;
+
+  @ApiProperty({ description: 'Grade requirement', example: 1, required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
+  @IsNumber({}, { message: 'Grade must be a number' })
+  grade?: number;
+
   @ApiProperty({ description: 'Company ID', required: true })
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
@@ -131,4 +149,10 @@ export class CreateJobDto {
   @IsOptional()
   @IsBoolean({ message: 'isWaiting must be a boolean' })
   isWaiting?: boolean;
+
+  @ApiProperty({ description: 'Contact email for job application', required: false })
+  @IsOptional()
+  @IsString({ message: 'Email must be a string' })
+  @Transform(({ value }) => value?.trim())
+  email?: string;
 }
