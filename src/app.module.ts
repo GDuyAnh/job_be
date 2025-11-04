@@ -20,10 +20,10 @@ import appConfig from '@/config/app.config';
       database: process.env.DB_DATABASE,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
-      // ssl: {
-      //   ca: process.env.DB_SSL_CA,
-      //   rejectUnauthorized: true,
-      // },
+      ssl: {
+        ca: process.env.DB_SSL_CA,
+        rejectUnauthorized: true,
+      },
     }),
     AuthModule,
     UsersModule,
