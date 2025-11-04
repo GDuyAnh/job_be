@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsUrl,
   IsNumber,
-  IsEmail,
   IsBoolean,
   ValidateNested,
   IsArray,
@@ -29,23 +28,20 @@ export class CreateCompanyDto {
   @Transform(({ value }) => value?.trim())
   name: string;
   
-  @ApiProperty({ description: 'MST type ', example: 123456789 })
-  @IsNumber({}, { message: 'Organization MST must be a number' })
-  @Type(() => Number)
-  mst: number;
-
-  @ApiProperty({ description: 'Company email', example: 'contact@company.com' })
-  @IsEmail({}, { message: 'Email must be a valid email address' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  @ApiProperty({ description: 'MST type ', example: '123456789' })
+  @IsString({ message: 'MST must be a string' })
+  @IsNotEmpty({ message: 'MST is required' })
+  @Transform(({ value }) => value?.trim())
+  mst: string;
 
   @ApiProperty({
     description: 'Company logo',
     example: 'https://example.com/logo.png',
+    required: true,
   })
-  @IsOptional()
+  @IsNotEmpty({ message: 'Logo is required' })
   @IsUrl({}, { message: 'Logo must be a valid URL' })
-  logo?: string;
+  logo: string;
 
   @ApiProperty({ description: 'Organization type ID', example: 1 })
   @IsOptional()

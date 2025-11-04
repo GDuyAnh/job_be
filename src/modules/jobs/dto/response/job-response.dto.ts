@@ -22,6 +22,15 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Experience level ID' })
   experienceLevel: number;
 
+  @ApiProperty({ description: 'Required qualification ID', required: false })
+  requiredQualification?: number | null;
+
+  @ApiProperty({ description: 'Gender requirement ID', required: false })
+  gender?: number | null;
+
+  @ApiProperty({ description: 'Grade requirement ID', required: false })
+  grade?: number | null;
+
   @ApiProperty({ description: 'Company ID' })
   companyId: number;
 
@@ -81,6 +90,9 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Detailed description (HTML)' })
   detailDescription: string;
 
+  @ApiProperty({ description: 'Contact email for job application', required: false })
+  email?: string;
+
   constructor(job: any) {
     this.id = job.id;
     this.title = job.title;
@@ -89,6 +101,9 @@ export class JobResponseDto {
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
     this.experienceLevel = job.experienceLevel;
+    this.requiredQualification = job.requiredQualification || null;
+    this.gender = job.gender || null;
+    this.grade = job.grade || null;
     this.companyId = job.companyId;
     this.userId = job.userId;
     this.companyName = job.company?.name || '';
@@ -106,6 +121,7 @@ export class JobResponseDto {
     this.salaryType = job.salaryType ?? 0;
     this.salaryTypeValue = job.salaryTypeValue ?? 0;
     this.detailDescription = job.detailDescription;
+    this.email = job.email;
     this.benefits = Array.isArray(job.jobBenefits)
       ? job.jobBenefits.map((jb: any) => jb.benefitId)
       : [];

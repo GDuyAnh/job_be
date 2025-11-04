@@ -40,7 +40,7 @@ export class JobsService {
 
     const { benefits, ...jobData } = data;
 
-    jobData.isWaiting = true;
+    jobData.isWaiting = false;
     jobData.userId = data.userId;
     // 1. Tạo job
     const savedJob = await this.jobsRepository.save(

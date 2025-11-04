@@ -10,7 +10,7 @@ export class CompanyResponseDto {
   name: string;
 
   @ApiProperty({ description: 'Company mst' })
-  mst: number;
+  mst: string;
   
 
   @ApiProperty({ description: 'Company logo', nullable: true })

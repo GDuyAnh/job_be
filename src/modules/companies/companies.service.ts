@@ -31,13 +31,15 @@ export class CompaniesService {
   ) {}
 
   async create(data: CreateCompanyDto): Promise<CompanyResponseDto> {
-    if (!data.email) {
-      throw new BadRequestException('Email is required');
-    }
-
     if (!data.name || data.name.trim() === '') {
       throw new BadRequestException(
         'Company name is required and cannot be empty',
+      );
+    }
+
+    if (!data.logo || data.logo.trim() === '') {
+      throw new BadRequestException(
+        'Company logo is required and cannot be empty',
       );
     }
 
@@ -49,17 +51,9 @@ export class CompaniesService {
       throw new ConflictException('Company name already exists');
     }
 
-    const existingEmail = await this.companiesRepository.findOne({
-      where: { email: data.email },
-    });
-
-    if (existingEmail) {
-      throw new ConflictException('Email already exists');
-    }
-
     const { companyImages, ...companyData } = data;
 
-    companyData.isWaiting = true;
+    companyData.isWaiting = false;
 
     const company = this.companiesRepository.create(companyData);
     const savedCompany = await this.companiesRepository.save(company);
@@ -205,7 +199,7 @@ export class CompaniesService {
     return new CompanyDetailDto(company, jobSummaries);
   }
 
-  async getCompanyDetailByMst(mst: number): Promise<CompanyDetailDto> {
+  async getCompanyDetailByMst(mst: string): Promise<CompanyDetailDto> {
     // 1. Find company based on MST + Company Image
     const company = await this.companiesRepository.findOne({
       where: { mst },
@@ -258,21 +252,8 @@ export class CompaniesService {
       throw new ConflictException('Company name already exists');
     }
 
-    if (!data.email) {
-      throw new BadRequestException('Email is required');
-    }
-
-    const existingEmail = await this.companiesRepository.findOne({
-      where: { email: data.email },
-    });
-
-    if (existingEmail && existingEmail.id !== companyId) {
-      throw new ConflictException('Email already exists');
-    }
-
     const { companyImages, ...companyData } = data;
 
-  
     Object.assign(company, companyData);
     const updated = await this.companiesRepository.save(company);
 
