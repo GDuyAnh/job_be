@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsDateString,
   IsBoolean,
-  IsArray,
   IsNumber,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
@@ -25,25 +24,25 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Description is required' })
   description: string;
 
-  @ApiProperty({ description: 'Job category', example: 1 })
-  @Transform(({ value }) => Number(value))
-  @IsNumber({}, { message: 'Category must be a number' })
-  category: number;
+  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
+  @IsString({ message: 'Category must be a string' })
+  category: string;
 
-  @ApiProperty({ description: 'Job location', example: 1 })
-  @Transform(({ value }) => Number(value))
-  @IsNumber({}, { message: 'Location must be a number' })
-  location: number;
+  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  @IsString({ message: 'Location must be a string' })
+  location: string;
 
   @ApiProperty({ description: 'Type of employment', example: 1 })
   @Transform(({ value }) => Number(value))
   @IsNumber({}, { message: 'Type of employment must be a number' })
+  @IsNotEmpty({ message: 'Type of employment is required' })
   typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level required', example: 1 })
-  @Transform(({ value }) => Number(value))
+  @ApiProperty({ description: 'Experience level required', example: 1, required: false })
+  @IsOptional()
+  @Transform(({ value }) => (value !== null ? Number(value) : value))
   @IsNumber({}, { message: 'Experience level must be a number' })
-  experienceLevel: number;
+  experienceLevel?: number;
 
   @ApiProperty({ description: 'Required qualification', example: 1, required: false })
   @IsOptional()
@@ -51,11 +50,10 @@ export class CreateJobDto {
   @IsNumber({}, { message: 'Required qualification must be a number' })
   requiredQualification?: number;
 
-  @ApiProperty({ description: 'Gender requirement', example: 1, required: false })
+  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")', required: false })
   @IsOptional()
-  @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Gender must be a number' })
-  gender?: number;
+  @IsString({ message: 'Gender must be a string' })
+  gender?: string;
 
   @ApiProperty({ description: 'Grade requirement', example: 1, required: false })
   @IsOptional()
@@ -90,41 +88,33 @@ export class CreateJobDto {
   @IsDateString({}, { message: 'Posted date must be a valid date' })
   postedDate?: Date;
 
-  @ApiProperty({ description: 'Application deadline', required: false })
-  @IsOptional()
+  @ApiProperty({ description: 'Application deadline' })
   @IsDateString({}, { message: 'Deadline must be a valid date' })
-  deadline?: Date;
+  @IsNotEmpty({ message: 'Deadline is required' })
+  deadline: Date;
 
-  @ApiProperty({ description: 'Salary Min', required: false })
-  @IsOptional()
+  @ApiProperty({ description: 'Salary Min' })
   @Transform(({ value }) => (value !== null ? Number(value) : value))
   @IsNumber({}, { message: 'Salary Min must be a number' })
-  salaryMin?: number;
+  @IsNotEmpty({ message: 'Salary Min is required' })
+  salaryMin: number;
 
-  @ApiProperty({ description: 'Salary Max', required: false })
-  @IsOptional()
+  @ApiProperty({ description: 'Salary Max' })
   @Transform(({ value }) => (value !== null ? Number(value) : value))
   @IsNumber({}, { message: 'Salary Max must be a number' })
-  salaryMax?: number;
+  @IsNotEmpty({ message: 'Salary Max is required' })
+  salaryMax: number;
 
-  @ApiProperty({ description: 'Salary Type', required: false })
-  @IsOptional()
+  @ApiProperty({ description: 'Salary Type' })
   @Transform(({ value }) => (value !== null ? Number(value) : value))
   @IsNumber({}, { message: 'Salary Type must be a number' })
-  salaryType?: number;
+  @IsNotEmpty({ message: 'Salary Type is required' })
+  salaryType: number;
 
-  @ApiProperty({ description: 'Salary Type Value', required: false })
+  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")', required: false })
   @IsOptional()
-  @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Salary Type Value must be a number' })
-  salaryTypeValue?: number;
-
-  @ApiProperty({ description: 'Benefits', required: false, type: [Number] })
-  @IsOptional()
-  @IsArray({ message: 'Benefits must be an array' })
-  @Transform(({ value }) => (Array.isArray(value) ? value.map(Number) : value))
-  @IsNumber({}, { each: true, message: 'Each benefit must be a number' })
-  benefits?: number[];
+  @IsString({ message: 'Benefits must be a string' })
+  benefits?: string;
 
   @ApiProperty({ description: 'Detailed description', required: false })
   @IsOptional()
@@ -155,4 +145,16 @@ export class CreateJobDto {
   @IsString({ message: 'Email must be a string' })
   @Transform(({ value }) => value?.trim())
   email?: string;
+
+  @ApiProperty({ description: 'Contact phone number for job application', required: false })
+  @IsOptional()
+  @IsString({ message: 'Phone number must be a string' })
+  @Transform(({ value }) => value?.trim())
+  phoneNumber?: string;
+
+  @ApiProperty({ description: 'Job address', example: '123 Main Street, District 1, Ho Chi Minh City' })
+  @IsString({ message: 'Address must be a string' })
+  @IsNotEmpty({ message: 'Address is required' })
+  @Transform(({ value }) => value?.trim())
+  address: string;
 }

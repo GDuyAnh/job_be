@@ -10,11 +10,11 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Job description' })
   description: string;
 
-  @ApiProperty({ description: 'Job category ID' })
-  category: number;
+  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
+  category: string;
 
-  @ApiProperty({ description: 'Job location ID' })
-  location: number;
+  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  location: string;
 
   @ApiProperty({ description: 'Type of employment ID' })
   typeOfEmployment: number;
@@ -25,8 +25,8 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Required qualification ID', required: false })
   requiredQualification?: number | null;
 
-  @ApiProperty({ description: 'Gender requirement ID', required: false })
-  gender?: number | null;
+  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")', required: false })
+  gender?: string | null;
 
   @ApiProperty({ description: 'Grade requirement ID', required: false })
   grade?: number | null;
@@ -81,17 +81,20 @@ export class JobResponseDto {
   })
   salaryType: number;
 
-  @ApiProperty({ description: 'Salary type value', example: 10 })
-  salaryTypeValue: number;
-
-  @ApiProperty({ description: 'Benefit IDs', type: [Number], required: false })
-  benefits: number[];
+  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")', required: false })
+  benefits: string;
 
   @ApiProperty({ description: 'Detailed description (HTML)' })
   detailDescription: string;
 
   @ApiProperty({ description: 'Contact email for job application', required: false })
   email?: string;
+
+  @ApiProperty({ description: 'Contact phone number for job application', required: false })
+  phoneNumber?: string;
+
+  @ApiProperty({ description: 'Job address' })
+  address: string;
 
   constructor(job: any) {
     this.id = job.id;
@@ -119,11 +122,10 @@ export class JobResponseDto {
     this.salaryMin = job.salaryMin ?? 0;
     this.salaryMax = job.salaryMax ?? 0;
     this.salaryType = job.salaryType ?? 0;
-    this.salaryTypeValue = job.salaryTypeValue ?? 0;
     this.detailDescription = job.detailDescription;
     this.email = job.email;
-    this.benefits = Array.isArray(job.jobBenefits)
-      ? job.jobBenefits.map((jb: any) => jb.benefitId)
-      : [];
+    this.phoneNumber = job.phoneNumber;
+    this.benefits = job.benefits || '';
+    this.address = job.address || '';
   }
 }

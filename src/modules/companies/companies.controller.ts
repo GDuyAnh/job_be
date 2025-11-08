@@ -10,6 +10,7 @@ import {
   UseGuards,
   ParseIntPipe,
   Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
@@ -22,6 +23,8 @@ import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 import { Roles } from '@/modules/constants/roles.decorator';
 import { RoleStatus } from '@/enum/role';
 import { SearchCompanyAdminDto } from './dto/request/search-company-admin.dto';
+import { GetApplicationsDto } from './dto/request/get-applications.dto';
+import { JobApplicationResponseDto } from './dto/response/job-application-response.dto';
 
 @ApiTags('companies')
 @Controller('companies')
@@ -60,17 +63,22 @@ export class CompaniesController {
     return this.companiesService.listForAdmin(query);
   }
 
-  @Get(':id')
+  @Get('applications')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.COMPANY, RoleStatus.ADMIN, RoleStatus.USER)
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    description: 'Company detail information',
-    type: CompanyDetailDto,
+    description: 'Get applications for jobs owned by user',
+    type: [JobApplicationResponseDto],
   })
-  @ApiResponse({ status: 404, description: 'Company not found' })
-  async getCompanyDetail(
-    @Param('id', ParseIntPipe) companyId: number,
-  ): Promise<CompanyDetailDto> {
-    return this.companiesService.getCompanyDetail(companyId);
+  async getMyJobApplications(
+    @Query() query: GetApplicationsDto,
+  ): Promise<JobApplicationResponseDto[]> {
+    if (!query.userId) {
+      throw new BadRequestException('UserId is required');
+    }
+    return this.companiesService.getApplicationsByJobOwner(query.userId);
   }
 
   @Get('/mst/:mst')
@@ -83,6 +91,19 @@ export class CompaniesController {
     @Param('mst') mst: string,
   ): Promise<CompanyDetailDto> {
     return this.companiesService.getCompanyDetailByMst(mst);
+  }
+
+  @Get(':id')
+  @ApiResponse({
+    status: 200,
+    description: 'Company detail information',
+    type: CompanyDetailDto,
+  })
+  @ApiResponse({ status: 404, description: 'Company not found' })
+  async getCompanyDetail(
+    @Param('id', ParseIntPipe) companyId: number,
+  ): Promise<CompanyDetailDto> {
+    return this.companiesService.getCompanyDetail(companyId);
   }
 
   @Put(':id')

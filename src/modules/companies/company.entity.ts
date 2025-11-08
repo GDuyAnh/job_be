@@ -52,7 +52,7 @@ export class Company {
   website: string;
 
   @ApiProperty({ description: 'Detailed address' })
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   address: string;
 
   @ApiProperty({ description: 'Company size (e.g., 123 employees)' })

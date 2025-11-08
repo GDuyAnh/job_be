@@ -2,12 +2,16 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -17,7 +21,7 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { email, username, password, fullName } = createUserDto;
+    const { email, username, password, fullName, phoneNumber } = createUserDto;
 
     const existingEmail = await this.usersRepository.findOne({
       where: { email },
@@ -41,6 +45,7 @@ export class UsersService {
       username,
       password: hashedPassword,
       fullName,
+      phoneNumber: phoneNumber || null,
     });
 
     const savedUser = await this.usersRepository.save(user);
@@ -83,5 +88,76 @@ export class UsersService {
       delete user.password;
       return user;
     });
+  }
+
+  async changePassword(
+    userId: number,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    const { currentPassword, newPassword, confirmPassword } = changePasswordDto
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('New password and confirm password do not match')
+    }
+
+    // Get user with password
+    const user = await this.findByIdWithPassword(userId)
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password)
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect')
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    // Update password
+    await this.usersRepository.update(userId, { password: hashedPassword })
+  }
+
+  async updateProfile(
+    userId: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } })
+
+    if (!user) {
+      throw new NotFoundException('User not found')
+    }
+
+    // Check if username is already taken by another user
+    const existingUser = await this.usersRepository.findOne({
+      where: { username: updateUserDto.username },
+    })
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new ConflictException('Username already exists')
+    }
+
+    // Update user
+    await this.usersRepository.update(userId, {
+      fullName: updateUserDto.fullName.trim(),
+      username: updateUserDto.username.trim(),
+      phoneNumber: updateUserDto.phoneNumber?.trim() || null,
+    })
+
+    // Return updated user
+    const updatedUser = await this.findById(userId)
+    return updatedUser
+  }
+
+  async deleteAccount(userId: number): Promise<void> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } })
+
+    if (!user) {
+      throw new NotFoundException('User not found')
+    }
+
+    // Soft delete by setting isActive to false
+    // Or hard delete if needed
+    await this.usersRepository.update(userId, { isActive: false })
+    // For hard delete: await this.usersRepository.delete(userId)
   }
 }

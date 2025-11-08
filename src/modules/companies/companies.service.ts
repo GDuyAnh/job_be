@@ -16,6 +16,9 @@ import { Job } from '../jobs/job.entity';
 import { CompanyJobSummaryDto } from './dto/response/company-job-summary.dto';
 import { CompanyImage } from './company-image.entity';
 import { SearchCompanyAdminDto } from './dto/request/search-company-admin.dto';
+import { JobApplication } from '../jobs/job-application.entity';
+import { JobApplicationResponseDto } from './dto/response/job-application-response.dto';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class CompaniesService {
@@ -28,6 +31,12 @@ export class CompaniesService {
 
     @InjectRepository(CompanyImage)
     private companyImageRepository: Repository<CompanyImage>,
+
+    @InjectRepository(JobApplication)
+    private jobApplicationRepository: Repository<JobApplication>,
+
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
   async create(data: CreateCompanyDto): Promise<CompanyResponseDto> {
@@ -43,6 +52,13 @@ export class CompaniesService {
       );
     }
 
+    // MST is required when creating a new company
+    if (!data.mst || data.mst.trim() === '') {
+      throw new BadRequestException(
+        'MST is required and cannot be empty',
+      );
+    }
+
     const existingCompany = await this.companiesRepository.findOne({
       where: { name: data.name.trim() },
     });
@@ -51,11 +67,14 @@ export class CompaniesService {
       throw new ConflictException('Company name already exists');
     }
 
-    const { companyImages, ...companyData } = data;
+    const { companyImages, mst, ...companyData } = data;
 
     companyData.isWaiting = false;
 
-    const company = this.companiesRepository.create(companyData);
+    const company = this.companiesRepository.create({
+      ...companyData,
+      mst: mst.trim(), // Assign MST explicitly
+    });
     const savedCompany = await this.companiesRepository.save(company);
 
     if (companyImages && companyImages.length > 0) {
@@ -138,7 +157,17 @@ export class CompaniesService {
     }
 
     if (!noFilterLocation) {
-      qb.andWhere('job.location = :location', { location: dto.location });
+      // Use LIKE to find location in comma-separated string
+      // Match: exact match, start, middle, or end of string
+      qb.andWhere(
+        '(job.location = :location OR job.location LIKE :locationStart OR job.location LIKE :locationMiddle OR job.location LIKE :locationEnd)',
+        {
+          location: String(dto.location),
+          locationStart: `${dto.location},%`,
+          locationMiddle: `%,${dto.location},%`,
+          locationEnd: `%,${dto.location}`,
+        },
+      );
     }
 
     if (dto.isShow !== undefined && dto.isShow !== null) {
@@ -252,8 +281,28 @@ export class CompaniesService {
       throw new ConflictException('Company name already exists');
     }
 
-    const { companyImages, ...companyData } = data;
+    // Destructure and handle MST separately to prevent data loss
+    // MST, logo, and companyImages are extracted separately, so companyData won't contain them
+    const { companyImages, logo, mst, ...companyData } = data;
 
+    // Handle MST separately - preserve existing MST if not provided or empty
+    if (mst !== undefined && mst !== null && mst.trim() !== '') {
+      // MST is provided and has value - update it
+      company.mst = mst.trim();
+    }
+    // If MST is not provided or is empty, keep existing MST (don't modify company.mst)
+
+    // Only update logo if provided
+    if (logo !== undefined) {
+      if (!logo || logo.trim() === '') {
+        throw new BadRequestException(
+          'Logo is required and cannot be empty',
+        );
+      }
+      company.logo = logo.trim();
+    }
+
+    // Update other fields (MST is already handled above, so it won't be overwritten)
     Object.assign(company, companyData);
     const updated = await this.companiesRepository.save(company);
 
@@ -331,7 +380,17 @@ export class CompaniesService {
     }
 
     if (!noFilterLocation) {
-      qb.andWhere('job.location = :location', { location: dto.location });
+      // Use LIKE to find location in comma-separated string
+      // Match: exact match, start, middle, or end of string
+      qb.andWhere(
+        '(job.location = :location OR job.location LIKE :locationStart OR job.location LIKE :locationMiddle OR job.location LIKE :locationEnd)',
+        {
+          location: String(dto.location),
+          locationStart: `${dto.location},%`,
+          locationMiddle: `%,${dto.location},%`,
+          locationEnd: `%,${dto.location}`,
+        },
+      );
     }
 
     if (dto.isShow !== undefined && dto.isShow !== null) {
@@ -365,5 +424,28 @@ export class CompaniesService {
     company.isWaiting = false;
     const updatedCompany = await this.companiesRepository.save(company);
     return new CompanyResponseDto(updatedCompany);
+  }
+
+  async getApplicationsByJobOwner(userId: number): Promise<JobApplicationResponseDto[]> {
+    const applications = await this.jobApplicationRepository
+      .createQueryBuilder('application')
+      .leftJoinAndSelect('application.job', 'job')
+      .leftJoinAndSelect('application.user', 'user')
+      .where('job.userId = :userId', { userId })
+      .orderBy('application.appliedAt', 'DESC')
+      .getMany();
+
+    return applications.map((app) => {
+      return new JobApplicationResponseDto({
+        id: app.id,
+        jobTitle: app.job.title,
+        jobId: app.job.id,
+        applicantName: app.user.fullName,
+        phone: app.user.phoneNumber || '',
+        email: app.user.email,
+        cvUrl: app.resumePath || undefined,
+        applicationDate: app.appliedAt,
+      });
+    });
   }
 }

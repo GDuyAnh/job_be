@@ -24,13 +24,13 @@ export class JobDetailDto {
   @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ description: 'Job category ID' })
-  @IsNumber()
-  category: number;
+  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
+  @IsString()
+  category: string;
 
-  @ApiProperty({ description: 'Job location ID' })
-  @IsNumber()
-  location: number;
+  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  @IsString()
+  location: string;
 
   @ApiProperty({ description: 'Type of employment ID' })
   @IsNumber()
@@ -45,10 +45,10 @@ export class JobDetailDto {
   @IsNumber()
   requiredQualification: number | null;
 
-  @ApiProperty({ description: 'Gender requirement ID', nullable: true })
+  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")', nullable: true })
   @IsOptional()
-  @IsNumber()
-  gender: number | null;
+  @IsString()
+  gender: string | null;
 
   @ApiProperty({ description: 'Grade requirement ID', nullable: true })
   @IsOptional()
@@ -77,10 +77,6 @@ export class JobDetailDto {
   @IsNumber()
   foundedYear: number | null;
 
-  @ApiProperty({ description: 'Company address', nullable: true })
-  @IsOptional()
-  @IsString()
-  address: string | null;
 
   @ApiProperty({ description: 'Company website', nullable: true })
   @IsOptional()
@@ -158,16 +154,10 @@ export class JobDetailDto {
   @IsNumber()
   salaryType: number;
 
-  @ApiProperty({ description: 'Salary Type Value' })
+  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")', nullable: true })
   @IsOptional()
-  @IsNumber()
-  salaryTypeValue: number;
-
-  @ApiProperty({ description: 'Benefit IDs', nullable: true })
-  @IsOptional()
-  @IsArray({ message: 'Benefits must be an array' })
-  @IsNumber({}, { each: true, message: 'Each benefit must be a number' })
-  benefits: number[];
+  @IsString({ message: 'Benefits must be a string' })
+  benefits: string;
 
   @ApiProperty({ description: 'Detailed description (HTML)', nullable: true })
   @IsOptional()
@@ -178,6 +168,16 @@ export class JobDetailDto {
   @IsOptional()
   @IsString()
   email: string | null;
+
+  @ApiProperty({ description: 'Contact phone number for job application', nullable: true })
+  @IsOptional()
+  @IsString()
+  phoneNumber: string | null;
+
+  @ApiProperty({ description: 'Job address' })
+  @IsOptional()
+  @IsString()
+  address: string;
 
   constructor(job: any) {
     this.id = job.id;
@@ -211,11 +211,10 @@ export class JobDetailDto {
     this.salaryMin = job.salaryMin;
     this.salaryMax = job.salaryMax;
     this.salaryType = job.salaryType;
-    this.salaryTypeValue = job.salaryTypeValue ?? 0;
-    this.benefits = Array.isArray(job.jobBenefits)
-      ? job.jobBenefits.map((jb: any) => jb.benefitId)
-      : [];
+    this.benefits = job.benefits || '';
     this.detailDescription = job.detailDescription;
     this.email = job.email || null;
+    this.phoneNumber = job.phoneNumber || null;
+    this.address = job.address || '';
   }
 }
