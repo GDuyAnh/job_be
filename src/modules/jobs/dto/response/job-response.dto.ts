@@ -19,8 +19,8 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Type of employment ID' })
   typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level ID' })
-  experienceLevel: number;
+  @ApiProperty({ description: 'Experience level ID', required: false })
+  experienceLevel: number | null;
 
   @ApiProperty({ description: 'Required qualification ID', required: false })
   requiredQualification?: number | null;
@@ -103,7 +103,7 @@ export class JobResponseDto {
     this.category = job.category;
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
-    this.experienceLevel = job.experienceLevel;
+    this.experienceLevel = job.experienceLevel ?? null;
     this.requiredQualification = job.requiredQualification || null;
     this.gender = job.gender || null;
     this.grade = job.grade || null;
