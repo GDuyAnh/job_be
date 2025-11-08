@@ -38,7 +38,7 @@ export class Job {
   typeOfEmployment: number;
 
   @ApiProperty({ description: 'Experience level required' })
-  @Column()
+  @Column({ nullable: true })
   experienceLevel: number;
 
   @ApiProperty({ description: 'Required qualification' })

@@ -36,9 +36,10 @@ export class JobDetailDto {
   @IsNumber()
   typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level ID' })
+  @ApiProperty({ description: 'Experience level ID', required: false })
+  @IsOptional()
   @IsNumber()
-  experienceLevel: number;
+  experienceLevel: number | null;
 
   @ApiProperty({ description: 'Required qualification ID', nullable: true })
   @IsOptional()
@@ -186,7 +187,7 @@ export class JobDetailDto {
     this.category = job.category;
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
-    this.experienceLevel = job.experienceLevel;
+    this.experienceLevel = job.experienceLevel ?? null;
     this.requiredQualification = job.requiredQualification || null;
     this.gender = job.gender || null;
     this.grade = job.grade || null;

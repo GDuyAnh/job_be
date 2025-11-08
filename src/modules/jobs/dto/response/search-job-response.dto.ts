@@ -22,8 +22,8 @@ export class JobSearchResponseDto {
   @ApiProperty({ description: 'Type of employment ID', example: 1 })
   typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level ID', example: 3 })
-  experienceLevel: number;
+  @ApiProperty({ description: 'Experience level ID', example: 3, required: false })
+  experienceLevel: number | null;
 
   @ApiProperty({ description: 'Company name', example: 'Tech Corp' })
   companyName: string;
@@ -72,7 +72,7 @@ export class JobSearchResponseDto {
     this.category = job.category;
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
-    this.experienceLevel = job.experienceLevel;
+    this.experienceLevel = job.experienceLevel ?? null;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
     this.salaryMin = job.salaryMin ?? null;
