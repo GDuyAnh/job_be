@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CategoryStatsDto {
   @ApiProperty({
-    description: 'Category name',
-    example: 'Literature Teacher'
+    description: 'Category as comma-separated string (e.g., "1,2,3")',
+    example: '1,2'
   })
-  category: number;
+  category: string;
 
   @ApiProperty({
     description: 'Number of jobs in this category',
@@ -13,7 +13,7 @@ export class CategoryStatsDto {
   })
   jobCount: number;
 
-  constructor(category: number, jobCount: number) {
+  constructor(category: string, jobCount: number) {
     this.category = category;
     this.jobCount = jobCount;
   }

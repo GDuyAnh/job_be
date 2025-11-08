@@ -4,9 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Job } from './job.entity';
-import { JobBenefit } from './job-benefit.entity';
 import { SearchJobDto } from './dto/request/search-job-request.dto';
 import { JobDetailDto } from './dto/response/job-detail.dto';
 import { CategoryStatsDto } from './dto/response/category-stats.dto';
@@ -30,45 +29,45 @@ export class JobsService {
     private jobsRepository: Repository<Job>,
     @InjectRepository(Company)
     private companiesRepository: Repository<Company>,
-    @InjectRepository(JobBenefit)
-    private jobBenefitRepository: Repository<JobBenefit>,
   ) {}
 
   async create(data: CreateJobDto): Promise<JobResponseDto> {
-    await this.validateJobData(data);
+    await this.validateJobData(data, false);
     await this.ensureCompanyExists(data.companyId);
 
-    const { benefits, ...jobData } = data;
-
-    jobData.isWaiting = false;
-    jobData.userId = data.userId;
-    // 1. Tạo job
+    data.isWaiting = false;
+    data.userId = data.userId;
+    // Tạo job (benefits đã được lưu trực tiếp trong data)
     const savedJob = await this.jobsRepository.save(
-      this.jobsRepository.create(jobData),
+      this.jobsRepository.create(data),
     );
 
-    // 2. Cập nhật benefits
-    await this.updateJobBenefits(savedJob.id, benefits);
-
-    // 3. Trả về DTO
+    // Trả về DTO
     return this.buildJobResponse(savedJob.id);
   }
 
   async update(id: number, data: CreateJobDto): Promise<JobResponseDto> {
-    await this.validateJobData(data);
     const job = await this.findJobOrThrow(id);
 
     if (data.companyId !== undefined) {
       await this.ensureCompanyExists(data.companyId);
     }
 
-    const { benefits, ...jobData } = data;
+    // For update, preserve existing values if not provided
+    if (data.salaryMin === undefined || data.salaryMin === null) {
+      data.salaryMin = job.salaryMin;
+    }
+    if (data.salaryMax === undefined || data.salaryMax === null) {
+      data.salaryMax = job.salaryMax;
+    }
+    if (data.salaryType === undefined || data.salaryType === null) {
+      data.salaryType = job.salaryType;
+    }
 
-    // Cập nhật job
-    await this.jobsRepository.save({ ...job, ...jobData });
+    await this.validateJobData(data, true);
 
-    // Cập nhật benefits
-    await this.updateJobBenefits(id, benefits);
+    // Cập nhật job (benefits đã được lưu trực tiếp trong data)
+    await this.jobsRepository.save({ ...job, ...data });
 
     return this.buildJobResponse(id);
   }
@@ -77,11 +76,6 @@ export class JobsService {
     const jobs = await this.jobsRepository.find({
       where: { isWaiting: false },
     });
-    for (const job of jobs) {
-      job.jobBenefits = await this.jobBenefitRepository.find({
-        where: { jobId: job.id },
-      });
-    }
     return jobs.map((job) => new JobResponseDto(job));
   }
 
@@ -98,22 +92,42 @@ export class JobsService {
       );
     }
 
-    // category
+    // category - search in comma-separated string
     if (
       dto.category !== undefined &&
       dto.category !== null &&
       dto.category !== ALL_CATEGORIES
     ) {
-      qb.andWhere('job.category = :c', { c: dto.category });
+      // Use LIKE to find category in comma-separated string
+      // Match: exact match, start, middle, or end of string
+      qb.andWhere(
+        '(job.category = :c OR job.category LIKE :cStart OR job.category LIKE :cMiddle OR job.category LIKE :cEnd)',
+        {
+          c: String(dto.category),
+          cStart: `${dto.category},%`,
+          cMiddle: `%,${dto.category},%`,
+          cEnd: `%,${dto.category}`,
+        },
+      );
     }
 
-    // location
+    // location - search in comma-separated string
     if (
       dto.location !== undefined &&
       dto.location !== null &&
       dto.location !== ALL_LOCATIONS
     ) {
-      qb.andWhere('job.location = :l', { l: dto.location });
+      // Use LIKE to find location in comma-separated string
+      // Match: exact match, start, middle, or end of string
+      qb.andWhere(
+        '(job.location = :l OR job.location LIKE :lStart OR job.location LIKE :lMiddle OR job.location LIKE :lEnd)',
+        {
+          l: String(dto.location),
+          lStart: `${dto.location},%`,
+          lMiddle: `%,${dto.location},%`,
+          lEnd: `%,${dto.location}`,
+        },
+      );
     }
 
     // typeOfEmployment (array)
@@ -147,12 +161,6 @@ export class JobsService {
 
     const jobs = await qb.getMany();
 
-    for (const job of jobs) {
-      job.jobBenefits = await this.jobBenefitRepository.find({
-        where: { jobId: job.id },
-      });
-    }
-
     return jobs.map((job) => new JobSearchResponseDto(job));
   }
 
@@ -164,9 +172,6 @@ export class JobsService {
     if (!job || job.isWaiting) {
       throw new NotFoundException('Job not found');
     }
-    job.jobBenefits = await this.jobBenefitRepository.find({
-      where: { jobId: job.id },
-    });
     return new JobDetailDto(job);
   }
 
@@ -176,30 +181,45 @@ export class JobsService {
       relations: ['company'],
     });
 
-    for (const job of jobs) {
-      job.jobBenefits = await this.jobBenefitRepository.find({
-        where: { jobId: job.id },
-      });
-    }
-
     return jobs.map((job) => new JobResponseDto(job));
   }
 
   async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
-    const result = await this.jobsRepository
-      .createQueryBuilder('job')
-      .select('job.category', 'category')
-      .addSelect('COUNT(job.id)', 'jobCount')
-      .groupBy('job.category')
-      .orderBy('jobCount', 'DESC')
-      .getRawMany();
+    // Get all jobs
+    const jobs = await this.jobsRepository.find({
+      where: { isWaiting: false }, // Only count approved jobs
+    });
+
+    // Count jobs per category
+    const categoryCountMap = new Map<string, number>();
+
+    // Process each job's category string
+    jobs.forEach((job) => {
+      if (job.category) {
+        // Split comma-separated string into individual categories
+        const categories = job.category
+          .split(',')
+          .map((cat) => cat.trim())
+          .filter((cat) => cat !== '');
+
+        // Count each category
+        categories.forEach((category) => {
+          const currentCount = categoryCountMap.get(category) || 0;
+          categoryCountMap.set(category, currentCount + 1);
+        });
+      }
+    });
+
+    // Convert map to array and sort by count descending
+    const result = Array.from(categoryCountMap.entries())
+      .map(([category, jobCount]) => ({
+        category,
+        jobCount,
+      }))
+      .sort((a, b) => b.jobCount - a.jobCount);
 
     return result.map(
-      (item) =>
-        new CategoryStatsDto(
-          Number(item.category),
-          parseInt(item.jobCount, 10),
-        ),
+      (item) => new CategoryStatsDto(item.category, item.jobCount),
     );
   }
 
@@ -207,17 +227,26 @@ export class JobsService {
     const cities = MAJOR_CITIES;
     const cityImages = MAJOR_CITIES_IMG;
 
-    const result = await this.jobsRepository
-      .createQueryBuilder('job')
-      .select('job.location', 'location')
-      .addSelect('COUNT(job.id)', 'jobCount')
-      .groupBy('job.location')
-      .orderBy('jobCount', 'DESC')
-      .getRawMany();
+    // Get all approved jobs
+    const jobs = await this.jobsRepository.find({
+      where: { isWaiting: false },
+    });
 
+    // Count jobs per individual location from comma-separated strings
     const locationMap = new Map<number, number>();
-    result.forEach((item) => {
-      locationMap.set(Number(item.location), parseInt(item.jobCount, 10));
+
+    jobs.forEach((job) => {
+      if (job.location) {
+        const locations = job.location.split(',').map((l) => l.trim()).filter((l) => l);
+
+        locations.forEach((loc) => {
+          const locNum = Number(loc);
+
+          if (!isNaN(locNum)) {
+            locationMap.set(locNum, (locationMap.get(locNum) || 0) + 1);
+          }
+        });
+      }
     });
 
     const response: LocationStatsDto[] = [];
@@ -245,7 +274,6 @@ export class JobsService {
       throw new NotFoundException(`Job with ID ${id} not found`);
     }
 
-    await this.jobBenefitRepository.delete({ jobId: id });
     await this.jobsRepository.delete(id);
   }
 
@@ -262,13 +290,22 @@ export class JobsService {
       );
     }
 
-    // category
+    // category - search in comma-separated string
     if (
       dto.category !== undefined &&
       dto.category !== null &&
       dto.category !== ALL_CATEGORIES
     ) {
-      qb.andWhere('job.category = :c', { c: dto.category });
+      // Use LIKE to find category in comma-separated string
+      qb.andWhere(
+        '(job.category = :c OR job.category LIKE :cStart OR job.category LIKE :cMiddle OR job.category LIKE :cEnd)',
+        {
+          c: String(dto.category),
+          cStart: `${dto.category},%`,
+          cMiddle: `%,${dto.category},%`,
+          cEnd: `%,${dto.category}`,
+        },
+      );
     }
 
     // location
@@ -316,12 +353,6 @@ export class JobsService {
 
     const jobs = await qb.getMany();
 
-    for (const job of jobs) {
-      job.jobBenefits = await this.jobBenefitRepository.find({
-        where: { jobId: job.id },
-      });
-    }
-
     return jobs.map((job) => new JobSearchResponseDto(job));
   }
 
@@ -345,6 +376,7 @@ export class JobsService {
     // 4. Trả về DTO chuẩn
     return this.buildJobResponse(updated.id);
   }
+
   /* ================= Helper Methods ================= */
 
   private async ensureCompanyExists(companyId: number): Promise<void> {
@@ -367,20 +399,6 @@ export class JobsService {
     return job;
   }
 
-  private async updateJobBenefits(
-    jobId: number,
-    benefits?: number[],
-  ): Promise<void> {
-    await this.jobBenefitRepository.delete({ jobId });
-
-    if (Array.isArray(benefits) && benefits.length > 0) {
-      const jobBenefits = benefits.map((benefitId) =>
-        this.jobBenefitRepository.create({ jobId, benefitId }),
-      );
-      await this.jobBenefitRepository.save(jobBenefits);
-    }
-  }
-
   private async buildJobResponse(jobId: number): Promise<JobResponseDto> {
     const jobWithRelations = await this.jobsRepository.findOne({
       where: { id: jobId },
@@ -391,14 +409,13 @@ export class JobsService {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
     }
 
-    jobWithRelations.jobBenefits = await this.jobBenefitRepository.find({
-      where: { jobId },
-    });
-
     return new JobResponseDto(jobWithRelations);
   }
 
-  private async validateJobData(jobData: CreateJobDto) {
+  private async validateJobData(
+    jobData: CreateJobDto,
+    isUpdate: boolean = false,
+  ) {
     if (!jobData.postedDate) {
       jobData.postedDate = new Date();
     } else {
@@ -406,6 +423,19 @@ export class JobsService {
     }
 
     jobData.deadline = new Date(jobData.deadline);
+
+    // Set default values for salary fields if not provided (only for create)
+    if (!isUpdate) {
+      if (jobData.salaryMin === undefined || jobData.salaryMin === null) {
+        jobData.salaryMin = 0;
+      }
+      if (jobData.salaryMax === undefined || jobData.salaryMax === null) {
+        jobData.salaryMax = 0;
+      }
+      if (jobData.salaryType === undefined || jobData.salaryType === null) {
+        jobData.salaryType = 0;
+      }
+    }
 
     if (jobData.salaryMin < 0 || jobData.salaryMax < 0) {
       throw new BadRequestException('Salary must be non-negative');

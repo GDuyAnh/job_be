@@ -13,11 +13,11 @@ export class JobSearchResponseDto {
   })
   description: string;
 
-  @ApiProperty({ description: 'Job category ID', example: 2 })
-  category: number;
+  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")', example: '1,2' })
+  category: string;
 
-  @ApiProperty({ description: 'Job location ID', example: 1 })
-  location: number;
+  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")', example: '1,2' })
+  location: string;
 
   @ApiProperty({ description: 'Type of employment ID', example: 1 })
   typeOfEmployment: number;
@@ -51,13 +51,6 @@ export class JobSearchResponseDto {
   @ApiProperty({ description: 'Salary type ID', example: 1, required: false })
   salaryType?: number;
 
-  @ApiProperty({
-    description: 'Salary Type Value',
-    example: 1,
-    required: false,
-  })
-  salaryTypeValue?: number;
-
   @ApiProperty({ description: 'Whether the job is featured', example: true })
   isFeatured: boolean;
 
@@ -67,7 +60,10 @@ export class JobSearchResponseDto {
     required: false,
     example: [1, 2, 3],
   })
-  benefits?: number[] | null;
+  benefits?: string | null;
+
+  @ApiProperty({ description: 'Job address', example: '123 Main Street, District 1, Ho Chi Minh City' })
+  address: string;
 
   constructor(job: any) {
     this.id = job.id;
@@ -82,10 +78,8 @@ export class JobSearchResponseDto {
     this.salaryMin = job.salaryMin ?? null;
     this.salaryMax = job.salaryMax ?? null;
     this.salaryType = job.salaryType ?? null;
-    this.salaryTypeValue = job.salaryTypeValue ?? null;
     this.isFeatured = job.isFeatured ?? false;
-    this.benefits = Array.isArray(job.jobBenefits)
-      ? job.jobBenefits.map((jb: any) => jb.benefitId)
-      : null;
+    this.benefits = job.benefits || null;
+    this.address = job.address || '';
   }
 }

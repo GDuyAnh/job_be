@@ -8,6 +8,7 @@ import {
   IsBoolean,
   ValidateNested,
   IsArray,
+  ValidateIf,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
@@ -28,26 +29,27 @@ export class CreateCompanyDto {
   @Transform(({ value }) => value?.trim())
   name: string;
   
-  @ApiProperty({ description: 'MST type ', example: '123456789' })
+  @ApiPropertyOptional({ description: 'MST type ', example: '123456789' })
+  @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
   @IsString({ message: 'MST must be a string' })
-  @IsNotEmpty({ message: 'MST is required' })
   @Transform(({ value }) => value?.trim())
-  mst: string;
+  mst?: string;
 
   @ApiProperty({
     description: 'Company logo',
     example: 'https://example.com/logo.png',
     required: true,
   })
+  @IsString({ message: 'Logo must be a string' })
   @IsNotEmpty({ message: 'Logo is required' })
-  @IsUrl({}, { message: 'Logo must be a valid URL' })
   logo: string;
 
   @ApiProperty({ description: 'Organization type ID', example: 1 })
-  @IsOptional()
   @IsNumber({}, { message: 'Organization type must be a number' })
+  @IsNotEmpty({ message: 'Organization type is required' })
   @Type(() => Number)
-  organizationType?: number;
+  organizationType: number;
 
   @ApiProperty({
     description: 'Whether the company is shown',
@@ -73,6 +75,7 @@ export class CreateCompanyDto {
     example: 'https://facebook.com/company',
   })
   @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
   @IsUrl({}, { message: 'Facebook link must be a valid URL' })
   facebookLink?: string;
 
@@ -81,6 +84,7 @@ export class CreateCompanyDto {
     example: 'https://twitter.com/company',
   })
   @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
   @IsUrl({}, { message: 'Twitter link must be a valid URL' })
   twitterLink?: string;
 
@@ -89,6 +93,7 @@ export class CreateCompanyDto {
     example: 'https://linkedin.com/company',
   })
   @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
   @IsUrl({}, { message: 'LinkedIn link must be a valid URL' })
   linkedInLink?: string;
 
@@ -97,6 +102,7 @@ export class CreateCompanyDto {
     example: 'https://instagram.com/company',
   })
   @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
   @IsUrl({}, { message: 'Instagram link must be a valid URL' })
   instagramLink?: string;
 
@@ -105,6 +111,7 @@ export class CreateCompanyDto {
     example: 'https://company.com',
   })
   @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
   @IsUrl({}, { message: 'Website must be a valid URL' })
   website?: string;
 
@@ -112,27 +119,27 @@ export class CreateCompanyDto {
     description: 'Detailed address',
     example: '123 Nguyen Van Linh, District 7',
   })
-  @IsOptional()
   @IsString({ message: 'Address must be a string' })
-  address?: string;
+  @IsNotEmpty({ message: 'Address is required' })
+  address: string;
 
   @ApiProperty({ description: 'Company size', example: 100 })
-  @IsOptional()
   @IsNumber({}, { message: 'Company size must be a number' })
-  companySize?: number;
+  @IsNotEmpty({ message: 'Company size is required' })
+  companySize: number;
 
   @ApiProperty({ description: 'Founded year', example: 2010 })
-  @IsOptional()
   @IsNumber({}, { message: 'Founded year must be a number' })
-  foundedYear?: number;
+  @IsNotEmpty({ message: 'Founded year is required' })
+  foundedYear: number;
 
   @ApiProperty({
     description: 'Company description',
     example: 'Technology company specializing in...',
   })
-  @IsOptional()
   @IsString({ message: 'Description must be a string' })
-  description?: string;
+  @IsNotEmpty({ message: 'Description is required' })
+  description: string;
 
   @ApiProperty({
     description: 'Company Insight',

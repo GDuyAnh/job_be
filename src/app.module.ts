@@ -19,7 +19,7 @@ import appConfig from '@/config/app.config';
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
+      synchronize: process.env.DB_SYNCHRONIZE === 'true',
       ssl: {
         ca: process.env.DB_SSL_CA,
         rejectUnauthorized: true,

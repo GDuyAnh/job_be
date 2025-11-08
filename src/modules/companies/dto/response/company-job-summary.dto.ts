@@ -9,8 +9,8 @@ export class CompanyJobSummaryDto {
   @ApiProperty({ description: 'Job title' })
   title: string;
 
-  @ApiProperty({ description: 'Job location ID' })
-  location: number;
+  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  location: string;
 
   @ApiProperty({ description: 'Type of employment ID' })
   typeOfEmployment: number;

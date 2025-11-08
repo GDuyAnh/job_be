@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from '../companies/company.entity';
-import { JobBenefit } from './job-benefit.entity';
 import { User } from '../users/user.entity';
 
 @Entity('jobs')
@@ -26,13 +25,13 @@ export class Job {
   @Column('text')
   description: string;
 
-  @ApiProperty({ description: 'Job category' })
+  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
   @Column()
-  category: number;
+  category: string;
 
-  @ApiProperty({ description: 'Job location' })
+  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
   @Column()
-  location: number;
+  location: string;
 
   @ApiProperty({ description: 'Type of employment' })
   @Column()
@@ -46,9 +45,9 @@ export class Job {
   @Column({ nullable: true })
   requiredQualification: number;
 
-  @ApiProperty({ description: 'Gender requirement' })
+  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")' })
   @Column({ nullable: true })
-  gender: number;
+  gender: string;
 
   @ApiProperty({ description: 'Grade requirement' })
   @Column({ nullable: true })
@@ -119,15 +118,6 @@ export class Job {
   @Column({ nullable: false })
   salaryType: number;
 
-  @ApiProperty({
-    description: 'Salary Type Value . Example : 100000 ',
-  })
-  @Column({ default: 0 })
-  salaryTypeValue: number;
-
-  // Internal use only, not exposed directly in API
-  jobBenefits?: JobBenefit[];
-
   @ApiProperty({ description: 'Detailed description' })
   @Column({ type: 'text', nullable: true })
   detailDescription: string;
@@ -135,4 +125,16 @@ export class Job {
   @ApiProperty({ description: 'Contact email for job application' })
   @Column({ nullable: true })
   email: string;
+
+  @ApiProperty({ description: 'Contact phone number for job application' })
+  @Column({ nullable: true })
+  phoneNumber: string;
+
+  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")' })
+  @Column({ nullable: true })
+  benefits: string;
+
+  @ApiProperty({ description: 'Job address' })
+  @Column({ type: 'text' })
+  address: string;
 }
