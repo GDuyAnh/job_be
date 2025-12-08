@@ -55,6 +55,10 @@ export class Company {
   @Column({ type: 'text', nullable: true })
   address: string;
 
+  @ApiProperty({ description: 'Tax address' })
+  @Column({ type: 'text', nullable: true })
+  taxAddress: string;
+
   @ApiProperty({ description: 'Company size (e.g., 123 employees)' })
   @Column({ nullable: true })
   companySize: number;
@@ -94,6 +98,14 @@ export class Company {
   @ApiProperty({ description: 'Instagram link' })
   @Column({ nullable: true })
   instagramLink: string;
+
+  @ApiProperty({ description: 'Company video URL' })
+  @Column({ nullable: true })
+  videoUrl: string;
+
+  @ApiProperty({ description: 'Company banner image' })
+  @Column({ nullable: true })
+  bannerImage: string;
 
   @CreateDateColumn()
   createdAt: Date;

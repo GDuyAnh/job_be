@@ -424,27 +424,50 @@ export class JobsService {
 
     jobData.deadline = new Date(jobData.deadline);
 
-    // Set default values for salary fields if not provided (only for create)
-    if (!isUpdate) {
+    // Validate salary fields based on salaryType
+    // salaryType = 5 means "Thỏa thuận" (Negotiable), so salaryMin/Max are optional
+    if (jobData.salaryType !== 5) {
+      // If salaryType is not "Negotiable", salaryMin and salaryMax are required
       if (jobData.salaryMin === undefined || jobData.salaryMin === null) {
-        jobData.salaryMin = 0;
+        throw new BadRequestException('Salary Min is required when salary type is not negotiable');
       }
       if (jobData.salaryMax === undefined || jobData.salaryMax === null) {
-        jobData.salaryMax = 0;
+        throw new BadRequestException('Salary Max is required when salary type is not negotiable');
       }
-      if (jobData.salaryType === undefined || jobData.salaryType === null) {
-        jobData.salaryType = 0;
+
+      if (jobData.salaryMin < 0 || jobData.salaryMax < 0) {
+        throw new BadRequestException('Salary must be non-negative');
       }
-    }
 
-    if (jobData.salaryMin < 0 || jobData.salaryMax < 0) {
-      throw new BadRequestException('Salary must be non-negative');
-    }
-
-    if (jobData.salaryMin > jobData.salaryMax) {
-      throw new BadRequestException(
-        'Minimum salary cannot be greater than maximum salary',
-      );
+      if (jobData.salaryMin > jobData.salaryMax) {
+        throw new BadRequestException(
+          'Minimum salary cannot be greater than maximum salary',
+        );
+      }
+    } else {
+      // For "Negotiable" (salaryType = 5), salaryMin/Max are optional
+      // But if provided, they must be valid
+      if (jobData.salaryMin !== undefined && jobData.salaryMin !== null) {
+        if (jobData.salaryMin < 0) {
+          throw new BadRequestException('Salary Min must be non-negative');
+        }
+      }
+      if (jobData.salaryMax !== undefined && jobData.salaryMax !== null) {
+        if (jobData.salaryMax < 0) {
+          throw new BadRequestException('Salary Max must be non-negative');
+        }
+      }
+      if (
+        jobData.salaryMin !== undefined &&
+        jobData.salaryMin !== null &&
+        jobData.salaryMax !== undefined &&
+        jobData.salaryMax !== null &&
+        jobData.salaryMin > jobData.salaryMax
+      ) {
+        throw new BadRequestException(
+          'Minimum salary cannot be greater than maximum salary',
+        );
+      }
     }
 
     if (jobData.deadline < jobData.postedDate) {
