@@ -38,11 +38,17 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Instagram link', nullable: true })
   instagramLink: string | null;
 
+  @ApiProperty({ description: 'Company video URL', nullable: true })
+  videoUrl: string | null;
+
   @ApiProperty({ description: 'Company website', nullable: true })
   website: string | null;
 
   @ApiProperty({ description: 'Detailed address', nullable: true })
   address: string | null;
+
+  @ApiProperty({ description: 'Tax address', nullable: true })
+  taxAddress: string | null;
 
   @ApiProperty({
     description: 'Company size (e.g., 50-100 employees)',
@@ -64,6 +70,9 @@ export class CompanyDetailDto {
 
   @ApiProperty({ description: 'Company Overview', nullable: true })
   overview: string | null;
+
+  @ApiProperty({ description: 'Company banner image', nullable: true })
+  bannerImage: string | null;
 
   @ApiProperty({
     description: 'List of jobs belonging to this company',
@@ -89,15 +98,18 @@ export class CompanyDetailDto {
     this.twitterLink = company.twitterLink ?? null;
     this.linkedInLink = company.linkedInLink ?? null;
     this.instagramLink = company.instagramLink ?? null;
+    this.videoUrl = company.videoUrl ?? null;
 
     this.website = company.website ?? null;
     this.address = company.address ?? null;
+    this.taxAddress = company.taxAddress ?? null;
     this.companySize = company.companySize ?? null;
     this.foundedYear = company.foundedYear ?? null;
     this.email = company.email ?? null;
     this.description = company.description ?? null;
     this.insight = company.insight ?? null;
     this.overview = company.overview ?? null;
+    this.bannerImage = company.bannerImage ?? null;
 
     this.jobs = jobs || [];
     this.companyImages =

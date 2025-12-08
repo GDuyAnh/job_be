@@ -5,10 +5,14 @@ import {
   IsOptional,
   IsUrl,
   IsNumber,
+  IsInt,
   IsBoolean,
   ValidateNested,
   IsArray,
   ValidateIf,
+  Min,
+  Max,
+  Matches,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
@@ -28,13 +32,12 @@ export class CreateCompanyDto {
   @IsNotEmpty({ message: 'Company name is required' })
   @Transform(({ value }) => value?.trim())
   name: string;
-  
-  @ApiPropertyOptional({ description: 'MST type ', example: '123456789' })
-  @IsOptional()
-  @ValidateIf((o, value) => value != null && value !== '')
+
+  @ApiProperty({ description: 'MST type ', example: '123456789' })
   @IsString({ message: 'MST must be a string' })
+  @IsNotEmpty({ message: 'MST is required' })
   @Transform(({ value }) => value?.trim())
-  mst?: string;
+  mst: string;
 
   @ApiProperty({
     description: 'Company logo',
@@ -64,7 +67,7 @@ export class CreateCompanyDto {
     description: 'Company approval status - true if waiting for admin approval',
     example: true,
     required: false,
-    default: true
+    default: true,
   })
   @IsOptional()
   @IsBoolean({ message: 'isWaiting must be a boolean' })
@@ -107,12 +110,23 @@ export class CreateCompanyDto {
   instagramLink?: string;
 
   @ApiProperty({
+    description: 'Company video URL',
+    example: 'https://youtube.com/watch?v=...',
+  })
+  @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
+  @IsUrl({}, { message: 'Video URL must be a valid URL' })
+  videoUrl?: string;
+
+  @ApiProperty({
     description: 'Company website',
     example: 'https://company.com',
   })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsUrl({}, { message: 'Website must be a valid URL' })
+  @Matches(/^https?:\/\/.+/i, {
+    message: 'Website must be a valid URL starting with http:// or https://',
+  })
   website?: string;
 
   @ApiProperty({
@@ -123,23 +137,47 @@ export class CreateCompanyDto {
   @IsNotEmpty({ message: 'Address is required' })
   address: string;
 
-  @ApiProperty({ description: 'Company size', example: 100 })
-  @IsNumber({}, { message: 'Company size must be a number' })
-  @IsNotEmpty({ message: 'Company size is required' })
-  companySize: number;
+  @ApiProperty({
+    description: 'Tax address',
+    example: '123 Nguyen Van Linh, District 7',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Tax address must be a string' })
+  taxAddress?: string;
 
-  @ApiProperty({ description: 'Founded year', example: 2010 })
-  @IsNumber({}, { message: 'Founded year must be a number' })
-  @IsNotEmpty({ message: 'Founded year is required' })
-  foundedYear: number;
+  @ApiProperty({
+    description: 'Company email',
+    example: 'contact@company.com',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Email must be a string' })
+  email?: string;
+
+  @ApiProperty({ description: 'Company size', example: 100, required: false })
+  @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
+  @IsInt({ message: 'Company size must be an integer' })
+  @Min(0, { message: 'Company size must be non-negative' })
+  companySize?: number;
+
+  @ApiProperty({ description: 'Founded year', example: 2010, required: false })
+  @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
+  @IsInt({ message: 'Founded year must be an integer' })
+  @Min(1800, { message: 'Founded year must be at least 1800' })
+  @Max(2100, { message: 'Founded year must be at most 2100' })
+  foundedYear?: number;
 
   @ApiProperty({
     description: 'Company description',
     example: 'Technology company specializing in...',
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: 'Description must be a string' })
-  @IsNotEmpty({ message: 'Description is required' })
-  description: string;
+  description?: string;
 
   @ApiProperty({
     description: 'Company Insight',
@@ -156,6 +194,16 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsString({ message: 'Overview must be a string' })
   overview?: string;
+
+  @ApiProperty({
+    description: 'Company banner image URL',
+    example: 'https://example.com/banner.jpg',
+    required: false,
+  })
+  @IsOptional()
+  @ValidateIf((o, value) => value != null && value !== '')
+  @IsUrl({}, { message: 'Banner image must be a valid URL' })
+  bannerImage?: string;
 
   @ApiPropertyOptional({
     description: 'List of company images',
