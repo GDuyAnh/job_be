@@ -446,22 +446,23 @@ export class JobsService {
       }
     } else {
       // For "Negotiable" (salaryType = 5), salaryMin/Max are optional
-      // But if provided, they must be valid
-      if (jobData.salaryMin !== undefined && jobData.salaryMin !== null) {
-        if (jobData.salaryMin < 0) {
-          throw new BadRequestException('Salary Min must be non-negative');
-        }
+      // Set default values to 0 if not provided (since DB doesn't allow null)
+      if (jobData.salaryMin === undefined || jobData.salaryMin === null) {
+        jobData.salaryMin = 0;
       }
-      if (jobData.salaryMax !== undefined && jobData.salaryMax !== null) {
-        if (jobData.salaryMax < 0) {
-          throw new BadRequestException('Salary Max must be non-negative');
-        }
+      if (jobData.salaryMax === undefined || jobData.salaryMax === null) {
+        jobData.salaryMax = 0;
+      }
+      // But if provided, they must be valid
+      if (jobData.salaryMin < 0) {
+        throw new BadRequestException('Salary Min must be non-negative');
+      }
+      if (jobData.salaryMax < 0) {
+        throw new BadRequestException('Salary Max must be non-negative');
       }
       if (
-        jobData.salaryMin !== undefined &&
-        jobData.salaryMin !== null &&
-        jobData.salaryMax !== undefined &&
-        jobData.salaryMax !== null &&
+        jobData.salaryMin > 0 &&
+        jobData.salaryMax > 0 &&
         jobData.salaryMin > jobData.salaryMax
       ) {
         throw new BadRequestException(

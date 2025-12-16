@@ -9,6 +9,7 @@ import {
   IsEmail,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -98,6 +99,7 @@ export class CreateJobDto {
   deadline: Date;
 
   @ApiProperty({ description: 'Salary Min', required: false })
+  @ValidateIf((o) => o.salaryType !== 5)
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
   @IsNumber({}, { message: 'Salary Min must be a number' })
@@ -105,6 +107,7 @@ export class CreateJobDto {
   salaryMin?: number;
 
   @ApiProperty({ description: 'Salary Max', required: false })
+  @ValidateIf((o) => o.salaryType !== 5)
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
   @IsNumber({}, { message: 'Salary Max must be a number' })
