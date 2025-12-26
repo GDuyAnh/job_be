@@ -68,6 +68,11 @@ export class JobDetailDto {
   @IsString()
   companyLogo: string;
 
+  @ApiProperty({ description: 'Company banner image', nullable: true })
+  @IsOptional()
+  @IsString()
+  companyBannerImage: string | null;
+
   @ApiProperty({ description: 'Organization type ID', nullable: true })
   @IsOptional()
   @IsNumber()
@@ -175,10 +180,15 @@ export class JobDetailDto {
   @IsString()
   phoneNumber: string | null;
 
-  @ApiProperty({ description: 'Job address' })
+  @ApiProperty({ description: 'Company address' })
   @IsOptional()
   @IsString()
   address: string;
+
+  @ApiProperty({ description: 'Job address' })
+  @IsOptional()
+  @IsString()
+  jobAddress: string | null;
 
   constructor(job: any) {
     this.id = job.id;
@@ -194,6 +204,7 @@ export class JobDetailDto {
     this.companyId = job.companyId;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
+    this.companyBannerImage = job.company?.bannerImage || null;
     this.organizationType = job.company?.organizationType || null;
     this.foundedYear = job.company?.foundedYear || null;
     this.address = job.company?.address || null;
@@ -216,6 +227,7 @@ export class JobDetailDto {
     this.detailDescription = job.detailDescription;
     this.email = job.email || null;
     this.phoneNumber = job.phoneNumber || null;
-    this.address = job.address || '';
+    // Address is already set from company at line 199
+    this.jobAddress = job.address || null;
   }
 }
