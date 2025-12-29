@@ -3,11 +3,18 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from '@common/interceptors/logging.interceptor';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+    bodyParser: false, // Disable default body parser to use custom configuration
   });
+
+  // Configure body parser with increased limit BEFORE any other middleware
+  // This must be done before setGlobalPrefix and other configurations
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   // Global prefix for all routes
   app.setGlobalPrefix('api/v1');
