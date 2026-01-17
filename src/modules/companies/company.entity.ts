@@ -47,6 +47,13 @@ export class Company {
   @Column({ type: 'boolean', default: false })
   isWaiting: boolean;
 
+  @ApiProperty({
+    description: 'Whether the company is featured/highlighted',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  isFeatured: boolean;
+
   @ApiProperty({ description: 'Company website' })
   @Column({ nullable: true })
   website: string;

@@ -97,6 +97,6 @@ export class DemoController {
   @Roles(RoleStatus.ADMIN)
   @ApiResponse({ status: 200, description: 'admin success' })
   async adminOnly() {
-    return { message: 'ADMIN route OK' }
+    return { message: 'ADMIN route OK' };
   }
 }

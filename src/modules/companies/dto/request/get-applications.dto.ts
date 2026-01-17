@@ -9,4 +9,3 @@ export class GetApplicationsDto {
   @IsNumber({}, { message: 'UserId must be a number' })
   userId?: number;
 }
-

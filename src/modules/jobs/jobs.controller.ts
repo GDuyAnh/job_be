@@ -10,6 +10,7 @@ import {
   Delete,
   ParseIntPipe,
   Patch,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
@@ -25,6 +26,7 @@ import { CategoryStatsDto } from './dto/response/category-stats.dto';
 import { LocationStatsDto } from './dto/response/location-stats.dto';
 import { JobDetailDto } from './dto/response/job-detail.dto';
 import { SearchJobAdminDto } from './dto/request/search-job-request-admin.dto';
+import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -104,8 +106,73 @@ export class JobsController {
     description: 'Get jobs by user ID',
     type: [JobResponseDto],
   })
-  async getJobsByUserId(@Param('userId', ParseIntPipe) userId: number): Promise<JobResponseDto[]> {
+  async getJobsByUserId(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<JobResponseDto[]> {
     return this.jobsService.getJobsByUserId(userId);
+  }
+
+  @Get('email/:email')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.USER, RoleStatus.COMPANY, RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Get all jobs by email (including pending jobs)',
+    type: [JobResponseDto],
+  })
+  async getJobsByEmail(
+    @Param('email') email: string,
+  ): Promise<JobResponseDto[]> {
+    return this.jobsService.getJobsByEmail(email);
+  }
+
+  @Post('applications')
+  @ApiResponse({
+    status: 201,
+    description: 'Application submitted successfully',
+  })
+  async submitApplication(@Body() dto: CreateJobApplicationDto) {
+    const result = await this.jobsService.createApplication(dto);
+
+    return {
+      success: true,
+      message: 'Application submitted successfully',
+      data: {
+        applicationId: result.application.id,
+        userId: result.application.userId,
+        isNewUser: result.isNewUser,
+        userEmail: dto.email,
+      },
+    };
+  }
+
+  @Get('applications/user/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.USER, RoleStatus.COMPANY, RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Get applications submitted by user',
+  })
+  async getUserApplications(@Param('userId', ParseIntPipe) userId: number) {
+    return this.jobsService.getApplicationsByUserId(userId);
+  }
+
+  @Delete('applications/:applicationId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.USER, RoleStatus.COMPANY, RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Application soft deleted successfully',
+  })
+  async softDeleteApplication(
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+    @Request() req,
+  ) {
+    await this.jobsService.softDeleteApplication(applicationId, req.user.id);
+    return { message: 'Application deleted successfully' };
   }
 
   @Get(':id')

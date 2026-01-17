@@ -5,3 +5,4 @@ export { DemoModule } from './demo/demo.module';
 export { JobsModule } from './jobs/jobs.module';
 export { CompaniesModule } from './companies/companies.module';
 export { BlogsModule } from './blogs/blogs.module';
+export { UploadModule } from './upload/upload.module';

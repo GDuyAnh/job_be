@@ -18,7 +18,7 @@ export class BlogsService {
       order: { createdAt: 'DESC' },
     });
 
-    return blogs.map(blog => this.mapToBlogDetailDto(blog));
+    return blogs.map((blog) => this.mapToBlogDetailDto(blog));
   }
 
   async findOne(id: number): Promise<BlogDtoResponse> {
@@ -43,7 +43,10 @@ export class BlogsService {
     return this.mapToBlogDetailDto(savedBlog);
   }
 
-  async update(id: number, updateBlogDto: Partial<CreateBlogDto>): Promise<BlogDtoResponse> {
+  async update(
+    id: number,
+    updateBlogDto: Partial<CreateBlogDto>,
+  ): Promise<BlogDtoResponse> {
     const blog = await this.blogsRepository.findOne({ where: { id } });
 
     if (!blog) {
@@ -78,4 +81,4 @@ export class BlogsService {
       updatedAt: blog.updatedAt,
     };
   }
-} 
+}

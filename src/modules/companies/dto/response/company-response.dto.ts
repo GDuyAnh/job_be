@@ -11,7 +11,6 @@ export class CompanyResponseDto {
 
   @ApiProperty({ description: 'Company mst' })
   mst: string;
-  
 
   @ApiProperty({ description: 'Company logo', nullable: true })
   logo: string | null;
@@ -36,6 +35,12 @@ export class CompanyResponseDto {
     description: 'Company approval status - true if waiting for admin approval',
   })
   isWaiting: boolean;
+
+  @ApiProperty({
+    description: 'Whether the company is featured/highlighted',
+    default: false,
+  })
+  isFeatured: boolean;
 
   @ApiProperty({ description: 'Facebook link', nullable: true })
   facebookLink: string | null;
@@ -93,6 +98,7 @@ export class CompanyResponseDto {
     this.organizationType = company.organizationType;
     this.isShow = company.isShow;
     this.isWaiting = company.isWaiting;
+    this.isFeatured = company.isFeatured;
     this.facebookLink = company.facebookLink;
     this.twitterLink = company.twitterLink;
     this.linkedInLink = company.linkedInLink;

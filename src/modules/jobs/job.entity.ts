@@ -25,11 +25,15 @@ export class Job {
   @Column('text')
   description: string;
 
-  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job categories as comma-separated string (e.g., "1,2,3")',
+  })
   @Column()
   category: string;
 
-  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job locations as comma-separated string (e.g., "1,2,3")',
+  })
   @Column()
   location: string;
 
@@ -45,7 +49,10 @@ export class Job {
   @Column({ nullable: true })
   requiredQualification: number;
 
-  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description:
+      'Gender requirements as comma-separated string (e.g., "1,2,3")',
+  })
   @Column({ nullable: true })
   gender: string;
 
@@ -130,7 +137,9 @@ export class Job {
   @Column({ nullable: true })
   phoneNumber: string;
 
-  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Benefits as comma-separated string (e.g., "1,2,3")',
+  })
   @Column({ nullable: true })
   benefits: string;
 

@@ -24,11 +24,15 @@ export class JobDetailDto {
   @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job categories as comma-separated string (e.g., "1,2,3")',
+  })
   @IsString()
   category: string;
 
-  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job locations as comma-separated string (e.g., "1,2,3")',
+  })
   @IsString()
   location: string;
 
@@ -46,7 +50,11 @@ export class JobDetailDto {
   @IsNumber()
   requiredQualification: number | null;
 
-  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")', nullable: true })
+  @ApiProperty({
+    description:
+      'Gender requirements as comma-separated string (e.g., "1,2,3")',
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   gender: string | null;
@@ -82,7 +90,6 @@ export class JobDetailDto {
   @IsOptional()
   @IsNumber()
   foundedYear: number | null;
-
 
   @ApiProperty({ description: 'Company website', nullable: true })
   @IsOptional()
@@ -160,7 +167,10 @@ export class JobDetailDto {
   @IsNumber()
   salaryType: number;
 
-  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")', nullable: true })
+  @ApiProperty({
+    description: 'Benefits as comma-separated string (e.g., "1,2,3")',
+    nullable: true,
+  })
   @IsOptional()
   @IsString({ message: 'Benefits must be a string' })
   benefits: string;
@@ -170,12 +180,18 @@ export class JobDetailDto {
   @IsString()
   detailDescription: string | null;
 
-  @ApiProperty({ description: 'Contact email for job application', nullable: true })
+  @ApiProperty({
+    description: 'Contact email for job application',
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   email: string | null;
 
-  @ApiProperty({ description: 'Contact phone number for job application', nullable: true })
+  @ApiProperty({
+    description: 'Contact phone number for job application',
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   phoneNumber: string | null;

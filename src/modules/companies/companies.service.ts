@@ -54,9 +54,7 @@ export class CompaniesService {
 
     // MST is required when creating a new company
     if (!data.mst || data.mst.trim() === '') {
-      throw new BadRequestException(
-        'MST is required and cannot be empty',
-      );
+      throw new BadRequestException('MST is required and cannot be empty');
     }
 
     const existingCompany = await this.companiesRepository.findOne({
@@ -69,7 +67,9 @@ export class CompaniesService {
 
     const { companyImages, mst, ...companyData } = data;
 
-    companyData.isWaiting = false;
+    // Set isWaiting = true by default (requires admin approval)
+    companyData.isWaiting = true;
+    companyData.isShow = false; // Hidden until approved
 
     const company = this.companiesRepository.create({
       ...companyData,
@@ -109,21 +109,22 @@ export class CompaniesService {
         .leftJoin('company.companyImages', 'companyImages') // ✅ chỉ join, không select
         .select('company')
         .addSelect('COUNT(job.id)', 'openPositions')
-        .where('company.IsWaiting =:w', { w: false })
+        .where('company.isWaiting = :isWaiting', { isWaiting: false })
+        .andWhere('company.isShow = :isShow', { isShow: true })
         .groupBy('company.id')
         .getRawAndEntities();
 
       // Load companyImages riêng cho từng company
       const companyIds = companies.entities.map((company) => company.id);
       const companyImagesMap = new Map<number, any[]>();
-      
+
       if (companyIds.length > 0) {
         const companyImages = await this.companiesRepository
           .createQueryBuilder('company')
           .leftJoinAndSelect('company.companyImages', 'companyImages')
           .where('company.id IN (:...ids)', { ids: companyIds })
           .getMany();
-        
+
         companyImages.forEach((company) => {
           companyImagesMap.set(company.id, company.companyImages || []);
         });
@@ -170,9 +171,16 @@ export class CompaniesService {
       );
     }
 
+    // Filter by isShow (default: only show visible companies)
     if (dto.isShow !== undefined && dto.isShow !== null) {
       qb.andWhere('company.isShow = :isShow', { isShow: dto.isShow });
+    } else {
+      // Default: only show visible companies for public
+      qb.andWhere('company.isShow = :isShow', { isShow: true });
     }
+
+    // Filter out companies waiting for approval (for public search)
+    qb.andWhere('company.isWaiting = :isWaiting', { isWaiting: false });
 
     qb.groupBy('company.id');
 
@@ -181,14 +189,14 @@ export class CompaniesService {
     // Load companyImages riêng cho từng company
     const companyIds = companies.entities.map((company) => company.id);
     const companyImagesMap = new Map<number, any[]>();
-    
+
     if (companyIds.length > 0) {
       const companyImages = await this.companiesRepository
         .createQueryBuilder('company')
         .leftJoinAndSelect('company.companyImages', 'companyImages')
         .where('company.id IN (:...ids)', { ids: companyIds })
         .getMany();
-      
+
       companyImages.forEach((company) => {
         companyImagesMap.set(company.id, company.companyImages || []);
       });
@@ -209,7 +217,8 @@ export class CompaniesService {
       relations: ['companyImages'],
     });
 
-    if (!company || company.isWaiting) {
+    // Only show approved and visible companies to public
+    if (!company || company.isWaiting || !company.isShow) {
       throw new NotFoundException('Company not found');
     }
 
@@ -295,9 +304,7 @@ export class CompaniesService {
     // Only update logo if provided
     if (logo !== undefined) {
       if (!logo || logo.trim() === '') {
-        throw new BadRequestException(
-          'Logo is required and cannot be empty',
-        );
+        throw new BadRequestException('Logo is required and cannot be empty');
       }
       company.logo = logo.trim();
     }
@@ -421,12 +428,16 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
+    // Approve company: set isWaiting = false and isShow = true
     company.isWaiting = false;
+    company.isShow = true;
     const updatedCompany = await this.companiesRepository.save(company);
     return new CompanyResponseDto(updatedCompany);
   }
 
-  async getApplicationsByJobOwner(userId: number): Promise<JobApplicationResponseDto[]> {
+  async getApplicationsByJobOwner(
+    userId: number,
+  ): Promise<JobApplicationResponseDto[]> {
     const applications = await this.jobApplicationRepository
       .createQueryBuilder('application')
       .leftJoinAndSelect('application.job', 'job')
@@ -447,5 +458,43 @@ export class CompaniesService {
         applicationDate: app.appliedAt,
       });
     });
+  }
+
+  async setFeatured(
+    companyId: number,
+    isFeatured: boolean,
+  ): Promise<CompanyResponseDto> {
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+      relations: ['companyImages'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    company.isFeatured = isFeatured;
+    const updatedCompany = await this.companiesRepository.save(company);
+
+    return new CompanyResponseDto(updatedCompany);
+  }
+
+  async setShow(
+    companyId: number,
+    isShow: boolean,
+  ): Promise<CompanyResponseDto> {
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+      relations: ['companyImages'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    company.isShow = isShow;
+    const updatedCompany = await this.companiesRepository.save(company);
+
+    return new CompanyResponseDto(updatedCompany);
   }
 }

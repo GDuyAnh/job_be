@@ -44,4 +44,4 @@ export class Blog {
   @ApiProperty({ description: 'Updated date' })
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

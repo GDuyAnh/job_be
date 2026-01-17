@@ -1,4 +1,10 @@
-import { IsOptional, IsNumber, IsArray, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsNumber,
+  IsArray,
+  IsBoolean,
+  IsString,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -65,4 +71,8 @@ export class SearchJobDto {
   @IsNumber({}, { message: 'UserId must be a number' })
   userId?: number;
 
+  @ApiPropertyOptional({ description: 'Email to filter jobs by contact email' })
+  @IsOptional()
+  @IsString({ message: 'Email must be a string' })
+  email?: string;
 }

@@ -9,7 +9,15 @@ import { CompanyImage } from './company-image.entity';
 import { User } from '../users/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Company, Job, CompanyImage, JobApplication, User])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Company,
+      Job,
+      CompanyImage,
+      JobApplication,
+      User,
+    ]),
+  ],
   controllers: [CompaniesController],
   providers: [CompaniesService],
   exports: [CompaniesService],

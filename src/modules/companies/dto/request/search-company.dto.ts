@@ -35,5 +35,4 @@ export class SearchCompanyDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   isShow?: boolean;
-
 }

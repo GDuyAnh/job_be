@@ -29,11 +29,15 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Description is required' })
   description: string;
 
-  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job categories as comma-separated string (e.g., "1,2,3")',
+  })
   @IsString({ message: 'Category must be a string' })
   category: string;
 
-  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job locations as comma-separated string (e.g., "1,2,3")',
+  })
   @IsString({ message: 'Location must be a string' })
   location: string;
 
@@ -55,7 +59,10 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Required qualification is required' })
   requiredQualification: number;
 
-  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description:
+      'Gender requirements as comma-separated string (e.g., "1,2,3")',
+  })
   @IsString({ message: 'Gender must be a string' })
   @IsNotEmpty({ message: 'Gender is required' })
   gender: string;
@@ -120,7 +127,9 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Salary Type is required' })
   salaryType: number;
 
-  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Benefits as comma-separated string (e.g., "1,2,3")',
+  })
   @IsString({ message: 'Benefits must be a string' })
   @IsNotEmpty({ message: 'Benefits is required' })
   benefits: string;
@@ -143,7 +152,7 @@ export class CreateJobDto {
     description: 'Job approval status - true if waiting for admin approval',
     example: true,
     required: false,
-    default: true
+    default: true,
   })
   @IsOptional()
   @IsBoolean({ message: 'isWaiting must be a boolean' })
@@ -161,7 +170,10 @@ export class CreateJobDto {
   @Transform(({ value }) => value?.trim())
   phoneNumber: string;
 
-  @ApiProperty({ description: 'Job address', example: '123 Main Street, District 1, Ho Chi Minh City' })
+  @ApiProperty({
+    description: 'Job address',
+    example: '123 Main Street, District 1, Ho Chi Minh City',
+  })
   @IsString({ message: 'Address must be a string' })
   @IsNotEmpty({ message: 'Address is required' })
   @Transform(({ value }) => value?.trim())

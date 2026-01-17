@@ -129,7 +129,6 @@ export class LoggerMiddleware implements NestMiddleware {
   }
 
   private logRequest(logData: LogData, requestId: string): void {
-
     // use different colors for different methods
     const methodColor = this.getMethodColor(logData.method);
 

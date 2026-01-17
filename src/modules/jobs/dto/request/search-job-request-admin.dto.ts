@@ -66,5 +66,4 @@ export class SearchJobAdminDto {
   @Transform(({ value }) => (value !== undefined ? Number(value) : value))
   @IsNumber({}, { message: 'CompanyId must be a number' })
   companyId?: number;
-
 }

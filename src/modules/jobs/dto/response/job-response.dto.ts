@@ -10,10 +10,14 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Job description' })
   description: string;
 
-  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job categories as comma-separated string (e.g., "1,2,3")',
+  })
   category: string;
 
-  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")' })
+  @ApiProperty({
+    description: 'Job locations as comma-separated string (e.g., "1,2,3")',
+  })
   location: string;
 
   @ApiProperty({ description: 'Type of employment ID' })
@@ -25,7 +29,11 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Required qualification ID', required: false })
   requiredQualification?: number | null;
 
-  @ApiProperty({ description: 'Gender requirements as comma-separated string (e.g., "1,2,3")', required: false })
+  @ApiProperty({
+    description:
+      'Gender requirements as comma-separated string (e.g., "1,2,3")',
+    required: false,
+  })
   gender?: string | null;
 
   @ApiProperty({ description: 'Grade requirement ID', required: false })
@@ -81,16 +89,25 @@ export class JobResponseDto {
   })
   salaryType: number;
 
-  @ApiProperty({ description: 'Benefits as comma-separated string (e.g., "1,2,3")', required: false })
+  @ApiProperty({
+    description: 'Benefits as comma-separated string (e.g., "1,2,3")',
+    required: false,
+  })
   benefits: string;
 
   @ApiProperty({ description: 'Detailed description (HTML)' })
   detailDescription: string;
 
-  @ApiProperty({ description: 'Contact email for job application', required: false })
+  @ApiProperty({
+    description: 'Contact email for job application',
+    required: false,
+  })
   email?: string;
 
-  @ApiProperty({ description: 'Contact phone number for job application', required: false })
+  @ApiProperty({
+    description: 'Contact phone number for job application',
+    required: false,
+  })
   phoneNumber?: string;
 
   @ApiProperty({ description: 'Job address' })
