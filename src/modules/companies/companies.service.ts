@@ -105,7 +105,9 @@ export class CompaniesService {
     ) {
       const companies = await this.companiesRepository
         .createQueryBuilder('company')
-        .leftJoin('company.jobs', 'job')
+        .leftJoin('company.jobs', 'job', 'job.isWaiting = :jobIsWaiting', {
+          jobIsWaiting: false,
+        })
         .leftJoin('company.companyImages', 'companyImages') // ✅ chỉ join, không select
         .select('company')
         .addSelect('COUNT(job.id)', 'openPositions')
@@ -140,7 +142,9 @@ export class CompaniesService {
 
     const qb = this.companiesRepository
       .createQueryBuilder('company')
-      .leftJoin('company.jobs', 'job')
+      .leftJoin('company.jobs', 'job', 'job.isWaiting = :jobIsWaiting', {
+        jobIsWaiting: false,
+      })
       .leftJoin('company.companyImages', 'companyImages') // ✅ chỉ join, không select
       .select('company')
       .addSelect('COUNT(job.id)', 'openPositions');
@@ -222,9 +226,12 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
-    // 2. Find all jobs related to company
+    // 2. Find all approved jobs related to company (exclude pending jobs)
     const jobs = await this.jobsRepository.find({
-      where: { companyId: companyId },
+      where: {
+        companyId: companyId,
+        isWaiting: false, // Only show approved jobs to public
+      },
       order: {
         postedDate: 'DESC',
       },
@@ -249,9 +256,12 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
-    // 2. Find all jobs related to company
+    // 2. Find all approved jobs related to company (exclude pending jobs)
     const jobs = await this.jobsRepository.find({
-      where: { companyId: company.id },
+      where: {
+        companyId: company.id,
+        isWaiting: false, // Only show approved jobs to public
+      },
       order: {
         postedDate: 'DESC',
       },
