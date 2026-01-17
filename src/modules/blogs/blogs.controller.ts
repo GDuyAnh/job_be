@@ -7,11 +7,16 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { BlogDtoResponse } from './dto/blog-response.dto';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '@/modules/auth/guards/roles.guard';
+import { Roles } from '@/modules/constants/roles.decorator';
+import { RoleStatus } from '@/enum/role';
 
 @ApiTags('blogs')
 @Controller('blogs')
@@ -46,6 +51,9 @@ export class BlogsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
   @ApiResponse({
     status: 201,
     description: 'Blog created successfully',
@@ -60,6 +68,9 @@ export class BlogsController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Blog ID' })
   @ApiResponse({
     status: 200,
@@ -78,6 +89,9 @@ export class BlogsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
   @ApiParam({ name: 'id', description: 'Blog ID' })
   @ApiResponse({
     status: 200,

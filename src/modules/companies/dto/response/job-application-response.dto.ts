@@ -29,4 +29,3 @@ export class JobApplicationResponseDto {
     Object.assign(this, data);
   }
 }
-

@@ -27,8 +27,12 @@ export class CreateBlogDto {
   @IsOptional()
   author?: string;
 
-  @ApiProperty({ description: 'Blog status', required: false, default: 'published' })
+  @ApiProperty({
+    description: 'Blog status',
+    required: false,
+    default: 'published',
+  })
   @IsString()
   @IsOptional()
   status?: string;
-} 
+}

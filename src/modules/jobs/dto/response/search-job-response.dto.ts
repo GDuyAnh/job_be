@@ -13,16 +13,26 @@ export class JobSearchResponseDto {
   })
   description: string;
 
-  @ApiProperty({ description: 'Job categories as comma-separated string (e.g., "1,2,3")', example: '1,2' })
+  @ApiProperty({
+    description: 'Job categories as comma-separated string (e.g., "1,2,3")',
+    example: '1,2',
+  })
   category: string;
 
-  @ApiProperty({ description: 'Job locations as comma-separated string (e.g., "1,2,3")', example: '1,2' })
+  @ApiProperty({
+    description: 'Job locations as comma-separated string (e.g., "1,2,3")',
+    example: '1,2',
+  })
   location: string;
 
   @ApiProperty({ description: 'Type of employment ID', example: 1 })
   typeOfEmployment: number;
 
-  @ApiProperty({ description: 'Experience level ID', example: 3, required: false })
+  @ApiProperty({
+    description: 'Experience level ID',
+    example: 3,
+    required: false,
+  })
   experienceLevel: number | null;
 
   @ApiProperty({ description: 'Company name', example: 'Tech Corp' })
@@ -62,7 +72,10 @@ export class JobSearchResponseDto {
   })
   benefits?: string | null;
 
-  @ApiProperty({ description: 'Job address', example: '123 Main Street, District 1, Ho Chi Minh City' })
+  @ApiProperty({
+    description: 'Job address',
+    example: '123 Main Street, District 1, Ho Chi Minh City',
+  })
   address: string;
 
   constructor(job: any) {

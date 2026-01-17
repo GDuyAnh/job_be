@@ -10,4 +10,4 @@ import { BlogsController } from './blogs.controller';
   providers: [BlogsService],
   exports: [BlogsService],
 })
-export class BlogsModule {} 
+export class BlogsModule {}

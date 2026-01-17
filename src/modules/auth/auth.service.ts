@@ -33,6 +33,13 @@ export class AuthService {
         username: user.username,
         email: user.email,
         fullName: user.fullName,
+        phoneNumber: user.phoneNumber || null,
+        location: user.location || null,
+        expertise: user.expertise || null,
+        cvUrl: user.cvUrl || null,
+        coverLetterUrl: user.coverLetterUrl || null,
+        coverLetterText: user.coverLetterText || null,
+        avatarUrl: user.avatarUrl || null,
         role: user.role,
         companyId: user.companyId || null,
       },
@@ -45,4 +52,17 @@ export class AuthService {
     return result;
   }
 
+  async autoLoginByEmail(email: string) {
+    // Find user by email (returns user without password)
+    let user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Get full user data by ID to ensure all fields are present
+    const fullUser = await this.usersService.findById(user.id);
+
+    // Generate token without password validation
+    return this.login(fullUser);
+  }
 }

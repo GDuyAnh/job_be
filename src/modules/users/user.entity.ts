@@ -38,6 +38,49 @@ export class User {
   @Column({ nullable: true })
   phoneNumber: string;
 
+  @ApiProperty({
+    description: 'Location (province/city) as string number enum',
+    required: false,
+  })
+  @Column({ nullable: true })
+  location: string;
+
+  @ApiProperty({
+    description:
+      'Expertise (categories) as comma-separated string number enum list',
+    required: false,
+  })
+  @Column({ nullable: true })
+  expertise: string;
+
+  @ApiProperty({ description: 'CV URL', required: false })
+  @Column({ nullable: true })
+  cvUrl: string;
+
+  @ApiProperty({ description: 'CV Original Filename', required: false })
+  @Column({ nullable: true })
+  cvFileName: string;
+
+  @ApiProperty({ description: 'Cover Letter URL', required: false })
+  @Column({ nullable: true })
+  coverLetterUrl: string;
+
+  @ApiProperty({ description: 'Cover Letter Original Filename', required: false })
+  @Column({ nullable: true })
+  coverLetterFileName: string;
+
+  @ApiProperty({ description: 'Cover Letter Text', required: false })
+  @Column({ type: 'text', nullable: true })
+  coverLetterText: string;
+
+  @ApiProperty({ description: 'Avatar URL', required: false })
+  @Column({ nullable: true })
+  avatarUrl: string;
+
+  @ApiProperty({ description: 'Avatar Original Filename', required: false })
+  @Column({ nullable: true })
+  avatarFileName: string;
+
   @ApiProperty({ description: 'isActive' })
   @Column({ default: true })
   isActive: boolean;

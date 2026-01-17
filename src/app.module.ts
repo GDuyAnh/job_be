@@ -1,7 +1,15 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule, UsersModule, DemoModule, JobsModule, CompaniesModule, BlogsModule } from '@/modules';
+import {
+  AuthModule,
+  UsersModule,
+  DemoModule,
+  JobsModule,
+  CompaniesModule,
+  BlogsModule,
+  UploadModule,
+} from '@/modules';
 import { LoggerMiddleware } from '@common/middleware/logger.middleware';
 import appConfig from '@/config/app.config';
 
@@ -20,10 +28,10 @@ import appConfig from '@/config/app.config';
       database: process.env.DB_DATABASE,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: process.env.DB_SYNCHRONIZE === 'true',
-      ssl: {
-        ca: process.env.DB_SSL_CA,
-        rejectUnauthorized: true,
-      },
+      // ssl: {
+      //   ca: process.env.DB_SSL_CA,
+      //   rejectUnauthorized: true,
+      // },
     }),
     AuthModule,
     UsersModule,
@@ -31,6 +39,7 @@ import appConfig from '@/config/app.config';
     JobsModule,
     CompaniesModule,
     BlogsModule,
+    UploadModule,
   ],
 })
 export class AppModule implements NestModule {

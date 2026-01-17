@@ -87,9 +87,7 @@ export class CompaniesController {
     description: 'Company detail information by MST',
     type: CompanyDetailDto,
   })
-  async getCompanyByMst(
-    @Param('mst') mst: string,
-  ): Promise<CompanyDetailDto> {
+  async getCompanyByMst(@Param('mst') mst: string): Promise<CompanyDetailDto> {
     return this.companiesService.getCompanyDetailByMst(mst);
   }
 
@@ -147,5 +145,53 @@ export class CompaniesController {
   })
   async approveCompany(@Param('id', ParseIntPipe) companyId: number) {
     return this.companiesService.approve(companyId);
+  }
+
+  @Patch(':id/feature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company featured successfully',
+  })
+  async featureCompany(@Param('id', ParseIntPipe) companyId: number) {
+    return this.companiesService.setFeatured(companyId, true);
+  }
+
+  @Patch(':id/unfeature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company unfeatured successfully',
+  })
+  async unfeatureCompany(@Param('id', ParseIntPipe) companyId: number) {
+    return this.companiesService.setFeatured(companyId, false);
+  }
+
+  @Patch(':id/show')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company shown successfully',
+  })
+  async showCompany(@Param('id', ParseIntPipe) companyId: number) {
+    return this.companiesService.setShow(companyId, true);
+  }
+
+  @Patch(':id/hide')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company hidden successfully',
+  })
+  async hideCompany(@Param('id', ParseIntPipe) companyId: number) {
+    return this.companiesService.setShow(companyId, false);
   }
 }

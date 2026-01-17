@@ -36,12 +36,23 @@ export class JobApplication {
   @Column({ nullable: true })
   resumePath: string;
 
+  @ApiProperty({ description: 'Cover Letter Text', required: false })
+  @Column({ type: 'text', nullable: true })
+  coverLetterText: string;
+
+  @ApiProperty({ description: 'Cover Letter URL', required: false })
+  @Column({ nullable: true })
+  coverLetterUrl: string;
+
   @ApiProperty({ description: 'Application date' })
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   appliedAt: Date;
+
+  @ApiProperty({ description: 'Soft delete flag (for user dashboard)' })
+  @Column({ default: false })
+  delF: boolean;
 
   @ApiProperty({ description: 'Created date' })
   @CreateDateColumn()
   createdAt: Date;
 }
-

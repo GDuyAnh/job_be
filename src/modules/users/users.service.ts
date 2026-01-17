@@ -12,6 +12,8 @@ import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
+import { RoleStatus } from '@/enum/role';
 
 @Injectable()
 export class UsersService {
@@ -94,70 +96,217 @@ export class UsersService {
     userId: number,
     changePasswordDto: ChangePasswordDto,
   ): Promise<void> {
-    const { currentPassword, newPassword, confirmPassword } = changePasswordDto
+    const { currentPassword, newPassword, confirmPassword } = changePasswordDto;
 
     // Validate passwords match
     if (newPassword !== confirmPassword) {
-      throw new BadRequestException('New password and confirm password do not match')
+      throw new BadRequestException(
+        'New password and confirm password do not match',
+      );
     }
 
     // Get user with password
-    const user = await this.findByIdWithPassword(userId)
+    const user = await this.findByIdWithPassword(userId);
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password)
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect')
+      throw new UnauthorizedException('Current password is incorrect');
     }
 
     // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password
-    await this.usersRepository.update(userId, { password: hashedPassword })
+    await this.usersRepository.update(userId, { password: hashedPassword });
   }
 
   async updateProfile(
     userId: number,
     updateUserDto: UpdateUserDto,
   ): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } })
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('User not found');
     }
 
     // Check if username is already taken by another user
     const existingUser = await this.usersRepository.findOne({
       where: { username: updateUserDto.username },
-    })
+    });
 
     if (existingUser && existingUser.id !== userId) {
-      throw new ConflictException('Username already exists')
+      throw new ConflictException('Username already exists');
     }
 
-    // Update user
-    await this.usersRepository.update(userId, {
+    // Prepare update data
+    const updateData: any = {
       fullName: updateUserDto.fullName.trim(),
       username: updateUserDto.username.trim(),
       phoneNumber: updateUserDto.phoneNumber?.trim() || null,
-    })
+      location: updateUserDto.location?.trim() || null,
+      expertise: updateUserDto.expertise?.trim() || null,
+    };
+
+    // Add optional fields if provided
+    if (updateUserDto.cvUrl !== undefined) {
+      updateData.cvUrl = updateUserDto.cvUrl?.trim() || null;
+    }
+    if (updateUserDto.cvFileName !== undefined) {
+      updateData.cvFileName = updateUserDto.cvFileName?.trim() || null;
+    }
+    if (updateUserDto.coverLetterUrl !== undefined) {
+      updateData.coverLetterUrl = updateUserDto.coverLetterUrl?.trim() || null;
+    }
+    if (updateUserDto.coverLetterFileName !== undefined) {
+      updateData.coverLetterFileName =
+        updateUserDto.coverLetterFileName?.trim() || null;
+    }
+    if (updateUserDto.coverLetterText !== undefined) {
+      updateData.coverLetterText =
+        updateUserDto.coverLetterText?.trim() || null;
+    }
+    if (updateUserDto.avatarUrl !== undefined) {
+      updateData.avatarUrl = updateUserDto.avatarUrl?.trim() || null;
+    }
+    if (updateUserDto.avatarFileName !== undefined) {
+      updateData.avatarFileName = updateUserDto.avatarFileName?.trim() || null;
+    }
+
+    // Update user
+    await this.usersRepository.update(userId, updateData);
 
     // Return updated user
-    const updatedUser = await this.findById(userId)
-    return updatedUser
+    const updatedUser = await this.findById(userId);
+    return updatedUser;
   }
 
-  async deleteAccount(userId: number): Promise<void> {
-    const user = await this.usersRepository.findOne({ where: { id: userId } })
+  async deleteAccount(
+    userId: number,
+    deleteAccountDto: DeleteAccountDto,
+  ): Promise<void> {
+    const { password } = deleteAccountDto;
 
-    if (!user) {
-      throw new NotFoundException('User not found')
+    // Get user with password
+    const user = await this.findByIdWithPassword(userId);
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Password is incorrect');
     }
 
     // Soft delete by setting isActive to false
     // Or hard delete if needed
-    await this.usersRepository.update(userId, { isActive: false })
+    await this.usersRepository.update(userId, { isActive: false });
     // For hard delete: await this.usersRepository.delete(userId)
+  }
+
+  async findOrCreateUserByEmail(
+    email: string,
+    fullName: string,
+    phoneNumber?: string,
+    cvUrl?: string,
+    coverLetterUrl?: string,
+    coverLetterText?: string,
+  ): Promise<User> {
+    // Try to find existing user by email
+    let user = await this.findByEmail(email);
+
+    if (!user) {
+      // Create new user with auto-generated username and password
+      const username = email.split('@')[0];
+      const defaultPassword = username + '123'; // Password format: username123
+      const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+      user = this.usersRepository.create({
+        email,
+        username,
+        password: hashedPassword,
+        fullName,
+        phoneNumber: phoneNumber || null,
+        cvUrl: cvUrl || null,
+        coverLetterUrl: coverLetterUrl || null,
+        coverLetterText: coverLetterText || null,
+      });
+
+      user = await this.usersRepository.save(user);
+    } else {
+      // User exists - Update CV and Cover Letter from application
+      const updateData: any = {};
+
+      if (cvUrl !== undefined && cvUrl !== null) {
+        updateData.cvUrl = cvUrl;
+      }
+      if (coverLetterUrl !== undefined && coverLetterUrl !== null) {
+        updateData.coverLetterUrl = coverLetterUrl;
+      }
+      if (coverLetterText !== undefined && coverLetterText !== null) {
+        updateData.coverLetterText = coverLetterText;
+      }
+
+      // Only update if there's something to update
+      if (Object.keys(updateData).length > 0) {
+        await this.usersRepository.update(user.id, updateData);
+        // Reload user to get updated data
+        user = await this.usersRepository.findOne({ where: { id: user.id } });
+      }
+    }
+
+    // Remove password before returning
+    delete user.password;
+    return user;
+  }
+
+  async findAllWithCompany(): Promise<User[]> {
+    const users = await this.usersRepository.find({
+      relations: ['company'],
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    return users.map((user) => {
+      const userWithoutPassword = { ...user };
+      delete userWithoutPassword.password;
+      return userWithoutPassword;
+    });
+  }
+
+  async upgradeToCompanyUser(
+    userId: number,
+    companyId: number,
+  ): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.role = RoleStatus.COMPANY;
+    user.companyId = companyId;
+
+    const updatedUser = await this.usersRepository.save(user);
+    delete updatedUser.password;
+
+    return updatedUser;
+  }
+
+  async deleteUserByAdmin(userId: number): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.usersRepository.remove(user);
   }
 }
