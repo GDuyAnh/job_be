@@ -6,3 +6,5 @@ export { JobsModule } from './jobs/jobs.module';
 export { CompaniesModule } from './companies/companies.module';
 export { BlogsModule } from './blogs/blogs.module';
 export { UploadModule } from './upload/upload.module';
+export { EmailModule } from './email/email.module';
+export { AdminModule } from './admin/admin.module';

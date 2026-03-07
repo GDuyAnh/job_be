@@ -85,11 +85,10 @@ export class Job {
   updatedAt: Date;
 
   @ApiProperty({
-    description: 'Job approval status - true if waiting for admin approval ',
-    default: false,
+    description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED. Chỉ hiển thị khi APPROVED.',
   })
-  @Column({ type: 'boolean', default: false })
-  isWaiting: boolean;
+  @Column({ type: 'varchar', length: 20, nullable: true, default: 'ADMIN_REVIEW' })
+  status: string;
 
   @ApiProperty({ description: 'Whether the job is featured', default: false })
   @Column({ type: 'boolean', default: false })
@@ -146,4 +145,18 @@ export class Job {
   @ApiProperty({ description: 'Job address' })
   @Column({ type: 'text' })
   address: string;
+
+  @ApiProperty({
+    description: 'Post type: Basic, Hot, Urgent',
+    default: 'Basic',
+  })
+  @Column({ type: 'varchar', length: 20, nullable: true, default: 'Basic' })
+  postType: string;
+
+  @ApiProperty({
+    description: 'Note: user or admin',
+    default: 'user',
+  })
+  @Column({ type: 'varchar', length: 20, nullable: true, default: 'user' })
+  note: string;
 }

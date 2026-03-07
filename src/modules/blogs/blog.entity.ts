@@ -17,8 +17,12 @@ export class Blog {
   @Column()
   title: string;
 
+  @ApiProperty({ description: 'Blog content (rich text)' })
+  @Column('text', { nullable: true })
+  content: string;
+
   @ApiProperty({ description: 'Blog description' })
-  @Column('text')
+  @Column('text', { nullable: true })
   description: string;
 
   @ApiProperty({ description: 'Blog image URL' })
@@ -36,6 +40,26 @@ export class Blog {
   @ApiProperty({ description: 'Blog status', default: 'published' })
   @Column({ default: 'published' })
   status: string;
+
+  @ApiProperty({ description: 'SEO Title' })
+  @Column({ nullable: true })
+  titleSeo: string;
+
+  @ApiProperty({ description: 'Meta description (max 1000 chars)' })
+  @Column({ length: 1000, nullable: true })
+  metaDescription: string;
+
+  @ApiProperty({ description: 'Schema JSON (optional, max 1000 chars)', required: false })
+  @Column({ length: 1000, nullable: true })
+  schema?: string;
+
+  @ApiProperty({ description: 'Blog category' })
+  @Column({ nullable: true })
+  category: string;
+
+  @ApiProperty({ description: 'Display on homepage', required: false, default: false })
+  @Column({ default: false })
+  displayOnHomepage: boolean;
 
   @ApiProperty({ description: 'Created date' })
   @CreateDateColumn()

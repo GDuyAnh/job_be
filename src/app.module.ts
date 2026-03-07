@@ -9,15 +9,17 @@ import {
   CompaniesModule,
   BlogsModule,
   UploadModule,
+  AdminModule,
 } from '@/modules';
 import { LoggerMiddleware } from '@common/middleware/logger.middleware';
 import appConfig from '@/config/app.config';
+import emailConfig from '@/config/email.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig],
+      load: [appConfig, emailConfig],
     }),
     TypeOrmModule.forRoot({
       type: 'mysql',
@@ -40,6 +42,7 @@ import appConfig from '@/config/app.config';
     CompaniesModule,
     BlogsModule,
     UploadModule,
+    AdminModule,
   ],
 })
 export class AppModule implements NestModule {

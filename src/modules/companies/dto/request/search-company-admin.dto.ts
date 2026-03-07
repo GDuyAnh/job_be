@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import { IsOptional, IsNumber, IsBoolean, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 
@@ -43,4 +43,20 @@ export class SearchCompanyAdminDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   isWaiting?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by featured (true = only featured)',
+    enum: ['true', 'false'],
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  isFeatured?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by has banner image (true = only companies with banner)',
+    enum: ['true', 'false'],
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  hasBanner?: string;
 }

@@ -63,6 +63,22 @@ export class CompaniesController {
     return this.companiesService.listForAdmin(query);
   }
 
+  @Get('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Admin get company detail by id (for edit, any status)',
+    type: CompanyDetailDto,
+  })
+  @ApiResponse({ status: 404, description: 'Company not found' })
+  async adminGetCompanyDetail(
+    @Param('id', ParseIntPipe) companyId: number,
+  ): Promise<CompanyDetailDto> {
+    return this.companiesService.getCompanyDetailForAdmin(companyId);
+  }
+
   @Get('applications')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleStatus.COMPANY, RoleStatus.ADMIN, RoleStatus.USER)

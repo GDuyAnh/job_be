@@ -35,6 +35,53 @@ export class JobSearchResponseDto {
   })
   experienceLevel: number | null;
 
+  @ApiProperty({
+    description: 'Required qualification ID',
+    example: 1,
+    required: false,
+  })
+  requiredQualification: number | null;
+
+  @ApiProperty({
+    description: 'Gender requirements as comma-separated string (e.g., "1,2,3")',
+    required: false,
+  })
+  gender: string | null;
+
+  @ApiProperty({
+    description: 'Grade requirement ID',
+    example: 1,
+    required: false,
+  })
+  grade: number | null;
+
+  @ApiProperty({ description: 'Company ID', example: 1 })
+  companyId: number;
+
+  @ApiProperty({ description: 'User ID', example: 1 })
+  userId: number;
+
+  @ApiProperty({ description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED' })
+  status: string;
+
+  @ApiProperty({ description: 'Application deadline', required: false })
+  deadline?: Date | null;
+
+  @ApiProperty({ description: 'Detailed description', required: false })
+  detailDescription?: string | null;
+
+  @ApiProperty({ description: 'Contact email', required: false })
+  email?: string | null;
+
+  @ApiProperty({ description: 'Contact phone number', required: false })
+  phoneNumber?: string | null;
+
+  @ApiProperty({ description: 'Job image logo URL', required: false })
+  imageLogo?: string | null;
+
+  @ApiProperty({ description: 'Job banner logo URL', required: false })
+  bannerLogo?: string | null;
+
   @ApiProperty({ description: 'Company name', example: 'Tech Corp' })
   companyName: string;
 
@@ -78,6 +125,30 @@ export class JobSearchResponseDto {
   })
   address: string;
 
+  @ApiProperty({
+    description: 'Post type: Basic, Hot, Urgent',
+    required: false,
+  })
+  postType?: string;
+
+  @ApiProperty({ description: 'Posted date', required: false })
+  postedDate?: Date;
+
+  @ApiProperty({ description: 'Created date', required: false })
+  createdAt?: Date;
+
+  @ApiProperty({
+    description: 'Note: user or admin',
+    required: false,
+  })
+  note?: string;
+
+  @ApiProperty({
+    description: 'Total applications count (admin list)',
+    required: false,
+  })
+  totalApplications?: number;
+
   constructor(job: any) {
     this.id = job.id;
     this.title = job.title;
@@ -86,6 +157,18 @@ export class JobSearchResponseDto {
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
     this.experienceLevel = job.experienceLevel ?? null;
+    this.requiredQualification = job.requiredQualification ?? null;
+    this.gender = job.gender ?? null;
+    this.grade = job.grade ?? null;
+    this.companyId = job.companyId;
+    this.userId = job.userId;
+    this.status = job.status ?? 'ADMIN_REVIEW';
+    this.deadline = job.deadline ?? null;
+    this.detailDescription = job.detailDescription ?? null;
+    this.email = job.email ?? null;
+    this.phoneNumber = job.phoneNumber ?? null;
+    this.imageLogo = job.imageLogo ?? null;
+    this.bannerLogo = job.bannerLogo ?? null;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
     this.salaryMin = job.salaryMin ?? null;
@@ -94,5 +177,10 @@ export class JobSearchResponseDto {
     this.isFeatured = job.isFeatured ?? false;
     this.benefits = job.benefits || null;
     this.address = job.address || '';
+    this.postType = job.postType ?? 'Basic';
+    this.postedDate = job.postedDate ?? null;
+    this.createdAt = job.createdAt ?? null;
+    this.note = job.note ?? 'user';
+    this.totalApplications = job.totalApplications ?? 0;
   }
 }

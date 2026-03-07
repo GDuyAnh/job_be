@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Company } from './company.entity';
 import { SearchCompanyDto } from './dto/request/search-company.dto';
 import { CompanyDetailDto } from './dto/response/company-detail.dto';
@@ -105,9 +105,7 @@ export class CompaniesService {
     ) {
       const companies = await this.companiesRepository
         .createQueryBuilder('company')
-        .leftJoin('company.jobs', 'job', 'job.isWaiting = :jobIsWaiting', {
-          jobIsWaiting: false,
-        })
+        .leftJoin('company.jobs', 'job', "job.status = 'APPROVED'")
         .leftJoin('company.companyImages', 'companyImages') // ✅ chỉ join, không select
         .select('company')
         .addSelect('COUNT(job.id)', 'openPositions')
@@ -142,9 +140,7 @@ export class CompaniesService {
 
     const qb = this.companiesRepository
       .createQueryBuilder('company')
-      .leftJoin('company.jobs', 'job', 'job.isWaiting = :jobIsWaiting', {
-        jobIsWaiting: false,
-      })
+      .leftJoin('company.jobs', 'job', "job.status = 'APPROVED'")
       .leftJoin('company.companyImages', 'companyImages') // ✅ chỉ join, không select
       .select('company')
       .addSelect('COUNT(job.id)', 'openPositions');
@@ -226,11 +222,11 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
-    // 2. Find all approved jobs related to company (exclude pending jobs)
+    // 2. Find all approved jobs related to company
     const jobs = await this.jobsRepository.find({
       where: {
         companyId: companyId,
-        isWaiting: false, // Only show approved jobs to public
+        status: 'APPROVED',
       },
       order: {
         postedDate: 'DESC',
@@ -241,6 +237,25 @@ export class CompaniesService {
     const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
 
     // 4. Return CompanyDetailDto with Jobs and Images
+    return new CompanyDetailDto(company, jobSummaries);
+  }
+
+  async getCompanyDetailForAdmin(companyId: number): Promise<CompanyDetailDto> {
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+      relations: ['companyImages'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    const jobs = await this.jobsRepository.find({
+      where: { companyId },
+      order: { postedDate: 'DESC' },
+    });
+
+    const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
     return new CompanyDetailDto(company, jobSummaries);
   }
 
@@ -256,11 +271,11 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
-    // 2. Find all approved jobs related to company (exclude pending jobs)
+    // 2. Find all approved jobs related to company
     const jobs = await this.jobsRepository.find({
       where: {
         companyId: company.id,
-        isWaiting: false, // Only show approved jobs to public
+        status: 'APPROVED',
       },
       order: {
         postedDate: 'DESC',
@@ -385,9 +400,11 @@ export class CompaniesService {
       .addSelect('COUNT(job.id)', 'openPositions');
 
     if (!noFilterKeyword) {
-      qb.andWhere('LOWER(company.name) LIKE LOWER(:keyword)', {
-        keyword: `%${dto.keyword.trim()}%`,
-      });
+      const kw = `%${dto.keyword.trim()}%`;
+      qb.andWhere(
+        '(LOWER(company.name) LIKE LOWER(:keyword) OR company.mst LIKE :keyword OR LOWER(company.email) LIKE LOWER(:keyword))',
+        { keyword: kw },
+      );
     }
 
     if (!noFilterOrganizationType) {
@@ -418,13 +435,66 @@ export class CompaniesService {
       qb.andWhere('company.isWaiting = :w', { w: dto.isWaiting });
     }
 
+    // isFeatured / hasBanner come as query strings 'true' | 'false'
+    const isFeaturedFilter = dto.isFeatured === 'true';
+    const hasBannerFilter = dto.hasBanner === 'true';
+
+    if (isFeaturedFilter) {
+      qb.andWhere('company.isFeatured = :isFeatured', {
+        isFeatured: true,
+      });
+    }
+
+    if (hasBannerFilter) {
+      qb.andWhere(
+        'company.bannerImage IS NOT NULL AND company.bannerImage != :empty',
+        { empty: '' },
+      );
+    }
+
     qb.groupBy('company.id');
 
     const companies = await qb.getRawAndEntities();
 
+    const companyIds = companies.entities.map((c) => c.id);
+    const creatorByCompanyId = new Map<
+      number,
+      { email: string | null; phoneNumber: string | null }
+    >();
+    const companyImagesMap = new Map<number, any[]>();
+
+    if (companyIds.length > 0) {
+      const [users, companiesWithImages] = await Promise.all([
+        this.usersRepository.find({
+          where: { companyId: In(companyIds) },
+          order: { id: 'ASC' },
+        }),
+        this.companiesRepository
+          .createQueryBuilder('company')
+          .leftJoinAndSelect('company.companyImages', 'companyImages')
+          .where('company.id IN (:...ids)', { ids: companyIds })
+          .getMany(),
+      ]);
+
+      for (const u of users) {
+        if (u.companyId != null && !creatorByCompanyId.has(u.companyId)) {
+          const phone = u.phoneNumber?.trim() || null;
+          creatorByCompanyId.set(u.companyId, {
+            email: u.email ?? null,
+            phoneNumber: phone,
+          });
+        }
+      }
+      companiesWithImages.forEach((c) => {
+        companyImagesMap.set(c.id, c.companyImages || []);
+      });
+    }
+
     return companies.entities.map((company, index) => {
       const count = parseInt(companies.raw[index].openPositions, 10) || 0;
-      return new CompanyResponseDto(company, count);
+      const creator = creatorByCompanyId.get(company.id);
+      company.companyImages = companyImagesMap.get(company.id) || [];
+      return new CompanyResponseDto(company, count, creator);
     });
   }
 

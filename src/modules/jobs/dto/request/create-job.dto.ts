@@ -149,26 +149,53 @@ export class CreateJobDto {
   isFeatured?: boolean;
 
   @ApiProperty({
-    description: 'Job approval status - true if waiting for admin approval',
-    example: true,
+    description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
+    example: 'ADMIN_REVIEW',
     required: false,
-    default: true,
   })
   @IsOptional()
-  @IsBoolean({ message: 'isWaiting must be a boolean' })
-  isWaiting?: boolean;
+  @IsString({ message: 'Status must be a string' })
+  @Transform(({ value }) => value?.trim() || undefined)
+  status?: string;
 
-  @ApiProperty({ description: 'Contact email for job application' })
+  @ApiProperty({
+    description: 'Post type: Basic, Hot, Urgent',
+    example: 'Basic',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Post type must be a string' })
+  @Transform(({ value }) => value?.trim())
+  postType?: string;
+
+  @ApiProperty({
+    description: 'Note: user or admin',
+    example: 'user',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Note must be a string' })
+  @Transform(({ value }) => value?.trim())
+  note?: string;
+
+  @ApiProperty({
+    description: 'Contact email for job application',
+    required: false,
+  })
+  @IsOptional()
+  @ValidateIf((_, v) => v != null && String(v).trim() !== '')
   @IsEmail({}, { message: 'Email must be a valid email address' })
-  @IsNotEmpty({ message: 'Email is required' })
-  @Transform(({ value }) => value?.trim())
-  email: string;
+  @Transform(({ value }) => value?.trim() || undefined)
+  email?: string;
 
-  @ApiProperty({ description: 'Contact phone number for job application' })
+  @ApiProperty({
+    description: 'Contact phone number for job application',
+    required: false,
+  })
+  @IsOptional()
   @IsString({ message: 'Phone number must be a string' })
-  @IsNotEmpty({ message: 'Phone number is required' })
-  @Transform(({ value }) => value?.trim())
-  phoneNumber: string;
+  @Transform(({ value }) => value?.trim() || undefined)
+  phoneNumber?: string;
 
   @ApiProperty({
     description: 'Job address',

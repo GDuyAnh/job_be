@@ -10,6 +10,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -101,11 +102,19 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    description: 'Get all users for admin',
+    description: 'Get all users for admin, optionally filter by companyId',
     type: [User],
   })
-  async getAllUsersForAdmin(): Promise<User[]> {
-    return this.usersService.findAllWithCompany();
+  async getAllUsersForAdmin(
+    @Query('companyId') companyId?: string,
+  ): Promise<User[]> {
+    const id =
+      companyId !== undefined && companyId !== ''
+        ? parseInt(companyId, 10)
+        : undefined;
+    return this.usersService.findAllWithCompany(
+      id !== undefined && !Number.isNaN(id) ? id : undefined,
+    );
   }
 
   @Patch('admin/:id/upgrade-to-company')
@@ -121,6 +130,23 @@ export class UsersController {
     @Body('companyId', ParseIntPipe) companyId: number,
   ) {
     return this.usersService.upgradeToCompanyUser(userId, companyId);
+  }
+
+  @Patch('admin/:id/set-host-company')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Set or unset user as host of company (only one host per company)',
+  })
+  async setHostCompany(
+    @Param('id', ParseIntPipe) userId: number,
+    @Body('companyId', ParseIntPipe) companyId: number,
+    @Body('isHostCompany') isHostCompany?: boolean,
+  ) {
+    const setAsHost = isHostCompany !== false;
+    return this.usersService.setHostCompany(userId, companyId, setAsHost);
   }
 
   @Delete('admin/:id')

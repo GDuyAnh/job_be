@@ -110,7 +110,85 @@ JWT_EXPIRES_IN=1d
 # App
 PORT=8080
 NODE_ENV=development
+
+# Email Configuration (SMTP) - Required for sending account credentials
+# Gmail example:
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM_NAME=TopViec
+FRONTEND_URL=http://localhost:3001
+
+# Outlook example:
+# SMTP_HOST=smtp-mail.outlook.com
+# SMTP_PORT=587
+# SMTP_USER=your-email@outlook.com
+# SMTP_PASS=your-password
+
+# Yahoo example:
+# SMTP_HOST=smtp.mail.yahoo.com
+# SMTP_PORT=587
+# SMTP_USER=your-email@yahoo.com
+# SMTP_PASS=your-app-password
 ```
+
+### Cấu hình Email (SMTP)
+
+Email service được sử dụng để gửi thông tin tài khoản tự động khi user apply job hoặc đăng ký mới.
+
+#### Biến môi trường bắt buộc:
+- `SMTP_HOST`: Địa chỉ SMTP server (ví dụ: `smtp.gmail.com`)
+- `SMTP_PORT`: Cổng SMTP (thường là `587` cho TLS hoặc `465` cho SSL)
+- `SMTP_USER`: Email đăng nhập SMTP
+- `SMTP_PASS`: Mật khẩu hoặc App Password
+
+#### Biến môi trường tùy chọn:
+- `SMTP_FROM_NAME`: Tên hiển thị khi gửi email (mặc định: `TopViec`)
+- `FRONTEND_URL`: URL frontend để tạo link đăng nhập trong email (mặc định: `http://localhost:3001`)
+- `SMTP_SECURE`: `true` cho port 465 (SSL), `false` cho port 587 (TLS) - mặc định: `false`
+
+#### Hướng dẫn cấu hình Gmail:
+
+1. **Tạo App Password cho Gmail:**
+   - Vào [Google Account Settings](https://myaccount.google.com/)
+   - Bật **2-Step Verification** (bắt buộc)
+   - Tạo **App Password** tại [App Passwords](https://myaccount.google.com/apppasswords)
+   - Chọn app: "Mail" và device: "Other (Custom name)"
+   - Copy App Password (16 ký tự) và sử dụng cho `SMTP_PASS`
+
+2. **Cấu hình trong `.env`:**
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-16-char-app-password
+   SMTP_FROM_NAME=TopViec
+   FRONTEND_URL=http://localhost:3001
+   ```
+
+#### Các SMTP provider khác:
+
+- **Outlook/Hotmail:**
+  ```env
+  SMTP_HOST=smtp-mail.outlook.com
+  SMTP_PORT=587
+  SMTP_USER=your-email@outlook.com
+  SMTP_PASS=your-password
+  ```
+
+- **Yahoo:**
+  ```env
+  SMTP_HOST=smtp.mail.yahoo.com
+  SMTP_PORT=587
+  SMTP_USER=your-email@yahoo.com
+  SMTP_PASS=your-app-password
+  ```
+
+#### Lưu ý:
+- Nếu không cấu hình SMTP, email service sẽ bị vô hiệu hóa và chỉ log warning (không làm crash ứng dụng)
+- Email service sẽ tự động kiểm tra cấu hình khi khởi động ứng dụng
+- Xem logs để biết trạng thái cấu hình email service
 
 ## Sử dụng API
 

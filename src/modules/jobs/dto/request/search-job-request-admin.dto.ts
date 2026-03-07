@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber, IsArray, IsBoolean } from 'class-validator';
+import { IsOptional, IsNumber, IsArray, IsBoolean, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -54,12 +54,12 @@ export class SearchJobAdminDto {
   isFeatured?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Filter by approval status ( ADMIN Only )',
+    description: 'Filter by job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
   })
   @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  isWaiting?: boolean;
+  @IsString()
+  @Transform(({ value }) => value?.trim() || undefined)
+  status?: string;
 
   @ApiPropertyOptional({ description: 'CompanyId (number ID)' })
   @IsOptional()
