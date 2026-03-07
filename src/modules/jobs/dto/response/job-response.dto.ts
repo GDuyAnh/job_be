@@ -58,9 +58,10 @@ export class JobResponseDto {
   updatedAt: Date;
 
   @ApiProperty({
-    description: 'Job approval status , true if waiting for admin to approve',
+    description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
+    example: 'APPROVED',
   })
-  isWaiting: boolean;
+  status: string;
 
   @ApiProperty({ description: 'Whether the job is featured' })
   isFeatured: boolean;
@@ -113,6 +114,18 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Job address' })
   address: string;
 
+  @ApiProperty({
+    description: 'Post type: Basic, Hot, Urgent',
+    required: false,
+  })
+  postType?: string;
+
+  @ApiProperty({
+    description: 'Note: user or admin',
+    required: false,
+  })
+  note?: string;
+
   constructor(job: any) {
     this.id = job.id;
     this.title = job.title;
@@ -130,7 +143,7 @@ export class JobResponseDto {
     this.companyLogo = job.company?.logo || '';
     this.createdAt = job.createdAt;
     this.updatedAt = job.updatedAt;
-    this.isWaiting = job.isWaiting;
+    this.status = job.status ?? 'ADMIN_REVIEW';
     this.isFeatured = job.isFeatured;
     this.imageLogo = job.imageLogo;
     this.bannerLogo = job.bannerLogo;
@@ -144,5 +157,7 @@ export class JobResponseDto {
     this.phoneNumber = job.phoneNumber;
     this.benefits = job.benefits || '';
     this.address = job.address || '';
+    this.postType = job.postType ?? 'Basic';
+    this.note = job.note ?? 'user';
   }
 }

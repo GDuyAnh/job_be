@@ -37,19 +37,21 @@ export class JobsService {
     private usersService: UsersService,
   ) {}
 
+  /** Job chỉ hiển thị khi status = APPROVED */
+  private static readonly JOB_VISIBLE_CONDITION = "job.status = 'APPROVED'";
+
   async create(data: CreateJobDto): Promise<JobResponseDto> {
     await this.validateJobData(data, false);
     await this.ensureCompanyExists(data.companyId);
 
-    // Set isWaiting = true by default (requires admin/company approval)
-    data.isWaiting = true;
+    const status = (data.status?.trim() || 'ADMIN_REVIEW').toUpperCase();
+    const validStatuses = ['ADMIN_REVIEW', 'PENDING', 'APPROVED', 'REJECTED'];
+    const jobStatus = validStatuses.includes(status) ? status : 'ADMIN_REVIEW';
+    data.status = jobStatus;
     data.userId = data.userId;
-    // Tạo job (benefits đã được lưu trực tiếp trong data)
     const savedJob = await this.jobsRepository.save(
       this.jobsRepository.create(data),
     );
-
-    // Trả về DTO
     return this.buildJobResponse(savedJob.id);
   }
 
@@ -73,9 +75,14 @@ export class JobsService {
 
     await this.validateJobData(data, true);
 
-    // Cập nhật job (benefits đã được lưu trực tiếp trong data)
+    if (data.status !== undefined && data.status !== null) {
+      const status = String(data.status).trim().toUpperCase();
+      const validStatuses = ['ADMIN_REVIEW', 'PENDING', 'APPROVED', 'REJECTED'];
+      (data as any).status = validStatuses.includes(status) ? status : job.status || 'ADMIN_REVIEW';
+    }
+    // note không đổi khi update — chỉ dùng để biết admin add hay user add lúc tạo
+    (data as any).note = job.note ?? 'user';
     await this.jobsRepository.save({ ...job, ...data });
-
     return this.buildJobResponse(id);
   }
 
@@ -83,11 +90,10 @@ export class JobsService {
     const jobs = await this.jobsRepository
       .createQueryBuilder('job')
       .leftJoinAndSelect('job.company', 'company')
-      .where('job.isWaiting = :jobWaiting', { jobWaiting: false })
+      .where(JobsService.JOB_VISIBLE_CONDITION)
       .andWhere('company.isWaiting = :companyWaiting', { companyWaiting: false })
       .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getMany();
-    
     return jobs.map((job) => new JobResponseDto(job));
   }
 
@@ -173,8 +179,8 @@ export class JobsService {
       qb.andWhere('job.email = :email', { email: dto.email.trim() });
     }
 
-    // Viewer: CHỈ thấy job đã duyệt
-    qb.andWhere('job.isWaiting = :w', { w: false });
+    // Viewer: CHỈ thấy job đã duyệt (status = APPROVED hoặc legacy)
+    qb.andWhere(JobsService.JOB_VISIBLE_CONDITION);
 
     qb.orderBy('job.postedDate', 'DESC');
 
@@ -188,17 +194,12 @@ export class JobsService {
       where: { id: jobId },
       relations: ['company'],
     });
-    
-    // Check if job exists and is approved
-    if (!job || job.isWaiting) {
+    if (!job || job.status !== 'APPROVED') {
       throw new NotFoundException('Job not found');
     }
-    
-    // Check if company is approved and visible
     if (job.company && (job.company.isWaiting || !job.company.isShow)) {
       throw new NotFoundException('Job not found');
     }
-    
     return new JobDetailDto(job);
   }
 
@@ -222,11 +223,10 @@ export class JobsService {
   }
 
   async getCategoriesWithJobCount(): Promise<CategoryStatsDto[]> {
-    // Get all approved jobs from approved companies
     const jobs = await this.jobsRepository
       .createQueryBuilder('job')
       .leftJoin('job.company', 'company')
-      .where('job.isWaiting = :jobWaiting', { jobWaiting: false })
+      .where(JobsService.JOB_VISIBLE_CONDITION)
       .andWhere('company.isWaiting = :companyWaiting', { companyWaiting: false })
       .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getMany();
@@ -268,11 +268,10 @@ export class JobsService {
     const cities = MAJOR_CITIES;
     const cityImages = MAJOR_CITIES_IMG;
 
-    // Get all approved jobs from approved companies
     const jobs = await this.jobsRepository
       .createQueryBuilder('job')
       .leftJoin('job.company', 'company')
-      .where('job.isWaiting = :jobWaiting', { jobWaiting: false })
+      .where(JobsService.JOB_VISIBLE_CONDITION)
       .andWhere('company.isWaiting = :companyWaiting', { companyWaiting: false })
       .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getMany();
@@ -389,9 +388,8 @@ export class JobsService {
       qb.andWhere('job.companyId = :cid', { cid: dto.companyId });
     }
 
-    // Admin: chỉ lọc theo isWaiting nếu được truyền (nếu không truyền → trả cả pending & approved)
-    if (typeof dto.isWaiting === 'boolean') {
-      qb.andWhere('job.isWaiting = :w', { w: dto.isWaiting });
+    if (dto.status?.trim()) {
+      qb.andWhere('job.status = :status', { status: dto.status.trim().toUpperCase() });
     }
 
     // (Tuỳ chọn) nếu SearchJobAdminDto có thêm userId:
@@ -400,28 +398,40 @@ export class JobsService {
     qb.orderBy('job.postedDate', 'DESC');
 
     const jobs = await qb.getMany();
+    const jobIds = jobs.map((j) => j.id);
 
-    return jobs.map((job) => new JobSearchResponseDto(job));
+    // Count applications per job (chưa xóa: delF = false)
+    const countMap = new Map<number, number>();
+    if (jobIds.length > 0) {
+      const counts = await this.jobApplicationRepository
+        .createQueryBuilder('a')
+        .select('a.jobId', 'jobId')
+        .addSelect('COUNT(a.id)', 'cnt')
+        .where('a.jobId IN (:...ids)', { ids: jobIds })
+        .andWhere('a.delF = :delF', { delF: false })
+        .groupBy('a.jobId')
+        .getRawMany();
+      counts.forEach((row: { jobId: number; cnt: string }) => {
+        countMap.set(Number(row.jobId), parseInt(row.cnt, 10) || 0);
+      });
+    }
+
+    return jobs.map((job) => {
+      const totalApplications = countMap.get(job.id) ?? 0;
+      return new JobSearchResponseDto({ ...job, totalApplications });
+    });
   }
 
   async approve(id: number): Promise<JobResponseDto> {
-    // 1. Tìm job
     const job = await this.jobsRepository.findOne({ where: { id } });
     if (!job) {
       throw new NotFoundException('Job not found');
     }
-
-    // 2. Chỉ khi pending mới approve
-    if (!job.isWaiting) {
+    if (job.status === 'APPROVED') {
       throw new BadRequestException('Job has already been approved');
     }
-
-    // 3. Cập nhật trạng thái sang đã duyệt
-    job.isWaiting = false;
-
+    job.status = 'APPROVED';
     const updated = await this.jobsRepository.save(job);
-
-    // 4. Trả về DTO chuẩn
     return this.buildJobResponse(updated.id);
   }
 

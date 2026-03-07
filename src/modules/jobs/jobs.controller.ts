@@ -44,7 +44,7 @@ export class JobsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.COMPANY)
+  @Roles(RoleStatus.COMPANY, RoleStatus.ADMIN)
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Job updated' })
   async update(@Param('id') id: number, @Body() updateJobDto: CreateJobDto) {
@@ -63,7 +63,7 @@ export class JobsController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    description: 'Admin list jobs ( filter by isWaiting )',
+    description: 'Admin list jobs (filter by status)',
   })
   async adminList(@Query() query: SearchJobAdminDto) {
     return this.jobsService.listForAdmin(query);

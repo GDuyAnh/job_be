@@ -74,6 +74,15 @@ export class CreateCompanyDto {
   isWaiting?: boolean;
 
   @ApiProperty({
+    description: 'Whether the company is featured on homepage',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isFeatured must be a boolean' })
+  isFeatured?: boolean;
+
+  @ApiProperty({
     description: 'Facebook link',
     example: 'https://facebook.com/company',
   })

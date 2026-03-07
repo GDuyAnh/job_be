@@ -101,6 +101,13 @@ export class User {
   @Column({ nullable: true })
   companyId: number;
 
+  @ApiProperty({
+    description: 'True if this user is the host of the company (only one per company)',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  isHostCompany: boolean;
+
   @ManyToOne(() => Company, { nullable: true })
   @JoinColumn({ name: 'companyId' })
   company: Company;

@@ -57,8 +57,17 @@ export class CompanyResponseDto {
   @ApiProperty({ description: 'Company website', nullable: true })
   website: string | null;
 
+  @ApiProperty({ description: 'Company video URL', nullable: true })
+  videoUrl: string | null;
+
   @ApiProperty({ description: 'Detailed address', nullable: true })
   address: string | null;
+
+  @ApiProperty({ description: 'Tax address', nullable: true })
+  taxAddress: string | null;
+
+  @ApiProperty({ description: 'Banner image', nullable: true })
+  bannerImage: string | null;
 
   @ApiProperty({ description: 'Company size', nullable: true })
   companySize: number | null;
@@ -90,7 +99,23 @@ export class CompanyResponseDto {
   })
   companyImages: CompanyImageDto[];
 
-  constructor(company: Company, openPositions?: number) {
+  @ApiProperty({
+    description: 'Email of user who created/owns the company (admin list)',
+    nullable: true,
+  })
+  creatorEmail?: string | null;
+
+  @ApiProperty({
+    description: 'Phone of user who created/owns the company (admin list)',
+    nullable: true,
+  })
+  creatorPhone?: string | null;
+
+  constructor(
+    company: Company,
+    openPositions?: number,
+    creator?: { email?: string | null; phoneNumber?: string | null },
+  ) {
     this.id = company.id;
     this.name = company.name;
     this.mst = company.mst;
@@ -104,7 +129,10 @@ export class CompanyResponseDto {
     this.linkedInLink = company.linkedInLink;
     this.instagramLink = company.instagramLink;
     this.website = company.website;
+    this.videoUrl = company.videoUrl ?? null;
     this.address = company.address;
+    this.taxAddress = company.taxAddress ?? null;
+    this.bannerImage = company.bannerImage ?? null;
     this.companySize = company.companySize;
     this.foundedYear = company.foundedYear;
     this.email = company.email;
@@ -121,5 +149,8 @@ export class CompanyResponseDto {
         id: img.id,
         url: img.url,
       })) ?? [];
+
+    this.creatorEmail = creator?.email ?? null;
+    this.creatorPhone = creator?.phoneNumber ?? null;
   }
 }

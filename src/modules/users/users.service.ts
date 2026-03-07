@@ -14,12 +14,14 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { RoleStatus } from '@/enum/role';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private emailService: EmailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -51,6 +53,19 @@ export class UsersService {
     });
 
     const savedUser = await this.usersRepository.save(user);
+
+    // Send welcome email with account information
+    try {
+      await this.emailService.sendAccountCredentials(
+        email,
+        fullName,
+        username,
+        password, // Send original password before hashing
+      );
+    } catch (error) {
+      // Log error but don't fail registration if email fails
+      console.error('Failed to send welcome email:', error);
+    }
 
     // delete password
     delete savedUser.password;
@@ -216,6 +231,7 @@ export class UsersService {
   ): Promise<User> {
     // Try to find existing user by email
     let user = await this.findByEmail(email);
+    let isNewUser = false;
 
     if (!user) {
       // Create new user with auto-generated username and password
@@ -235,6 +251,20 @@ export class UsersService {
       });
 
       user = await this.usersRepository.save(user);
+      isNewUser = true;
+
+      // Send email with account credentials to new user
+      try {
+        await this.emailService.sendAccountCredentials(
+          email,
+          fullName,
+          username,
+          defaultPassword,
+        );
+      } catch (error) {
+        // Log error but don't fail user creation if email fails
+        console.error('Failed to send account credentials email:', error);
+      }
     } else {
       // User exists - Update CV and Cover Letter from application
       const updateData: any = {};
@@ -262,8 +292,13 @@ export class UsersService {
     return user;
   }
 
-  async findAllWithCompany(): Promise<User[]> {
+  async findAllWithCompany(companyId?: number): Promise<User[]> {
+    const where: any = {};
+    if (companyId != null) {
+      where.companyId = companyId;
+    }
     const users = await this.usersRepository.find({
+      where: Object.keys(where).length ? where : undefined,
       relations: ['company'],
       order: {
         createdAt: 'DESC',
@@ -308,5 +343,37 @@ export class UsersService {
     }
 
     await this.usersRepository.remove(user);
+  }
+
+  async setHostCompany(
+    userId: number,
+    companyId: number,
+    isHostCompany: boolean = true,
+  ): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.companyId !== companyId) {
+      throw new BadRequestException('User does not belong to this company');
+    }
+
+    if (isHostCompany) {
+      await this.usersRepository.update(
+        { companyId },
+        { isHostCompany: false },
+      );
+      user.isHostCompany = true;
+    } else {
+      user.isHostCompany = false;
+    }
+
+    const updated = await this.usersRepository.save(user);
+    delete updated.password;
+    return updated;
   }
 }

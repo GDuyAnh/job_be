@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { BlogsService } from './blogs.service';
 import { CreateBlogDto } from './dto/create-blog.dto';
+import { UpdateBlogDto } from './dto/update-blog.dto';
 import { BlogDtoResponse } from './dto/blog-response.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
@@ -31,6 +32,19 @@ export class BlogsController {
   })
   async findAll(): Promise<BlogDtoResponse[]> {
     return this.blogsService.findAll();
+  }
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'List of all blogs for admin',
+    type: [BlogDtoResponse],
+  })
+  async findAllForAdmin(): Promise<BlogDtoResponse[]> {
+    return this.blogsService.findAllForAdmin();
   }
 
   @Get(':id')
@@ -83,7 +97,7 @@ export class BlogsController {
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateBlogDto: Partial<CreateBlogDto>,
+    @Body() updateBlogDto: UpdateBlogDto,
   ): Promise<BlogDtoResponse> {
     return this.blogsService.update(id, updateBlogDto);
   }
