@@ -35,10 +35,6 @@ export class Company {
   @Column({ type: 'int', nullable: true })
   organizationType: number;
 
-  @ApiProperty({ description: 'Whether the company is shown', default: false })
-  @Column({ type: 'boolean', default: false })
-  isShow: boolean;
-
   @ApiProperty({
     description:
       'Company approval status - true if waiting for admin approval ',

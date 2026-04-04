@@ -1,5 +1,4 @@
-import {
-  Injectable,
+import { Injectable,
   ConflictException,
   NotFoundException,
   BadRequestException,
@@ -15,41 +14,61 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { RoleStatus } from '@/enum/role';
 import { EmailService } from '../email/email.service';
+import { Company } from '../companies/company.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Company)
+    private companiesRepository: Repository<Company>,
     private emailService: EmailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { email, username, password, fullName, phoneNumber } = createUserDto;
+    const {
+      email,
+      username,
+      password,
+      fullName,
+      phoneNumber,
+      role,
+      companyId,
+    } = createUserDto;
 
     const existingEmail = await this.usersRepository.findOne({
       where: { email },
     });
     if (existingEmail) {
-      throw new ConflictException('Email or username already exists');
+      throw new ConflictException(
+        'Email đã được sử dụng. Vui lòng sử dụng email khác.',
+      );
     }
 
     const existingUsername = await this.usersRepository.findOne({
       where: { username },
     });
     if (existingUsername) {
-      throw new ConflictException('Email or username already exists');
+      throw new ConflictException(
+        'Tên đăng nhập đã được sử dụng. Vui lòng sử dụng tên khác.',
+      );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // FE đã tạo company rồi, BE chỉ nhận companyId và gán cho user
+    // isHostCompany = true khi tạo company mới (FE set), false khi link tới existing company
     const user = this.usersRepository.create({
       email,
       username,
       password: hashedPassword,
       fullName,
       phoneNumber: phoneNumber || null,
+      role: role || RoleStatus.USER,
+      companyId: companyId || null,
+      isHostCompany: false,
     });
 
     const savedUser = await this.usersRepository.save(user);

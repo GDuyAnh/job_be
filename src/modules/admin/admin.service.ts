@@ -53,7 +53,6 @@ export class AdminService {
       .andWhere('company.isWaiting = :companyWaiting', {
         companyWaiting: false,
       })
-      .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getCount();
   }
 
@@ -67,7 +66,6 @@ export class AdminService {
       .andWhere('company.isWaiting = :companyWaiting', {
         companyWaiting: false,
       })
-      .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getCount();
   }
 

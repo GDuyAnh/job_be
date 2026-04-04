@@ -3,7 +3,9 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { RoleStatus } from '@/enum/role';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Company } from './company.entity';
@@ -69,7 +71,6 @@ export class CompaniesService {
 
     // Set isWaiting = true by default (requires admin approval)
     companyData.isWaiting = true;
-    companyData.isShow = false; // Hidden until approved
 
     const company = this.companiesRepository.create({
       ...companyData,
@@ -97,12 +98,7 @@ export class CompaniesService {
     const noFilterOrganizationType =
       !dto.organizationType || dto.organizationType === ALL_ORGANIZATION_TYPES;
 
-    if (
-      noFilterKeyword &&
-      noFilterLocation &&
-      noFilterOrganizationType &&
-      dto.isShow === undefined
-    ) {
+    if (noFilterKeyword && noFilterLocation && noFilterOrganizationType) {
       const companies = await this.companiesRepository
         .createQueryBuilder('company')
         .leftJoin('company.jobs', 'job', "job.status = 'APPROVED'")
@@ -110,7 +106,6 @@ export class CompaniesService {
         .select('company')
         .addSelect('COUNT(job.id)', 'openPositions')
         .where('company.isWaiting = :isWaiting', { isWaiting: false })
-        .andWhere('company.isShow = :isShow', { isShow: true })
         .groupBy('company.id')
         .getRawAndEntities();
 
@@ -171,14 +166,6 @@ export class CompaniesService {
       );
     }
 
-    // Filter by isShow (default: only show visible companies)
-    if (dto.isShow !== undefined && dto.isShow !== null) {
-      qb.andWhere('company.isShow = :isShow', { isShow: dto.isShow });
-    } else {
-      // Default: only show visible companies for public
-      qb.andWhere('company.isShow = :isShow', { isShow: true });
-    }
-
     // Filter out companies waiting for approval (for public search)
     qb.andWhere('company.isWaiting = :isWaiting', { isWaiting: false });
 
@@ -210,19 +197,37 @@ export class CompaniesService {
     });
   }
 
-  async getCompanyDetail(companyId: number): Promise<CompanyDetailDto> {
+  async getCompanyDetail(
+    companyId: number,
+    user?: any,
+  ): Promise<CompanyDetailDto> {
     // 1. Find Company với relations companyImages
     const company = await this.companiesRepository.findOne({
       where: { id: companyId },
       relations: ['companyImages'],
     });
 
-    // Only show approved and visible companies to public
-    if (!company || company.isWaiting || !company.isShow) {
+    if (!company) {
       throw new NotFoundException('Company not found');
     }
 
-    // 2. Find all approved jobs related to company
+    // Check if user can view this company
+    // ADMIN can view all companies
+    // COMPANY role can only view their own company (even if not approved)
+    // Others (including no user) can only view approved and visible companies
+    const isAdmin = user?.role === RoleStatus.ADMIN;
+    const isOwner =
+      user?.role === RoleStatus.COMPANY && user?.companyId === companyId;
+
+    if (!isAdmin && !isOwner) {
+      // Only show approved companies to public
+      if (company.isWaiting) {
+        throw new NotFoundException('Company not found');
+      }
+    }
+
+    // 2. Find all approved jobs related to company (for public view)
+    // But if user is owner/admin, show all their jobs
     const jobs = await this.jobsRepository.find({
       where: {
         companyId: companyId,
@@ -267,7 +272,7 @@ export class CompaniesService {
     });
     console.log('Company', company);
 
-    if (!company || company.isWaiting) {
+    if (!company) {
       throw new NotFoundException('Company not found');
     }
 
@@ -291,6 +296,7 @@ export class CompaniesService {
   async update(
     companyId: number,
     data: CreateCompanyDto,
+    user?: any,
   ): Promise<CompanyResponseDto> {
     const company = await this.companiesRepository.findOne({
       where: { id: companyId },
@@ -299,6 +305,21 @@ export class CompaniesService {
 
     if (!company) {
       throw new NotFoundException(`Company with ID ${companyId} not found`);
+    }
+
+    // Authorization check
+    // ADMIN can update any company
+    // COMPANY can only update their own company if they are the host
+    const isAdmin = user?.role === RoleStatus.ADMIN;
+    const isHostCompany =
+      user?.role === RoleStatus.COMPANY &&
+      user?.isHostCompany === true &&
+      user?.companyId === companyId;
+
+    if (!isAdmin && !isHostCompany) {
+      throw new UnauthorizedException(
+        'Bạn không có quyền chỉnh sửa thông tin công ty này',
+      );
     }
 
     if (!data.name || data.name.trim() === '') {
@@ -427,10 +448,6 @@ export class CompaniesService {
       );
     }
 
-    if (dto.isShow !== undefined && dto.isShow !== null) {
-      qb.andWhere('company.isShow = :isShow', { isShow: dto.isShow });
-    }
-
     if (typeof dto.isWaiting === 'boolean') {
       qb.andWhere('company.isWaiting = :w', { w: dto.isWaiting });
     }
@@ -508,9 +525,8 @@ export class CompaniesService {
       throw new NotFoundException('Company not found');
     }
 
-    // Approve company: set isWaiting = false and isShow = true
+    // Approve company: set isWaiting = false
     company.isWaiting = false;
-    company.isShow = true;
     const updatedCompany = await this.companiesRepository.save(company);
     return new CompanyResponseDto(updatedCompany);
   }
@@ -559,22 +575,23 @@ export class CompaniesService {
     return new CompanyResponseDto(updatedCompany);
   }
 
-  async setShow(
-    companyId: number,
-    isShow: boolean,
-  ): Promise<CompanyResponseDto> {
-    const company = await this.companiesRepository.findOne({
-      where: { id: companyId },
-      relations: ['companyImages'],
+  async createCompanyForRegistration(
+    taxCode: string,
+    email: string,
+  ): Promise<Company> {
+    // Tạo company đơn giản khi đăng ký làm nhà tuyển dụng
+    // Sử dụng tên công ty mặc định từ email
+    const companyName = email.split('@')[0] + ' Company';
+
+    const company = this.companiesRepository.create({
+      name: companyName,
+      mst: taxCode.trim(),
+      logo: 'https://via.placeholder.com/150', // Logo mặc định
+      address: '',
+      organizationType: 1, // Mặc định là loại hình đầu tiên
+      isWaiting: true, // Cần admin duyệt
     });
 
-    if (!company) {
-      throw new NotFoundException('Company not found');
-    }
-
-    company.isShow = isShow;
-    const updatedCompany = await this.companiesRepository.save(company);
-
-    return new CompanyResponseDto(updatedCompany);
+    return await this.companiesRepository.save(company);
   }
 }

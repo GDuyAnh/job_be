@@ -23,9 +23,6 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Company MST' })
   mst: string | null;
 
-  @ApiProperty({ description: 'Whether the company is shown' })
-  isShow: boolean;
-
   @ApiProperty({ description: 'Facebook link', nullable: true })
   facebookLink: string | null;
 
@@ -92,7 +89,6 @@ export class CompanyDetailDto {
     this.logo = company.logo;
     this.organizationType = company.organizationType;
     this.mst = company.mst;
-    this.isShow = company.isShow;
 
     this.facebookLink = company.facebookLink ?? null;
     this.twitterLink = company.twitterLink ?? null;

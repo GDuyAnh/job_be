@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   Patch,
   BadRequestException,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
@@ -32,9 +33,7 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.USER, RoleStatus.ADMIN, RoleStatus.COMPANY)
-  @ApiBearerAuth()
+  // Không yêu cầu auth vì đây là flow đăng ký - user chưa có token
   @ApiResponse({
     status: 201,
     description: 'Company created successfully',
@@ -110,7 +109,7 @@ export class CompaniesController {
   @Get(':id')
   @ApiResponse({
     status: 200,
-    description: 'Company detail information',
+    description: 'Company detail information (public)',
     type: CompanyDetailDto,
   })
   @ApiResponse({ status: 404, description: 'Company not found' })
@@ -118,6 +117,22 @@ export class CompaniesController {
     @Param('id', ParseIntPipe) companyId: number,
   ): Promise<CompanyDetailDto> {
     return this.companiesService.getCompanyDetail(companyId);
+  }
+
+  @Get(':id/detail')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company detail for owner/admin (protected)',
+    type: CompanyDetailDto,
+  })
+  @ApiResponse({ status: 404, description: 'Company not found' })
+  async getCompanyDetailProtected(
+    @Param('id', ParseIntPipe) companyId: number,
+    @Request() req,
+  ): Promise<CompanyDetailDto> {
+    return this.companiesService.getCompanyDetail(companyId, req.user);
   }
 
   @Put(':id')
@@ -129,12 +144,14 @@ export class CompaniesController {
     description: 'Company updated successfully',
     type: CompanyDetailDto,
   })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Company not found' })
   async updateCompany(
     @Param('id', ParseIntPipe) companyId: number,
     @Body() updateCompanyDto: CreateCompanyDto,
+    @Request() req,
   ) {
-    return this.companiesService.update(companyId, updateCompanyDto);
+    return this.companiesService.update(companyId, updateCompanyDto, req.user);
   }
 
   @Delete(':id')
@@ -187,27 +204,4 @@ export class CompaniesController {
     return this.companiesService.setFeatured(companyId, false);
   }
 
-  @Patch(':id/show')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
-  @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    description: 'Company shown successfully',
-  })
-  async showCompany(@Param('id', ParseIntPipe) companyId: number) {
-    return this.companiesService.setShow(companyId, true);
-  }
-
-  @Patch(':id/hide')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
-  @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    description: 'Company hidden successfully',
-  })
-  async hideCompany(@Param('id', ParseIntPipe) companyId: number) {
-    return this.companiesService.setShow(companyId, false);
-  }
 }

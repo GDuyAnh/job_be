@@ -55,15 +55,6 @@ export class CreateCompanyDto {
   organizationType: number;
 
   @ApiProperty({
-    description: 'Whether the company is shown',
-    example: false,
-    required: false,
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'isShow must be a boolean' })
-  isShow?: boolean;
-
-  @ApiProperty({
     description: 'Company approval status - true if waiting for admin approval',
     example: true,
     required: false,
@@ -223,8 +214,13 @@ export class CreateCompanyDto {
     ],
   })
   @IsOptional()
-  @IsArray({ message: 'Company images must be an array' })
   @ValidateNested({ each: true })
   @Type(() => CreateCompanyImageDto)
+  @Transform(({ value }) => {
+    // Handle undefined, null, or non-array values
+    if (value === undefined || value === null) return []
+    if (!Array.isArray(value)) return []
+    return value
+  })
   companyImages?: CreateCompanyImageDto[];
 }

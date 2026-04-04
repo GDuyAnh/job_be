@@ -30,9 +30,4 @@ export class SearchCompanyDto {
   @Type(() => Number)
   location?: number;
 
-  @ApiPropertyOptional({ description: 'Only get shown company' })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  isShow?: boolean;
-}
+  }

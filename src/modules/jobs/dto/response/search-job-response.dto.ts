@@ -108,9 +108,6 @@ export class JobSearchResponseDto {
   @ApiProperty({ description: 'Salary type ID', example: 1, required: false })
   salaryType?: number;
 
-  @ApiProperty({ description: 'Whether the job is featured', example: true })
-  isFeatured: boolean;
-
   @ApiProperty({
     description: 'Benefit IDs',
     type: [Number],
@@ -174,7 +171,6 @@ export class JobSearchResponseDto {
     this.salaryMin = job.salaryMin ?? null;
     this.salaryMax = job.salaryMax ?? null;
     this.salaryType = job.salaryType ?? null;
-    this.isFeatured = job.isFeatured ?? false;
     this.benefits = job.benefits || null;
     this.address = job.address || '';
     this.postType = job.postType ?? 'Basic';

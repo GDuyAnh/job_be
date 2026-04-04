@@ -1,8 +1,11 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { RoleStatus } from '@/enum/role';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from './job.entity';
@@ -40,9 +43,23 @@ export class JobsService {
   /** Job chỉ hiển thị khi status = APPROVED */
   private static readonly JOB_VISIBLE_CONDITION = "job.status = 'APPROVED'";
 
-  async create(data: CreateJobDto): Promise<JobResponseDto> {
+  async create(data: CreateJobDto, user?: any): Promise<JobResponseDto> {
     await this.validateJobData(data, false);
     await this.ensureCompanyExists(data.companyId);
+
+    // Authorization check for job creation
+    // ADMIN can create job for any company
+    // COMPANY can only create job for their own company (must be host)
+    const isAdmin = user?.role === RoleStatus.ADMIN;
+    const isHostCompany =
+      user?.role === RoleStatus.COMPANY &&
+      user?.companyId === data.companyId;
+
+    if (!isAdmin && !isHostCompany) {
+      throw new UnauthorizedException(
+        'Bạn không có quyền tạo tin tuyển dụng cho công ty này',
+      );
+    }
 
     const status = (data.status?.trim() || 'ADMIN_REVIEW').toUpperCase();
     const validStatuses = ['ADMIN_REVIEW', 'PENDING', 'APPROVED', 'REJECTED'];
@@ -55,8 +72,22 @@ export class JobsService {
     return this.buildJobResponse(savedJob.id);
   }
 
-  async update(id: number, data: CreateJobDto): Promise<JobResponseDto> {
+  async update(id: number, data: CreateJobDto, user?: any): Promise<JobResponseDto> {
     const job = await this.findJobOrThrow(id);
+
+    // Authorization check for job update
+    // ADMIN can update any job
+    // COMPANY can only update job of their own company (must be host)
+    const isAdmin = user?.role === RoleStatus.ADMIN;
+    const isHostCompany =
+      user?.role === RoleStatus.COMPANY &&
+      user?.companyId === job.companyId;
+
+    if (!isAdmin && !isHostCompany) {
+      throw new UnauthorizedException(
+        'Bạn không có quyền chỉnh sửa tin tuyển dụng này',
+      );
+    }
 
     if (data.companyId !== undefined) {
       await this.ensureCompanyExists(data.companyId);
@@ -92,7 +123,6 @@ export class JobsService {
       .leftJoinAndSelect('job.company', 'company')
       .where(JobsService.JOB_VISIBLE_CONDITION)
       .andWhere('company.isWaiting = :companyWaiting', { companyWaiting: false })
-      .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getMany();
     return jobs.map((job) => new JobResponseDto(job));
   }
@@ -101,8 +131,7 @@ export class JobsService {
     const qb = this.jobsRepository
       .createQueryBuilder('job')
       .leftJoinAndSelect('job.company', 'company')
-      .where('company.isWaiting = :companyWaiting', { companyWaiting: false })
-      .andWhere('company.isShow = :companyShow', { companyShow: true });
+      .where('company.isWaiting = :companyWaiting', { companyWaiting: false });
 
     // keyword: title/description (case-insensitive)
     if (dto.keyword?.trim()) {
@@ -164,11 +193,6 @@ export class JobsService {
       });
     }
 
-    // isFeatured
-    if (dto.isFeatured !== undefined && dto.isFeatured !== null) {
-      qb.andWhere('job.isFeatured = :f', { f: dto.isFeatured });
-    }
-
     // companyId
     if (dto.companyId !== undefined && dto.companyId !== null) {
       qb.andWhere('job.companyId = :cid', { cid: dto.companyId });
@@ -197,7 +221,7 @@ export class JobsService {
     if (!job || job.status !== 'APPROVED') {
       throw new NotFoundException('Job not found');
     }
-    if (job.company && (job.company.isWaiting || !job.company.isShow)) {
+    if (job.company && job.company.isWaiting) {
       throw new NotFoundException('Job not found');
     }
     return new JobDetailDto(job);
@@ -228,7 +252,6 @@ export class JobsService {
       .leftJoin('job.company', 'company')
       .where(JobsService.JOB_VISIBLE_CONDITION)
       .andWhere('company.isWaiting = :companyWaiting', { companyWaiting: false })
-      .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getMany();
 
     // Count jobs per category
@@ -273,7 +296,6 @@ export class JobsService {
       .leftJoin('job.company', 'company')
       .where(JobsService.JOB_VISIBLE_CONDITION)
       .andWhere('company.isWaiting = :companyWaiting', { companyWaiting: false })
-      .andWhere('company.isShow = :companyShow', { companyShow: true })
       .getMany();
 
     // Count jobs per individual location from comma-separated strings
@@ -324,7 +346,24 @@ export class JobsService {
     await this.jobsRepository.delete(id);
   }
 
-  async listForAdmin(dto: SearchJobAdminDto): Promise<JobSearchResponseDto[]> {
+  async listForAdmin(
+    dto: SearchJobAdminDto,
+    user?: any,
+  ): Promise<JobSearchResponseDto[]> {
+    // Authorization check for COMPANY role
+    if (user?.role === RoleStatus.COMPANY) {
+      // Only host company can access
+      if (!user?.isHostCompany) {
+        throw new UnauthorizedException(
+          'Bạn không có quyền truy cập danh sách tin tuyển dụng',
+        );
+      }
+      // Host can only see jobs of their own company
+      if (user?.companyId) {
+        dto.companyId = user.companyId;
+      }
+    }
+
     const qb = this.jobsRepository
       .createQueryBuilder('job')
       .leftJoinAndSelect('job.company', 'company');
@@ -378,11 +417,6 @@ export class JobsService {
       });
     }
 
-    // isFeatured
-    if (dto.isFeatured !== undefined && dto.isFeatured !== null) {
-      qb.andWhere('job.isFeatured = :f', { f: dto.isFeatured });
-    }
-
     // companyId
     if (dto.companyId !== undefined && dto.companyId !== null) {
       qb.andWhere('job.companyId = :cid', { cid: dto.companyId });
@@ -422,7 +456,7 @@ export class JobsService {
     });
   }
 
-  async approve(id: number): Promise<JobResponseDto> {
+  async approve(id: number, user: any): Promise<JobResponseDto> {
     const job = await this.jobsRepository.findOne({ where: { id } });
     if (!job) {
       throw new NotFoundException('Job not found');
@@ -430,6 +464,15 @@ export class JobsService {
     if (job.status === 'APPROVED') {
       throw new BadRequestException('Job has already been approved');
     }
+
+    // Authorization check: only admin or host company of this job can approve
+    const isAdmin = user.role === RoleStatus.ADMIN;
+    const isHostOfCompany = user.isHostCompany === true && user.companyId === job.companyId;
+
+    if (!isAdmin && !isHostOfCompany) {
+      throw new ForbiddenException('Bạn không có quyền duyệt tin đăng này');
+    }
+
     job.status = 'APPROVED';
     const updated = await this.jobsRepository.save(job);
     return this.buildJobResponse(updated.id);

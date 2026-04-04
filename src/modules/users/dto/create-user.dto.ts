@@ -5,7 +5,10 @@ import {
   MinLength,
   IsNotEmpty,
   IsOptional,
+  IsNumber,
+  IsEnum,
 } from 'class-validator';
+import { RoleStatus } from '@/enum/role';
 
 export class CreateUserDto {
   @ApiProperty({ description: 'email', example: 'user@example.com' })
@@ -36,4 +39,32 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   phoneNumber?: string;
+
+  @ApiProperty({
+    description: 'role - 1: User, 3: Company',
+    required: false,
+    example: 1,
+    enum: [1, 3],
+  })
+  @IsNumber()
+  @IsOptional()
+  role?: number;
+
+  @ApiProperty({
+    description: 'taxCode - Mã số thuế (bắt buộc khi đăng ký làm nhà tuyển dụng)',
+    required: false,
+    example: '0123456789',
+  })
+  @IsString()
+  @IsOptional()
+  taxCode?: string;
+
+  @ApiProperty({
+    description: 'companyId - ID của công ty (FE đã tạo company trước)',
+    required: false,
+    example: 1,
+  })
+  @IsNumber()
+  @IsOptional()
+  companyId?: number;
 }
