@@ -51,6 +51,9 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Company logo', required: false })
   companyLogo?: string;
 
+  @ApiProperty({ description: 'Company banner image', required: false })
+  companyBannerImage?: string;
+
   @ApiProperty({ description: 'Created date' })
   createdAt: Date;
 
@@ -62,9 +65,6 @@ export class JobResponseDto {
     example: 'APPROVED',
   })
   status: string;
-
-  @ApiProperty({ description: 'Whether the job is featured' })
-  isFeatured: boolean;
 
   @ApiProperty({ description: 'Image logo' })
   imageLogo: string;
@@ -141,10 +141,10 @@ export class JobResponseDto {
     this.userId = job.userId;
     this.companyName = job.company?.name || '';
     this.companyLogo = job.company?.logo || '';
+    this.companyBannerImage = job.company?.bannerImage || '';
     this.createdAt = job.createdAt;
     this.updatedAt = job.updatedAt;
     this.status = job.status ?? 'ADMIN_REVIEW';
-    this.isFeatured = job.isFeatured;
     this.imageLogo = job.imageLogo;
     this.bannerLogo = job.bannerLogo;
     this.postedDate = job.postedDate;

@@ -30,12 +30,6 @@ export class SearchCompanyAdminDto {
   @Type(() => Number)
   location?: number;
 
-  @ApiPropertyOptional({ description: 'Only get shown company' })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  isShow?: boolean;
-
   @ApiPropertyOptional({
     description: 'Filter by approval status ( ADMIN Only )',
   })

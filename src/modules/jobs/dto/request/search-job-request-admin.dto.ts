@@ -47,12 +47,6 @@ export class SearchJobAdminDto {
   )
   experienceLevel?: number[];
 
-  @ApiPropertyOptional({ description: 'Only get featured jobs' })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  isFeatured?: boolean;
-
   @ApiPropertyOptional({
     description: 'Filter by job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
   })

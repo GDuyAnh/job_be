@@ -90,10 +90,6 @@ export class Job {
   @Column({ type: 'varchar', length: 20, nullable: true, default: 'ADMIN_REVIEW' })
   status: string;
 
-  @ApiProperty({ description: 'Whether the job is featured', default: false })
-  @Column({ type: 'boolean', default: false })
-  isFeatured: boolean;
-
   @ApiProperty({ description: 'Image logo (default if not provided)' })
   @Column({ nullable: true })
   imageLogo: string;

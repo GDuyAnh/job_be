@@ -28,9 +28,6 @@ export class CompanyResponseDto {
   })
   organizationType: number | null;
 
-  @ApiProperty({ description: 'Whether the company is shown' })
-  isShow: boolean;
-
   @ApiProperty({
     description: 'Company approval status - true if waiting for admin approval',
   })
@@ -121,7 +118,6 @@ export class CompanyResponseDto {
     this.mst = company.mst;
     this.logo = company.logo;
     this.organizationType = company.organizationType;
-    this.isShow = company.isShow;
     this.isWaiting = company.isWaiting;
     this.isFeatured = company.isFeatured;
     this.facebookLink = company.facebookLink;

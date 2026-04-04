@@ -140,15 +140,6 @@ export class CreateJobDto {
   detailDescription?: string;
 
   @ApiProperty({
-    description: 'Whether the job is featured',
-    required: false,
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'Is featured must be a boolean' })
-  isFeatured?: boolean;
-
-  @ApiProperty({
     description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
     example: 'ADMIN_REVIEW',
     required: false,

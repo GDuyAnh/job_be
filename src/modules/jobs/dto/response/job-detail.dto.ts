@@ -116,9 +116,6 @@ export class JobDetailDto {
   @IsUrl()
   linkedInLink: string | null;
 
-  @ApiProperty({ description: 'Whether the job is featured' })
-  isFeatured: boolean;
-
   @ApiProperty({
     description: 'Image logo (default if not provided)',
     nullable: true,
@@ -229,7 +226,6 @@ export class JobDetailDto {
     this.instagramLink = job.company?.instagramLink || null;
     this.twitterLink = job.company?.twitterLink || null;
     this.linkedInLink = job.company?.linkedInLink || null;
-    this.isFeatured = job.isFeatured;
     this.imageLogo = job.imageLogo;
     this.bannerLogo = job.bannerLogo;
     this.createdAt = job.createdAt;

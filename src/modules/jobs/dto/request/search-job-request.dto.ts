@@ -53,12 +53,6 @@ export class SearchJobDto {
   )
   experienceLevel?: number[];
 
-  @ApiPropertyOptional({ description: 'Only get featured jobs' })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  isFeatured?: boolean;
-
   @ApiPropertyOptional({ description: 'CompanyId (number ID)' })
   @IsOptional()
   @Transform(({ value }) => (value !== undefined ? Number(value) : value))

@@ -38,8 +38,9 @@ export class JobsController {
   @Roles(RoleStatus.COMPANY, RoleStatus.ADMIN, RoleStatus.USER)
   @ApiBearerAuth()
   @ApiResponse({ status: 201, description: 'Job created' })
-  async create(@Body() createJobDto: CreateJobDto) {
-    return this.jobsService.create(createJobDto);
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async create(@Body() createJobDto: CreateJobDto, @Request() req) {
+    return this.jobsService.create(createJobDto, req.user);
   }
 
   @Put(':id')
@@ -47,8 +48,13 @@ export class JobsController {
   @Roles(RoleStatus.COMPANY, RoleStatus.ADMIN)
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Job updated' })
-  async update(@Param('id') id: number, @Body() updateJobDto: CreateJobDto) {
-    return this.jobsService.update(id, updateJobDto);
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async update(
+    @Param('id') id: number,
+    @Body() updateJobDto: CreateJobDto,
+    @Request() req,
+  ) {
+    return this.jobsService.update(id, updateJobDto, req.user);
   }
 
   @Get()
@@ -59,14 +65,15 @@ export class JobsController {
 
   @Get('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
+  @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     description: 'Admin list jobs (filter by status)',
   })
-  async adminList(@Query() query: SearchJobAdminDto) {
-    return this.jobsService.listForAdmin(query);
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async adminList(@Query() query: SearchJobAdminDto, @Request() req) {
+    return this.jobsService.listForAdmin(query, req.user);
   }
 
   @Get('search')
@@ -197,13 +204,16 @@ export class JobsController {
 
   @Patch(':id/approve')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleStatus.ADMIN)
+  @Roles(RoleStatus.ADMIN, RoleStatus.COMPANY)
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     description: 'Job approved successfully',
   })
-  async approveJobs(@Param('id', ParseIntPipe) jobId: number) {
-    return this.jobsService.approve(jobId);
+  async approveJobs(
+    @Param('id', ParseIntPipe) jobId: number,
+    @Request() req,
+  ) {
+    return this.jobsService.approve(jobId, req.user);
   }
 }
