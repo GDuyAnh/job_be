@@ -315,6 +315,8 @@ export class UsersService {
     const where: any = {};
     if (companyId != null) {
       where.companyId = companyId;
+      // Khi filter theo companyId (Admin Company Management), chỉ lấy employer role COMPANY
+      where.role = RoleStatus.COMPANY;
     }
     const users = await this.usersRepository.find({
       where: Object.keys(where).length ? where : undefined,
