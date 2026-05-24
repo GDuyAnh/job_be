@@ -115,14 +115,14 @@ export class PublicJobsController {
       const deadline = new Date(jobDto.deadline);
       if (deadline < posted) {
         throw new BadRequestException(
-          'Deadline cannot be earlier than posted date',
+          'Hạn nộp không được sớm hơn ngày đăng',
         );
       }
       const oneMonthLater = new Date(posted);
       oneMonthLater.setMonth(posted.getMonth() + 1);
       if (deadline > oneMonthLater) {
         throw new BadRequestException(
-          'Deadline cannot be more than 1 month after posted date',
+          'Hạn nộp không được quá 1 tháng sau ngày đăng',
         );
       }
       // Salary validations
@@ -134,7 +134,7 @@ export class PublicJobsController {
           jobDto.salaryMax < 0 ||
           jobDto.salaryMin > jobDto.salaryMax
         ) {
-          throw new BadRequestException('Invalid salary range');
+          throw new BadRequestException('Khoảng lương không hợp lệ');
         }
       } else {
         // Negotiable

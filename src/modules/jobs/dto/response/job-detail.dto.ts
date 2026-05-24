@@ -169,7 +169,7 @@ export class JobDetailDto {
     nullable: true,
   })
   @IsOptional()
-  @IsString({ message: 'Benefits must be a string' })
+  @IsString({ message: 'Phúc lợi phải là chuỗi' })
   benefits: string;
 
   @ApiProperty({ description: 'Detailed description (HTML)', nullable: true })
@@ -202,6 +202,13 @@ export class JobDetailDto {
   @IsOptional()
   @IsString()
   jobAddress: string | null;
+
+  @ApiProperty({
+    description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
+    example: 'APPROVED',
+  })
+  @IsString()
+  status: string;
 
   constructor(job: any) {
     this.id = job.id;
@@ -241,5 +248,6 @@ export class JobDetailDto {
     this.phoneNumber = job.phoneNumber || null;
     // Address is already set from company at line 199
     this.jobAddress = job.address || null;
+    this.status = job.status ?? 'APPROVED';
   }
 }

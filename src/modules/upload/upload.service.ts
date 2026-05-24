@@ -4,6 +4,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -66,7 +67,7 @@ export class UploadService {
       return fileUrl;
     } catch (error) {
       console.error('Error uploading file to R2:', error);
-      throw new BadRequestException('Failed to upload file');
+      throw new BadRequestException('Tải tệp lên thất bại');
     }
   }
 
@@ -74,25 +75,81 @@ export class UploadService {
    * Xóa file từ Cloudflare R2
    * @param fileUrl URL của file cần xóa
    */
+  private extractKeyFromFileUrl(fileUrl: string): string {
+    if (!fileUrl) {
+      throw new BadRequestException('URL ảnh không hợp lệ');
+    }
+
+    const sanitized = fileUrl.split('?')[0].split('#')[0];
+    const publicBase = this.publicUrl.replace(/\/$/, '');
+
+    if (sanitized.startsWith(`${publicBase}/`)) {
+      return sanitized.slice(publicBase.length + 1);
+    }
+
+    let pathname: string;
+    try {
+      pathname = new URL(sanitized).pathname;
+    } catch {
+      throw new BadRequestException('URL ảnh không hợp lệ');
+    }
+
+    const key = pathname.startsWith('/') ? pathname.substring(1) : pathname;
+
+    if (!key || key.includes('..')) {
+      throw new BadRequestException('Đường dẫn ảnh không hợp lệ');
+    }
+
+    return key;
+  }
+
+  private assertAllowedImageKey(key: string): void {
+    const allowedPrefixes = ['logo/', 'banner/', 'company-images/', 'avatar/'];
+
+    if (!allowedPrefixes.some((prefix) => key.startsWith(prefix))) {
+      throw new BadRequestException('Đường dẫn ảnh không được phép');
+    }
+  }
+
+  /**
+   * Đọc ảnh từ R2 và trả về data URL (phục vụ crop ảnh trên FE, tránh CORS)
+   */
+  async getImageDataUrl(fileUrl: string): Promise<{ dataUrl: string }> {
+    const key = this.extractKeyFromFileUrl(fileUrl);
+    this.assertAllowedImageKey(key);
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      });
+      const response = await this.s3Client.send(command);
+      const body = await response.Body?.transformToByteArray();
+
+      if (!body?.length) {
+        throw new BadRequestException('Không tìm thấy ảnh');
+      }
+
+      const mimeType = response.ContentType || 'image/png';
+      const base64 = Buffer.from(body).toString('base64');
+
+      return {
+        dataUrl: `data:${mimeType};base64,${base64}`,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Error reading image from R2:', error);
+      throw new BadRequestException('Không tải được ảnh');
+    }
+  }
+
   async deleteFile(fileUrl: string): Promise<void> {
     try {
       if (!fileUrl) return;
 
-      // Extract key từ URL
-      // Support cả R2 public URL và custom domain
-      let key = '';
-
-      if (fileUrl.startsWith(this.publicUrl)) {
-        // Standard R2 public URL
-        key = fileUrl.replace(this.publicUrl + '/', '');
-      } else {
-        // Custom domain hoặc URL khác
-        // Extract path after domain (e.g., cv/123-abc.pdf)
-        const url = new URL(fileUrl);
-        key = url.pathname.startsWith('/')
-          ? url.pathname.substring(1)
-          : url.pathname;
-      }
+      const key = this.extractKeyFromFileUrl(fileUrl);
 
       if (!key) {
         console.warn('Cannot extract key from URL:', fileUrl);
@@ -153,7 +210,7 @@ export class UploadService {
       };
     } catch (error) {
       console.error('Error generating presigned URL:', error);
-      throw new BadRequestException('Failed to generate upload URL');
+      throw new BadRequestException('Tạo URL tải lên thất bại');
     }
   }
 
@@ -171,12 +228,12 @@ export class UploadService {
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        'Invalid file type. Only PDF, DOC, and DOCX are allowed.',
+        'Định dạng tệp không hợp lệ. Chỉ cho phép PDF, DOC và DOCX.',
       );
     }
 
     if (file.size > maxSize) {
-      throw new BadRequestException('File size must be less than 5MB.');
+      throw new BadRequestException('Kích thước tệp phải nhỏ hơn 5MB.');
     }
   }
 
@@ -190,12 +247,12 @@ export class UploadService {
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        'Invalid file type. Only JPEG and PNG are allowed.',
+        'Định dạng tệp không hợp lệ. Chỉ cho phép JPEG và PNG.',
       );
     }
 
     if (file.size > maxSize) {
-      throw new BadRequestException('File size must be less than 3MB.');
+      throw new BadRequestException('Kích thước tệp phải nhỏ hơn 3MB.');
     }
   }
 

@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Get,
+  Query,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
@@ -67,7 +69,7 @@ export class UploadController {
     @Body('oldUrl') oldUrl?: string,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Chưa tải lên tệp');
     }
 
     // Validate file
@@ -84,7 +86,7 @@ export class UploadController {
     return {
       url,
       originalName: file.originalname,
-      message: 'CV uploaded successfully',
+      message: 'Tải CV lên thành công',
     };
   }
 
@@ -133,7 +135,7 @@ export class UploadController {
     @Body('oldUrl') oldUrl?: string,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Chưa tải lên tệp');
     }
 
     // Validate file
@@ -150,7 +152,7 @@ export class UploadController {
     return {
       url,
       originalName: file.originalname,
-      message: 'Cover letter uploaded successfully',
+      message: 'Tải thư xin việc lên thành công',
     };
   }
 
@@ -199,7 +201,7 @@ export class UploadController {
     @Body('oldUrl') oldUrl?: string,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Chưa tải lên tệp');
     }
 
     // Validate file
@@ -216,7 +218,7 @@ export class UploadController {
     return {
       url,
       originalName: file.originalname,
-      message: 'Avatar uploaded successfully',
+      message: 'Tải ảnh đại diện lên thành công',
     };
   }
 
@@ -271,7 +273,7 @@ export class UploadController {
 
     // Validate folder
     if (!['cv', 'cover-letter', 'avatar'].includes(folder)) {
-      throw new BadRequestException('Invalid folder');
+      throw new BadRequestException('Thư mục không hợp lệ');
     }
 
     return await this.uploadService.getPresignedUploadUrl(
@@ -330,7 +332,7 @@ export class UploadController {
     @Body('oldUrl') oldUrl?: string,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Chưa tải lên tệp');
     }
 
     // Validate folder
@@ -353,6 +355,30 @@ export class UploadController {
       originalName: file.originalname,
       message: 'Image uploaded successfully',
     };
+  }
+
+  @Get('image-data')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Load image from R2 as data URL (for client-side crop)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Image data URL',
+    schema: {
+      type: 'object',
+      properties: {
+        dataUrl: { type: 'string' },
+      },
+    },
+  })
+  async getImageData(@Query('url') url: string) {
+    if (!url?.trim()) {
+      throw new BadRequestException('URL là bắt buộc');
+    }
+
+    return await this.uploadService.getImageDataUrl(url.trim());
   }
 
   @Post('delete-batch')
@@ -385,7 +411,7 @@ export class UploadController {
   })
   async deleteBatch(@Body('urls') urls: string[]) {
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
-      throw new BadRequestException('URLs array is required and cannot be empty');
+      throw new BadRequestException('Danh sách URL là bắt buộc và không được rỗng');
     }
 
     // Delete files asynchronously (don't await)
@@ -394,7 +420,7 @@ export class UploadController {
     });
 
     return {
-      message: 'Batch delete initiated',
+      message: 'Đã bắt đầu xóa hàng loạt',
       count: urls.length,
     };
   }

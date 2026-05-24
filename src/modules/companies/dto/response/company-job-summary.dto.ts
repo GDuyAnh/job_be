@@ -23,11 +23,28 @@ export class CompanyJobSummaryDto {
   @ApiProperty({ description: 'Posted date' })
   postedDate: Date;
 
+  @ApiProperty({ description: 'Salary Min', nullable: true })
+  salaryMin: number;
+
+  @ApiProperty({ description: 'Salary Max', nullable: true })
+  salaryMax: number;
+
+  @ApiProperty({ description: 'Salary Type', nullable: true })
+  salaryType: number;
+
+  @ApiProperty({ description: 'Experience level required', nullable: true })
+  experienceLevel: number | null;
+
   constructor(job: Job) {
     this.id = job.id;
     this.title = job.title;
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
     this.imageLogo = job.imageLogo;
+    this.postedDate = job.postedDate;
+    this.salaryMin = job.salaryMin;
+    this.salaryMax = job.salaryMax;
+    this.salaryType = job.salaryType;
+    this.experienceLevel = job.experienceLevel ?? null;
   }
 }

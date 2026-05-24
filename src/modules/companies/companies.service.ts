@@ -21,6 +21,7 @@ import { SearchCompanyAdminDto } from './dto/request/search-company-admin.dto';
 import { JobApplication } from '../jobs/job-application.entity';
 import { JobApplicationResponseDto } from './dto/response/job-application-response.dto';
 import { User } from '../users/user.entity';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class CompaniesService {
@@ -39,24 +40,25 @@ export class CompaniesService {
 
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private uploadService: UploadService,
   ) {}
 
   async create(data: CreateCompanyDto): Promise<CompanyResponseDto> {
     if (!data.name || data.name.trim() === '') {
       throw new BadRequestException(
-        'Company name is required and cannot be empty',
+        'Tên công ty là bắt buộc và không được để trống',
       );
     }
 
     if (!data.logo || data.logo.trim() === '') {
       throw new BadRequestException(
-        'Company logo is required and cannot be empty',
+        'Logo công ty là bắt buộc và không được để trống',
       );
     }
 
-    // MST is required when creating a new company
+    // Mã số thuế không được để trống when creating a new company
     if (!data.mst || data.mst.trim() === '') {
-      throw new BadRequestException('MST is required and cannot be empty');
+      throw new BadRequestException('Mã số thuế là bắt buộc và không được để trống');
     }
 
     const existingCompany = await this.companiesRepository.findOne({
@@ -64,7 +66,7 @@ export class CompaniesService {
     });
 
     if (existingCompany) {
-      throw new ConflictException('Company name already exists');
+      throw new ConflictException('Tên công ty đã tồn tại');
     }
 
     const { companyImages, mst, ...companyData } = data;
@@ -208,7 +210,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Không tìm thấy công ty');
     }
 
     // Check if user can view this company
@@ -222,7 +224,7 @@ export class CompaniesService {
     if (!isAdmin && !isOwner) {
       // Only show approved companies to public
       if (company.isWaiting) {
-        throw new NotFoundException('Company not found');
+        throw new NotFoundException('Không tìm thấy công ty');
       }
     }
 
@@ -252,7 +254,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Không tìm thấy công ty');
     }
 
     const jobs = await this.jobsRepository.find({
@@ -273,7 +275,7 @@ export class CompaniesService {
     console.log('Company', company);
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Không tìm thấy công ty');
     }
 
     // 2. Find all approved jobs related to company
@@ -304,7 +306,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException(`Company with ID ${companyId} not found`);
+      throw new NotFoundException(`Company with ID ${companyId} Không tìm thấy`);
     }
 
     // Authorization check
@@ -324,7 +326,7 @@ export class CompaniesService {
 
     if (!data.name || data.name.trim() === '') {
       throw new BadRequestException(
-        'Company name is required and cannot be empty',
+        'Tên công ty là bắt buộc và không được để trống',
       );
     }
 
@@ -333,7 +335,7 @@ export class CompaniesService {
     });
 
     if (existingCompany && existingCompany.id !== companyId) {
-      throw new ConflictException('Company name already exists');
+      throw new ConflictException('Tên công ty đã tồn tại');
     }
 
     // Destructure and handle MST separately to prevent data loss
@@ -347,19 +349,28 @@ export class CompaniesService {
     }
     // If MST is not provided or is empty, keep existing MST (don't modify company.mst)
 
-    // Only update logo if provided
+    // Only update logo if provided (và xóa logo cũ trên R2 nếu thay đổi)
+    const prevLogo = company.logo || null;
     if (logo !== undefined) {
       if (!logo || logo.trim() === '') {
-        throw new BadRequestException('Logo is required and cannot be empty');
+        throw new BadRequestException('Logo là bắt buộc và không được để trống');
       }
       company.logo = logo.trim();
     }
+
+    // Xóa banner cũ nếu thay đổi
+    const prevBanner = company.bannerImage || null;
+    const nextBanner =
+      (companyData as any).bannerImage !== undefined ? ((companyData as any).bannerImage ?? null) : undefined;
 
     // Update other fields (MST is already handled above, so it won't be overwritten)
     Object.assign(company, companyData);
     const updated = await this.companiesRepository.save(company);
 
     if (companyImages !== undefined) {
+      const prevImages = (company.companyImages || []).map((i) => i.url).filter(Boolean);
+      const nextImages = (companyImages || []).map((i: any) => i?.url).filter(Boolean);
+
       if (company.companyImages && company.companyImages.length > 0) {
         await this.companyImageRepository.remove(company.companyImages);
       }
@@ -375,6 +386,20 @@ export class CompaniesService {
         await this.companyImageRepository.save(newImages);
         updated.companyImages = newImages;
       }
+
+      // Best-effort: xóa các ảnh cũ không còn dùng trên R2
+      const removed = prevImages.filter((u) => !nextImages.includes(u));
+      if (removed.length > 0) {
+        this.uploadService.deleteBatch(removed).catch((e) => console.error('R2 delete (companyImages) failed:', e));
+      }
+    }
+
+    // Best-effort: xóa logo/banner cũ nếu đã đổi
+    if (prevLogo && updated.logo && prevLogo !== updated.logo) {
+      this.uploadService.deleteFile(prevLogo).catch((e) => console.error('R2 delete (company logo) failed:', e));
+    }
+    if (prevBanner && (updated.bannerImage || null) !== prevBanner) {
+      this.uploadService.deleteFile(prevBanner).catch((e) => console.error('R2 delete (company banner) failed:', e));
     }
 
     return new CompanyResponseDto(updated);
@@ -387,7 +412,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException(`Company with ID ${id} not found`);
+      throw new NotFoundException(`Company with ID ${id} Không tìm thấy`);
     }
 
     const jobCount = await this.jobsRepository.count({
@@ -395,7 +420,18 @@ export class CompaniesService {
     });
 
     if (jobCount > 0) {
-      throw new BadRequestException('Can not delete company with active jobs');
+      throw new BadRequestException('Không thể xóa công ty đang có tin tuyển dụng hoạt động');
+    }
+
+    // Best-effort: xóa file trên R2 trước khi xóa record
+    const urlsToDelete: string[] = [];
+    if (company.logo) urlsToDelete.push(company.logo);
+    if (company.bannerImage) urlsToDelete.push(company.bannerImage);
+    if (company.companyImages?.length) {
+      urlsToDelete.push(...company.companyImages.map((i) => i.url).filter(Boolean));
+    }
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (company) failed:', e));
     }
 
     // Xóa company images trước (cascade sẽ tự động xóa nhưng để chắc chắn)
@@ -522,7 +558,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Không tìm thấy công ty');
     }
 
     // Approve company: set isWaiting = false
@@ -551,6 +587,7 @@ export class CompaniesService {
         phone: app.user.phoneNumber || '',
         email: app.user.email,
         cvUrl: app.resumePath || undefined,
+        coverLetterText: app.coverLetterText || undefined,
         applicationDate: app.appliedAt,
       });
     });
@@ -566,7 +603,7 @@ export class CompaniesService {
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Không tìm thấy công ty');
     }
 
     company.isFeatured = isFeatured;

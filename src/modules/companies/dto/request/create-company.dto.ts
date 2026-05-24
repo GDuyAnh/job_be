@@ -21,21 +21,21 @@ export class CreateCompanyImageDto {
     description: 'Image URL',
     example: 'https://example.com/company-image.jpg',
   })
-  @IsUrl({}, { message: 'Image URL must be a valid URL' })
-  @IsNotEmpty({ message: 'Image URL is required' })
+  @IsUrl({}, { message: 'URL ảnh phải hợp lệ' })
+  @IsNotEmpty({ message: 'URL ảnh không được để trống' })
   url: string;
 }
 
 export class CreateCompanyDto {
   @ApiProperty({ description: 'Company name', example: 'ABC University' })
-  @IsString({ message: 'Company name must be a string' })
-  @IsNotEmpty({ message: 'Company name is required' })
+  @IsString({ message: 'Tên công ty phải là chuỗi' })
+  @IsNotEmpty({ message: 'Tên công ty không được để trống' })
   @Transform(({ value }) => value?.trim())
   name: string;
 
   @ApiProperty({ description: 'MST type ', example: '123456789' })
-  @IsString({ message: 'MST must be a string' })
-  @IsNotEmpty({ message: 'MST is required' })
+  @IsString({ message: 'Mã số thuế phải là chuỗi' })
+  @IsNotEmpty({ message: 'Mã số thuế không được để trống' })
   @Transform(({ value }) => value?.trim())
   mst: string;
 
@@ -44,13 +44,13 @@ export class CreateCompanyDto {
     example: 'https://example.com/logo.png',
     required: true,
   })
-  @IsString({ message: 'Logo must be a string' })
-  @IsNotEmpty({ message: 'Logo is required' })
+  @IsString({ message: 'Logo phải là chuỗi' })
+  @IsNotEmpty({ message: 'Logo không được để trống' })
   logo: string;
 
   @ApiProperty({ description: 'Organization type ID', example: 1 })
-  @IsNumber({}, { message: 'Organization type must be a number' })
-  @IsNotEmpty({ message: 'Organization type is required' })
+  @IsNumber({}, { message: 'Loại hình tổ chức phải là số' })
+  @IsNotEmpty({ message: 'Loại hình tổ chức không được để trống' })
   @Type(() => Number)
   organizationType: number;
 
@@ -61,7 +61,7 @@ export class CreateCompanyDto {
     default: true,
   })
   @IsOptional()
-  @IsBoolean({ message: 'isWaiting must be a boolean' })
+  @IsBoolean({ message: 'Trạng thái chờ duyệt phải là đúng/sai' })
   isWaiting?: boolean;
 
   @ApiProperty({
@@ -70,7 +70,7 @@ export class CreateCompanyDto {
     required: false,
   })
   @IsOptional()
-  @IsBoolean({ message: 'isFeatured must be a boolean' })
+  @IsBoolean({ message: 'Trạng thái nổi bật phải là đúng/sai' })
   isFeatured?: boolean;
 
   @ApiProperty({
@@ -79,7 +79,7 @@ export class CreateCompanyDto {
   })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsUrl({}, { message: 'Facebook link must be a valid URL' })
+  @IsUrl({}, { message: 'Liên kết Facebook phải là URL hợp lệ' })
   facebookLink?: string;
 
   @ApiProperty({
@@ -88,7 +88,7 @@ export class CreateCompanyDto {
   })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsUrl({}, { message: 'Twitter link must be a valid URL' })
+  @IsUrl({}, { message: 'Liên kết Twitter phải là URL hợp lệ' })
   twitterLink?: string;
 
   @ApiProperty({
@@ -97,7 +97,7 @@ export class CreateCompanyDto {
   })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsUrl({}, { message: 'LinkedIn link must be a valid URL' })
+  @IsUrl({}, { message: 'Liên kết LinkedIn phải là URL hợp lệ' })
   linkedInLink?: string;
 
   @ApiProperty({
@@ -106,7 +106,7 @@ export class CreateCompanyDto {
   })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsUrl({}, { message: 'Instagram link must be a valid URL' })
+  @IsUrl({}, { message: 'Liên kết Instagram phải là URL hợp lệ' })
   instagramLink?: string;
 
   @ApiProperty({
@@ -115,7 +115,7 @@ export class CreateCompanyDto {
   })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsUrl({}, { message: 'Video URL must be a valid URL' })
+  @IsUrl({}, { message: 'URL video phải hợp lệ' })
   videoUrl?: string;
 
   @ApiProperty({
@@ -125,7 +125,7 @@ export class CreateCompanyDto {
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
   @Matches(/^https?:\/\/.+/i, {
-    message: 'Website must be a valid URL starting with http:// or https://',
+    message: 'Website phải là URL hợp lệ bắt đầu bằng http:// hoặc https://',
   })
   website?: string;
 
@@ -133,8 +133,8 @@ export class CreateCompanyDto {
     description: 'Detailed address',
     example: '123 Nguyen Van Linh, District 7',
   })
-  @IsString({ message: 'Address must be a string' })
-  @IsNotEmpty({ message: 'Address is required' })
+  @IsString({ message: 'Địa chỉ phải là chuỗi' })
+  @IsNotEmpty({ message: 'Địa chỉ không được để trống' })
   address: string;
 
   @ApiProperty({
@@ -143,7 +143,7 @@ export class CreateCompanyDto {
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'Tax address must be a string' })
+  @IsString({ message: 'Địa chỉ thuế phải là chuỗi' })
   taxAddress?: string;
 
   @ApiProperty({
@@ -152,22 +152,22 @@ export class CreateCompanyDto {
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'Email must be a string' })
+  @IsString({ message: 'Email phải là chuỗi' })
   email?: string;
 
   @ApiProperty({ description: 'Company size', example: 100, required: false })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsInt({ message: 'Company size must be an integer' })
-  @Min(0, { message: 'Company size must be non-negative' })
+  @IsInt({ message: 'Quy mô công ty phải là số nguyên' })
+  @Min(0, { message: 'Quy mô công ty không được âm' })
   companySize?: number;
 
   @ApiProperty({ description: 'Founded year', example: 2010, required: false })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsInt({ message: 'Founded year must be an integer' })
-  @Min(1800, { message: 'Founded year must be at least 1800' })
-  @Max(2100, { message: 'Founded year must be at most 2100' })
+  @IsInt({ message: 'Năm thành lập phải là số nguyên' })
+  @Min(1800, { message: 'Năm thành lập phải từ 1800 trở lên' })
+  @Max(2100, { message: 'Năm thành lập không được vượt quá 2100' })
   foundedYear?: number;
 
   @ApiProperty({
@@ -176,7 +176,7 @@ export class CreateCompanyDto {
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'Description must be a string' })
+  @IsString({ message: 'Mô tả phải là chuỗi' })
   description?: string;
 
   @ApiProperty({
@@ -184,7 +184,7 @@ export class CreateCompanyDto {
     example: 'We value innovation and teamwork',
   })
   @IsOptional()
-  @IsString({ message: 'Insight must be a string' })
+  @IsString({ message: 'Thông tin nổi bật phải là chuỗi' })
   insight?: string;
 
   @ApiProperty({
@@ -192,7 +192,7 @@ export class CreateCompanyDto {
     example: 'Founded in 2010, we have ...',
   })
   @IsOptional()
-  @IsString({ message: 'Overview must be a string' })
+  @IsString({ message: 'Tổng quan phải là chuỗi' })
   overview?: string;
 
   @ApiProperty({
@@ -202,7 +202,7 @@ export class CreateCompanyDto {
   })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')
-  @IsUrl({}, { message: 'Banner image must be a valid URL' })
+  @IsUrl({}, { message: 'Ảnh banner phải là URL hợp lệ' })
   bannerImage?: string;
 
   @ApiPropertyOptional({

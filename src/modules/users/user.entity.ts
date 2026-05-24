@@ -53,6 +53,14 @@ export class User {
   @Column({ nullable: true })
   expertise: string;
 
+  @ApiProperty({
+    description: 'Gender (male/female/both)',
+    required: false,
+    example: 'both',
+  })
+  @Column({ nullable: true })
+  gender: string;
+
   @ApiProperty({ description: 'CV URL', required: false })
   @Column({ nullable: true })
   cvUrl: string;

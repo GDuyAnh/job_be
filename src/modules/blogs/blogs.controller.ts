@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
@@ -34,6 +35,22 @@ export class BlogsController {
     return this.blogsService.findAll();
   }
 
+  @Get(':id/related')
+  @ApiParam({ name: 'id', description: 'Blog ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of related blogs (published)',
+    type: [BlogDtoResponse],
+  })
+  async related(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('limit') limit?: string,
+  ): Promise<BlogDtoResponse[]> {
+    const n = Number(limit)
+    const take = Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 12) : 3
+    return this.blogsService.findRelated(id, take)
+  }
+
   @Get('admin/all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleStatus.ADMIN)
@@ -56,7 +73,7 @@ export class BlogsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Blog not found',
+    description: 'Blog Không tìm thấy',
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -93,7 +110,7 @@ export class BlogsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Blog not found',
+    description: 'Blog Không tìm thấy',
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -113,7 +130,7 @@ export class BlogsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Blog not found',
+    description: 'Blog Không tìm thấy',
   })
   async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.blogsService.delete(id);

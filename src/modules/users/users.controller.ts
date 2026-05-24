@@ -52,7 +52,7 @@ export class UsersController {
     type: User,
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
   async updateProfile(
     @Request() req,
     @Body() updateUserDto: UpdateUserDto,
@@ -79,21 +79,21 @@ export class UsersController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     await this.usersService.changePassword(req.user.id, changePasswordDto);
-    return { message: 'Password changed successfully' };
+    return { message: 'Đổi mật khẩu thành công' };
   }
 
   @Delete('account')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Account deleted successfully' })
-  @ApiResponse({ status: 401, description: 'Password is incorrect' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Mật khẩu không chính xác' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
   async deleteAccount(
     @Request() req,
     @Body() deleteAccountDto: DeleteAccountDto,
   ) {
     await this.usersService.deleteAccount(req.user.id, deleteAccountDto);
-    return { message: 'Account deleted successfully' };
+    return { message: 'Đã xóa tài khoản thành công' };
   }
 
   @Get('admin/all')
@@ -154,9 +154,9 @@ export class UsersController {
   @Roles(RoleStatus.ADMIN)
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
   async deleteUserByAdmin(@Param('id', ParseIntPipe) userId: number) {
     await this.usersService.deleteUserByAdmin(userId);
-    return { message: `User with ID ${userId} deleted successfully` };
+    return { message: `Đã xóa người dùng ID ${userId} thành công` };
   }
 }

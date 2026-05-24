@@ -6,6 +6,7 @@ import { Job } from '../jobs/job.entity';
 import { JobApplication } from '../jobs/job-application.entity';
 import { User } from '../users/user.entity';
 import { AdminApplicationResponseDto } from './dto/admin-application-response.dto';
+import { UploadService } from '../upload/upload.service';
 
 export interface AdminStatsDto {
   companiesCount: number;
@@ -25,6 +26,7 @@ export class AdminService {
     private readonly jobApplicationRepository: Repository<JobApplication>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private uploadService: UploadService,
   ) {}
 
   async getStats(): Promise<AdminStatsDto> {
@@ -107,8 +109,12 @@ export class AdminService {
       where: { id: applicationId },
     });
     if (!application) {
-      throw new NotFoundException('Application not found');
+      throw new NotFoundException('Không tìm thấy hồ sơ ứng tuyển');
     }
+    const urlsToDelete = [application.resumePath, application.coverLetterUrl].filter(Boolean) as string[];
     await this.jobApplicationRepository.update(applicationId, { delF: true });
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (admin application delete) failed:', e));
+    }
   }
 }

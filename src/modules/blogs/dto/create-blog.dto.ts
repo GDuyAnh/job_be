@@ -49,13 +49,13 @@ export class CreateBlogDto {
   @ApiProperty({ description: 'Meta description (max 1000 chars)' })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(1000, { message: 'Meta description must be 1000 characters or less' })
+  @MaxLength(1000, { message: 'Mô tả meta không được vượt quá 1000 ký tự' })
   metaDescription: string;
 
   @ApiProperty({ description: 'Schema JSON (optional, max 1000 chars)', required: false })
   @IsString()
   @IsOptional()
-  @MaxLength(1000, { message: 'Schema must be 1000 characters or less' })
+  @MaxLength(1000, { message: 'Schema không được vượt quá 1000 ký tự' })
   schema?: string;
 
   @ApiProperty({ description: 'Blog category' })

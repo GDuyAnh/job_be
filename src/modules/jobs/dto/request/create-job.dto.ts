@@ -15,9 +15,9 @@ import { Transform } from 'class-transformer';
 
 export class CreateJobDto {
   @ApiProperty({ description: 'Job title', example: 'Backend Developer' })
-  @IsString({ message: 'Title must be a string' })
-  @IsNotEmpty({ message: 'Title is required' })
-  @MaxLength(255, { message: 'Title must not exceed 255 characters' })
+  @IsString({ message: 'Tiêu đề phải là chuỗi' })
+  @IsNotEmpty({ message: 'Tiêu đề không được để trống' })
+  @MaxLength(255, { message: 'Tiêu đề không được vượt quá 255 ký tự' })
   @Transform(({ value }) => value?.trim())
   title: string;
 
@@ -25,118 +25,118 @@ export class CreateJobDto {
     description: 'Job description',
     example: 'Develop backend services...',
   })
-  @IsString({ message: 'Description must be a string' })
-  @IsNotEmpty({ message: 'Description is required' })
+  @IsString({ message: 'Mô tả phải là chuỗi' })
+  @IsNotEmpty({ message: 'Mô tả không được để trống' })
   description: string;
 
   @ApiProperty({
     description: 'Job categories as comma-separated string (e.g., "1,2,3")',
   })
-  @IsString({ message: 'Category must be a string' })
+  @IsString({ message: 'Danh mục phải là chuỗi' })
   category: string;
 
   @ApiProperty({
     description: 'Job locations as comma-separated string (e.g., "1,2,3")',
   })
-  @IsString({ message: 'Location must be a string' })
+  @IsString({ message: 'Địa điểm phải là chuỗi' })
   location: string;
 
   @ApiProperty({ description: 'Type of employment', example: 1 })
   @Transform(({ value }) => Number(value))
-  @IsNumber({}, { message: 'Type of employment must be a number' })
-  @IsNotEmpty({ message: 'Type of employment is required' })
+  @IsNumber({}, { message: 'Hình thức làm việc phải là số' })
+  @IsNotEmpty({ message: 'Hình thức làm việc không được để trống' })
   typeOfEmployment: number;
 
   @ApiProperty({ description: 'Experience level required', example: 1 })
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Experience level must be a number' })
-  @IsNotEmpty({ message: 'Experience level is required' })
+  @IsNumber({}, { message: 'Kinh nghiệm phải là số' })
+  @IsNotEmpty({ message: 'Kinh nghiệm không được để trống' })
   experienceLevel: number;
 
   @ApiProperty({ description: 'Required qualification', example: 1 })
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Required qualification must be a number' })
-  @IsNotEmpty({ message: 'Required qualification is required' })
+  @IsNumber({}, { message: 'Bằng cấp yêu cầu phải là số' })
+  @IsNotEmpty({ message: 'Bằng cấp yêu cầu không được để trống' })
   requiredQualification: number;
 
   @ApiProperty({
     description:
       'Gender requirements as comma-separated string (e.g., "1,2,3")',
   })
-  @IsString({ message: 'Gender must be a string' })
-  @IsNotEmpty({ message: 'Gender is required' })
+  @IsString({ message: 'Giới tính phải là chuỗi' })
+  @IsNotEmpty({ message: 'Giới tính không được để trống' })
   gender: string;
 
   @ApiProperty({ description: 'Grade requirement', example: 1 })
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Grade must be a number' })
-  @IsNotEmpty({ message: 'Grade is required' })
+  @IsNumber({}, { message: 'Cấp bậc phải là số' })
+  @IsNotEmpty({ message: 'Cấp bậc không được để trống' })
   grade: number;
 
   @ApiProperty({ description: 'Company ID', required: true })
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Company ID must be a number' })
+  @IsNumber({}, { message: 'Mã công ty phải là số' })
   companyId?: number;
 
   @ApiProperty({ description: 'User ID', required: true })
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'User ID must be a number' })
+  @IsNumber({}, { message: 'Mã người dùng phải là số' })
   userId?: number;
 
   @ApiProperty({ description: 'Image logo', required: false })
   @IsOptional()
-  @IsString({ message: 'Image logo must be a string' })
+  @IsString({ message: 'Logo ảnh phải là chuỗi' })
   imageLogo?: string;
 
   @ApiProperty({ description: 'Banner logo', required: false })
   @IsOptional()
-  @IsString({ message: 'Banner logo must be a string' })
+  @IsString({ message: 'Banner phải là chuỗi' })
   bannerLogo?: string;
 
   @ApiProperty({ description: 'Posted date', required: false })
   @IsOptional()
-  @IsDateString({}, { message: 'Posted date must be a valid date' })
+  @IsDateString({}, { message: 'Ngày đăng phải là ngày hợp lệ' })
   postedDate?: Date;
 
   @ApiProperty({ description: 'Application deadline' })
-  @IsDateString({}, { message: 'Deadline must be a valid date' })
-  @IsNotEmpty({ message: 'Deadline is required' })
+  @IsDateString({}, { message: 'Hạn nộp phải là ngày hợp lệ' })
+  @IsNotEmpty({ message: 'Hạn nộp không được để trống' })
   deadline: Date;
 
   @ApiProperty({ description: 'Salary Min', required: false })
   @ValidateIf((o) => o.salaryType !== 5)
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Salary Min must be a number' })
-  @Min(0, { message: 'Salary Min must be non-negative' })
+  @IsNumber({}, { message: 'Lương tối thiểu phải là số' })
+  @Min(0, { message: 'Lương tối thiểu không được âm' })
   salaryMin?: number;
 
   @ApiProperty({ description: 'Salary Max', required: false })
   @ValidateIf((o) => o.salaryType !== 5)
   @IsOptional()
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Salary Max must be a number' })
-  @Min(0, { message: 'Salary Max must be non-negative' })
+  @IsNumber({}, { message: 'Lương tối đa phải là số' })
+  @Min(0, { message: 'Lương tối đa không được âm' })
   salaryMax?: number;
 
   @ApiProperty({ description: 'Salary Type' })
   @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Salary Type must be a number' })
-  @IsNotEmpty({ message: 'Salary Type is required' })
+  @IsNumber({}, { message: 'Loại lương phải là số' })
+  @IsNotEmpty({ message: 'Loại lương không được để trống' })
   salaryType: number;
 
   @ApiProperty({
     description: 'Benefits as comma-separated string (e.g., "1,2,3")',
   })
-  @IsString({ message: 'Benefits must be a string' })
-  @IsNotEmpty({ message: 'Benefits is required' })
+  @IsString({ message: 'Phúc lợi phải là chuỗi' })
+  @IsNotEmpty({ message: 'Phúc lợi không được để trống' })
   benefits: string;
 
   @ApiProperty({ description: 'Detailed description', required: false })
   @IsOptional()
-  @IsString({ message: 'Detail description must be a string' })
+  @IsString({ message: 'Mô tả chi tiết phải là chuỗi' })
   detailDescription?: string;
 
   @ApiProperty({
@@ -145,7 +145,7 @@ export class CreateJobDto {
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'Status must be a string' })
+  @IsString({ message: 'Trạng thái phải là chuỗi' })
   @Transform(({ value }) => value?.trim() || undefined)
   status?: string;
 
@@ -155,7 +155,7 @@ export class CreateJobDto {
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'Post type must be a string' })
+  @IsString({ message: 'Loại tin phải là chuỗi' })
   @Transform(({ value }) => value?.trim())
   postType?: string;
 
@@ -165,7 +165,7 @@ export class CreateJobDto {
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'Note must be a string' })
+  @IsString({ message: 'Ghi chú phải là chuỗi' })
   @Transform(({ value }) => value?.trim())
   note?: string;
 
@@ -175,7 +175,7 @@ export class CreateJobDto {
   })
   @IsOptional()
   @ValidateIf((_, v) => v != null && String(v).trim() !== '')
-  @IsEmail({}, { message: 'Email must be a valid email address' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
   @Transform(({ value }) => value?.trim() || undefined)
   email?: string;
 
@@ -184,7 +184,7 @@ export class CreateJobDto {
     required: false,
   })
   @IsOptional()
-  @IsString({ message: 'Phone number must be a string' })
+  @IsString({ message: 'Số điện thoại phải là chuỗi' })
   @Transform(({ value }) => value?.trim() || undefined)
   phoneNumber?: string;
 
@@ -192,8 +192,8 @@ export class CreateJobDto {
     description: 'Job address',
     example: '123 Main Street, District 1, Ho Chi Minh City',
   })
-  @IsString({ message: 'Address must be a string' })
-  @IsNotEmpty({ message: 'Address is required' })
+  @IsString({ message: 'Địa chỉ phải là chuỗi' })
+  @IsNotEmpty({ message: 'Địa chỉ không được để trống' })
   @Transform(({ value }) => value?.trim())
   address: string;
 }

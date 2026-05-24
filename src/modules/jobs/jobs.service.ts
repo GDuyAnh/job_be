@@ -27,6 +27,7 @@ import { SearchJobAdminDto } from './dto/request/search-job-request-admin.dto';
 import { JobApplication } from './job-application.entity';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { UsersService } from '../users/users.service';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class JobsService {
@@ -38,6 +39,7 @@ export class JobsService {
     @InjectRepository(JobApplication)
     private jobApplicationRepository: Repository<JobApplication>,
     private usersService: UsersService,
+    private uploadService: UploadService,
   ) {}
 
   /** Job chỉ hiển thị khi status = APPROVED */
@@ -74,6 +76,17 @@ export class JobsService {
 
   async update(id: number, data: CreateJobDto, user?: any): Promise<JobResponseDto> {
     const job = await this.findJobOrThrow(id);
+    const urlsToDelete: string[] = [];
+
+    const maybeQueueReplace = (prev: string | null | undefined, next: any) => {
+      if (!prev) return;
+      if (next === undefined) return;
+      const nextVal = next == null || String(next).trim() === '' ? null : String(next).trim();
+      if (nextVal !== prev) urlsToDelete.push(prev);
+    };
+
+    maybeQueueReplace(job.imageLogo, (data as any).imageLogo);
+    maybeQueueReplace(job.bannerLogo, (data as any).bannerLogo);
 
     // Authorization check for job update
     // ADMIN can update any job
@@ -114,6 +127,10 @@ export class JobsService {
     // note không đổi khi update — chỉ dùng để biết admin add hay user add lúc tạo
     (data as any).note = job.note ?? 'user';
     await this.jobsRepository.save({ ...job, ...data });
+
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (job update) failed:', e));
+    }
     return this.buildJobResponse(id);
   }
 
@@ -193,6 +210,13 @@ export class JobsService {
       });
     }
 
+    // grade (array)
+    if (dto.grade?.length > 0) {
+      qb.andWhere('job.grade IN (:...grade)', {
+        grade: dto.grade,
+      });
+    }
+
     // companyId
     if (dto.companyId !== undefined && dto.companyId !== null) {
       qb.andWhere('job.companyId = :cid', { cid: dto.companyId });
@@ -219,10 +243,10 @@ export class JobsService {
       relations: ['company'],
     });
     if (!job || job.status !== 'APPROVED') {
-      throw new NotFoundException('Job not found');
+      throw new NotFoundException('Không tìm thấy tin tuyển dụng');
     }
     if (job.company && job.company.isWaiting) {
-      throw new NotFoundException('Job not found');
+      throw new NotFoundException('Không tìm thấy tin tuyển dụng');
     }
     return new JobDetailDto(job);
   }
@@ -340,9 +364,13 @@ export class JobsService {
   async delete(id: number): Promise<void> {
     const job = await this.jobsRepository.findOne({ where: { id } });
     if (!job) {
-      throw new NotFoundException(`Job with ID ${id} not found`);
+      throw new NotFoundException(`Job with ID ${id} Không tìm thấy`);
     }
 
+    const urlsToDelete = [job.imageLogo, job.bannerLogo].filter(Boolean) as string[];
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (job delete) failed:', e));
+    }
     await this.jobsRepository.delete(id);
   }
 
@@ -459,10 +487,10 @@ export class JobsService {
   async approve(id: number, user: any): Promise<JobResponseDto> {
     const job = await this.jobsRepository.findOne({ where: { id } });
     if (!job) {
-      throw new NotFoundException('Job not found');
+      throw new NotFoundException('Không tìm thấy tin tuyển dụng');
     }
     if (job.status === 'APPROVED') {
-      throw new BadRequestException('Job has already been approved');
+      throw new BadRequestException('Tin tuyển dụng đã được duyệt');
     }
 
     // Authorization check: only admin or host company of this job can approve
@@ -485,7 +513,7 @@ export class JobsService {
       where: { id: companyId },
     });
     if (!exists) {
-      throw new NotFoundException(`Company with ID ${companyId} not found`);
+      throw new NotFoundException(`Company with ID ${companyId} Không tìm thấy`);
     }
   }
 
@@ -495,7 +523,7 @@ export class JobsService {
       relations: ['company'],
     });
     if (!job) {
-      throw new NotFoundException(`Job with ID ${id} not found`);
+      throw new NotFoundException(`Job with ID ${id} Không tìm thấy`);
     }
     return job;
   }
@@ -507,7 +535,7 @@ export class JobsService {
     });
 
     if (!jobWithRelations) {
-      throw new NotFoundException(`Job with ID ${jobId} not found`);
+      throw new NotFoundException(`Job with ID ${jobId} Không tìm thấy`);
     }
 
     return new JobResponseDto(jobWithRelations);
@@ -531,22 +559,22 @@ export class JobsService {
       // If salaryType is not "Negotiable", salaryMin and salaryMax are required
       if (jobData.salaryMin === undefined || jobData.salaryMin === null) {
         throw new BadRequestException(
-          'Salary Min is required when salary type is not negotiable',
+          'Lương tối thiểu là bắt buộc khi loại lương không phải thỏa thuận',
         );
       }
       if (jobData.salaryMax === undefined || jobData.salaryMax === null) {
         throw new BadRequestException(
-          'Salary Max is required when salary type is not negotiable',
+          'Lương tối đa là bắt buộc khi loại lương không phải thỏa thuận',
         );
       }
 
       if (jobData.salaryMin < 0 || jobData.salaryMax < 0) {
-        throw new BadRequestException('Salary must be non-negative');
+        throw new BadRequestException('Mức lương không được âm');
       }
 
       if (jobData.salaryMin > jobData.salaryMax) {
         throw new BadRequestException(
-          'Minimum salary cannot be greater than maximum salary',
+          'Lương tối thiểu không được lớn hơn lương tối đa',
         );
       }
     } else {
@@ -560,10 +588,10 @@ export class JobsService {
       }
       // But if provided, they must be valid
       if (jobData.salaryMin < 0) {
-        throw new BadRequestException('Salary Min must be non-negative');
+        throw new BadRequestException('Lương tối thiểu không được âm');
       }
       if (jobData.salaryMax < 0) {
-        throw new BadRequestException('Salary Max must be non-negative');
+        throw new BadRequestException('Lương tối đa không được âm');
       }
       if (
         jobData.salaryMin > 0 &&
@@ -571,14 +599,14 @@ export class JobsService {
         jobData.salaryMin > jobData.salaryMax
       ) {
         throw new BadRequestException(
-          'Minimum salary cannot be greater than maximum salary',
+          'Lương tối thiểu không được lớn hơn lương tối đa',
         );
       }
     }
 
     if (jobData.deadline < jobData.postedDate) {
       throw new BadRequestException(
-        'Deadline cannot be earlier than posted date',
+        'Hạn nộp không được sớm hơn ngày đăng',
       );
     }
 
@@ -587,7 +615,7 @@ export class JobsService {
 
     if (jobData.deadline > oneMonthLater) {
       throw new BadRequestException(
-        'Deadline cannot be more than 1 month after posted date',
+        'Hạn nộp không được quá 1 tháng sau ngày đăng',
       );
     }
   }
@@ -632,10 +660,14 @@ export class JobsService {
     });
 
     if (!application) {
-      throw new NotFoundException('Application not found or unauthorized');
+      throw new NotFoundException('Không tìm thấy hồ sơ hoặc không có quyền');
     }
 
+    const urlsToDelete = [application.resumePath, application.coverLetterUrl].filter(Boolean) as string[];
     await this.jobApplicationRepository.update(applicationId, { delF: true });
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (application soft delete) failed:', e));
+    }
   }
 
   async createApplication(
@@ -644,7 +676,7 @@ export class JobsService {
     // Check if job exists
     const job = await this.jobsRepository.findOne({ where: { id: dto.jobId } });
     if (!job) {
-      throw new NotFoundException(`Job with ID ${dto.jobId} not found`);
+      throw new NotFoundException(`Job with ID ${dto.jobId} Không tìm thấy`);
     }
 
     let userId = dto.userId;
@@ -687,7 +719,7 @@ export class JobsService {
     });
 
     if (existingApplication) {
-      throw new BadRequestException('You have already applied for this job');
+      throw new BadRequestException('Bạn đã ứng tuyển tin này rồi');
     }
 
     // Create new application

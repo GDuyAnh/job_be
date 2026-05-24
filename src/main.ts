@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { validationExceptionFactory } from '@common/filters/validation-exception.factory';
+import { TranslateExceptionFilter } from '@common/filters/translate-exception.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from '@common/interceptors/logging.interceptor';
@@ -28,11 +30,15 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 
   // Global interceptor for logging
   app.useGlobalInterceptors(new LoggingInterceptor());
+
+  // Dịch message lỗi API sang tiếng Việt
+  app.useGlobalFilters(new TranslateExceptionFilter());
 
   // Swagger configuration
   const config = new DocumentBuilder()
