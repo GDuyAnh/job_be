@@ -15,6 +15,7 @@ import { DeleteAccountDto } from './dto/delete-account.dto';
 import { RoleStatus } from '@/enum/role';
 import { EmailService } from '../email/email.service';
 import { Company } from '../companies/company.entity';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,7 @@ export class UsersService {
     @InjectRepository(Company)
     private companiesRepository: Repository<Company>,
     private emailService: EmailService,
+    private uploadService: UploadService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -102,7 +104,7 @@ export class UsersService {
   async findById(id: number): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Không tìm thấy người dùng');
     }
     // Remove password for security
     delete user.password;
@@ -112,7 +114,7 @@ export class UsersService {
   async findByIdWithPassword(id: number): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Không tìm thấy người dùng');
     }
     // Keep password for JWT generation
     return user;
@@ -135,7 +137,7 @@ export class UsersService {
     // Validate passwords match
     if (newPassword !== confirmPassword) {
       throw new BadRequestException(
-        'New password and confirm password do not match',
+        'Mật khẩu mới và xác nhận mật khẩu không khớp',
       );
     }
 
@@ -148,7 +150,7 @@ export class UsersService {
       user.password,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException('Mật khẩu hiện tại không chính xác');
     }
 
     // Hash new password
@@ -165,7 +167,7 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Không tìm thấy người dùng');
     }
 
     // Check if username is already taken by another user
@@ -174,8 +176,22 @@ export class UsersService {
     });
 
     if (existingUser && existingUser.id !== userId) {
-      throw new ConflictException('Username already exists');
+      throw new ConflictException('Tên đăng nhập đã tồn tại');
     }
+
+    // Chuẩn bị danh sách file cũ cần xóa trên R2 (best-effort)
+    const urlsToDelete: string[] = [];
+
+    const maybeQueueReplace = (prev: string | null | undefined, next: any) => {
+      if (!prev) return;
+      if (next === undefined) return; // không update field này
+      const nextVal = next == null || String(next).trim() === '' ? null : String(next).trim();
+      if (nextVal !== prev) urlsToDelete.push(prev);
+    };
+
+    maybeQueueReplace(user.cvUrl, updateUserDto.cvUrl);
+    maybeQueueReplace(user.coverLetterUrl, updateUserDto.coverLetterUrl);
+    maybeQueueReplace(user.avatarUrl, updateUserDto.avatarUrl);
 
     // Prepare update data
     const updateData: any = {
@@ -185,6 +201,10 @@ export class UsersService {
       location: updateUserDto.location?.trim() || null,
       expertise: updateUserDto.expertise?.trim() || null,
     };
+
+    if (updateUserDto.gender !== undefined) {
+      updateData.gender = updateUserDto.gender?.trim() || null;
+    }
 
     // Add optional fields if provided
     if (updateUserDto.cvUrl !== undefined) {
@@ -214,6 +234,11 @@ export class UsersService {
     // Update user
     await this.usersRepository.update(userId, updateData);
 
+    // Best-effort: xóa file cũ trên R2 sau khi update DB
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (user profile) failed:', e));
+    }
+
     // Return updated user
     const updatedUser = await this.findById(userId);
     return updatedUser;
@@ -231,7 +256,7 @@ export class UsersService {
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Password is incorrect');
+      throw new UnauthorizedException('Mật khẩu không chính xác');
     }
 
     // Soft delete by setting isActive to false
@@ -287,11 +312,14 @@ export class UsersService {
     } else {
       // User exists - Update CV and Cover Letter from application
       const updateData: any = {};
+      const urlsToDelete: string[] = [];
 
       if (cvUrl !== undefined && cvUrl !== null) {
+        if (user.cvUrl && user.cvUrl !== cvUrl) urlsToDelete.push(user.cvUrl);
         updateData.cvUrl = cvUrl;
       }
       if (coverLetterUrl !== undefined && coverLetterUrl !== null) {
+        if (user.coverLetterUrl && user.coverLetterUrl !== coverLetterUrl) urlsToDelete.push(user.coverLetterUrl);
         updateData.coverLetterUrl = coverLetterUrl;
       }
       if (coverLetterText !== undefined && coverLetterText !== null) {
@@ -303,6 +331,10 @@ export class UsersService {
         await this.usersRepository.update(user.id, updateData);
         // Reload user to get updated data
         user = await this.usersRepository.findOne({ where: { id: user.id } });
+      }
+
+      if (urlsToDelete.length > 0) {
+        this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (user application update) failed:', e));
       }
     }
 
@@ -342,7 +374,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Không tìm thấy người dùng');
     }
 
     user.role = RoleStatus.COMPANY;
@@ -360,7 +392,13 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+
+    // Best-effort: xóa file trên R2 trước khi xóa user
+    const urlsToDelete = [user.cvUrl, user.coverLetterUrl, user.avatarUrl].filter(Boolean) as string[];
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (user delete) failed:', e));
     }
 
     await this.usersRepository.remove(user);
@@ -376,11 +414,11 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Không tìm thấy người dùng');
     }
 
     if (user.companyId !== companyId) {
-      throw new BadRequestException('User does not belong to this company');
+      throw new BadRequestException('Người dùng không thuộc công ty này');
     }
 
     if (isHostCompany) {

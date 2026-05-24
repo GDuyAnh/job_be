@@ -9,12 +9,14 @@ import { JobApplication } from './job-application.entity';
 import { UsersModule } from '../users/users.module';
 import { PublicJobsController } from './public-jobs.controller';
 import { AuthModule } from '../auth/auth.module';
+import { UploadModule } from '../upload/upload.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Job, JobBenefit, Company, JobApplication]),
     UsersModule,
     AuthModule,
+    UploadModule,
   ],
   controllers: [JobsController, PublicJobsController],
   providers: [JobsService],

@@ -144,7 +144,7 @@ export class JobsController {
 
     return {
       success: true,
-      message: 'Application submitted successfully',
+      message: 'Gửi hồ sơ ứng tuyển thành công',
       data: {
         applicationId: result.application.id,
         userId: result.application.userId,
@@ -179,7 +179,7 @@ export class JobsController {
     @Request() req,
   ) {
     await this.jobsService.softDeleteApplication(applicationId, req.user.id);
-    return { message: 'Application deleted successfully' };
+    return { message: 'Đã xóa hồ sơ ứng tuyển' };
   }
 
   @Get(':id')
@@ -199,7 +199,7 @@ export class JobsController {
   @ApiResponse({ status: 200, description: 'Job deleted' })
   async delete(@Param('id') id: number) {
     await this.jobsService.delete(id);
-    return { message: `Job with ${id} deleted successfully` };
+    return { message: `Đã xóa tin tuyển dụng ${id} thành công` };
   }
 
   @Patch(':id/approve')

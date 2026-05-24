@@ -63,7 +63,7 @@ export class AuthService {
     // Find user by email (returns user without password)
     let user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('Không tìm thấy người dùng');
     }
 
     // Get full user data by ID to ensure all fields are present

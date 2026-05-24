@@ -6,6 +6,6 @@ export class GetApplicationsDto {
   @ApiPropertyOptional({ description: 'UserId (number ID)' })
   @IsOptional()
   @Transform(({ value }) => (value !== undefined ? Number(value) : value))
-  @IsNumber({}, { message: 'UserId must be a number' })
+  @IsNumber({}, { message: 'Mã người dùng phải là số' })
   userId?: number;
 }

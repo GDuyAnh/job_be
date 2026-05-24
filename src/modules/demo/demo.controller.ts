@@ -66,7 +66,7 @@ export class DemoController {
 
   @Get(':id')
   @ApiResponse({ status: 200, description: 'success' })
-  @ApiResponse({ status: 404, description: 'not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy' })
   async getById(@Param('id') id: string) {
     // simulate data by id
     const mockData = {
@@ -82,7 +82,7 @@ export class DemoController {
 
     const data = mockData[id];
     if (!data) {
-      throw new BadRequestException('not found');
+      throw new BadRequestException('Không tìm thấy');
     }
 
     return {

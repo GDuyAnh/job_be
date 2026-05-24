@@ -10,13 +10,13 @@ export class SearchJobAdminDto {
   @ApiPropertyOptional({ description: 'Job category (number ID)' })
   @IsOptional()
   @Transform(({ value }) => (value !== undefined ? Number(value) : value))
-  @IsNumber({}, { message: 'Category must be a number' })
+  @IsNumber({}, { message: 'Danh mục phải là số' })
   category?: number;
 
   @ApiPropertyOptional({ description: 'Work location (number ID)' })
   @IsOptional()
   @Transform(({ value }) => (value !== undefined ? Number(value) : value))
-  @IsNumber({}, { message: 'Location must be a number' })
+  @IsNumber({}, { message: 'Địa điểm phải là số' })
   location?: number;
 
   @ApiPropertyOptional({
@@ -29,7 +29,7 @@ export class SearchJobAdminDto {
   )
   @IsNumber(
     {},
-    { each: true, message: 'Each type of employment must be a number' },
+    { each: true, message: 'Mỗi hình thức làm việc phải là số' },
   )
   typeOfEmployment?: number[];
 
@@ -43,7 +43,7 @@ export class SearchJobAdminDto {
   )
   @IsNumber(
     {},
-    { each: true, message: 'Each experience level must be a number' },
+    { each: true, message: 'Mỗi mức kinh nghiệm phải là số' },
   )
   experienceLevel?: number[];
 
@@ -58,6 +58,6 @@ export class SearchJobAdminDto {
   @ApiPropertyOptional({ description: 'CompanyId (number ID)' })
   @IsOptional()
   @Transform(({ value }) => (value !== undefined ? Number(value) : value))
-  @IsNumber({}, { message: 'CompanyId must be a number' })
+  @IsNumber({}, { message: 'Mã công ty phải là số' })
   companyId?: number;
 }

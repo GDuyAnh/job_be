@@ -1,16 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Blog } from './blog.entity';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { BlogDtoResponse } from './dto/blog-response.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class BlogsService {
   constructor(
     @InjectRepository(Blog)
     private blogsRepository: Repository<Blog>,
+    private uploadService: UploadService,
   ) {}
 
   async findAll(): Promise<BlogDtoResponse[]> {
@@ -36,10 +38,34 @@ export class BlogsService {
     });
 
     if (!blog) {
-      throw new NotFoundException(`Blog with ID ${id} not found`);
+      throw new NotFoundException(`Blog with ID ${id} Không tìm thấy`);
     }
 
     return this.mapToBlogDetailDto(blog);
+  }
+
+  async findRelated(id: number, limit = 3): Promise<BlogDtoResponse[]> {
+    const base = await this.blogsRepository.findOne({
+      where: { id, status: 'published' },
+    });
+
+    if (!base) {
+      throw new NotFoundException(`Blog with ID ${id} Không tìm thấy`);
+    }
+
+    const category = (base.category || '').trim();
+
+    const related = await this.blogsRepository.find({
+      where: {
+        status: 'published',
+        ...(category ? { category } : {}),
+        id: Not(id),
+      } as any,
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+
+    return related.map((blog) => this.mapToBlogDetailDto(blog));
   }
 
   async create(createBlogDto: CreateBlogDto): Promise<BlogDtoResponse> {
@@ -62,8 +88,10 @@ export class BlogsService {
     const blog = await this.blogsRepository.findOne({ where: { id } });
 
     if (!blog) {
-      throw new NotFoundException(`Blog with ID ${id} not found`);
+      throw new NotFoundException(`Blog with ID ${id} Không tìm thấy`);
     }
+
+    const prevImage = blog.image || null;
 
     // Only update fields that are provided
     if (updateBlogDto.title !== undefined) blog.title = updateBlogDto.title
@@ -80,6 +108,12 @@ export class BlogsService {
     if (updateBlogDto.displayOnHomepage !== undefined) blog.displayOnHomepage = updateBlogDto.displayOnHomepage
 
     const updatedBlog = await this.blogsRepository.save(blog);
+
+    // Best-effort: xóa ảnh cũ trên R2 nếu đổi ảnh
+    if (prevImage && updatedBlog.image && prevImage !== updatedBlog.image) {
+      this.uploadService.deleteFile(prevImage).catch((e) => console.error('R2 delete (blog image update) failed:', e));
+    }
+
     return this.mapToBlogDetailDto(updatedBlog);
   }
 
@@ -87,10 +121,14 @@ export class BlogsService {
     const blog = await this.blogsRepository.findOne({ where: { id } });
 
     if (!blog) {
-      throw new NotFoundException(`Blog with ID ${id} not found`);
+      throw new NotFoundException(`Blog with ID ${id} Không tìm thấy`);
     }
 
+    const urlsToDelete = [blog.image].filter(Boolean) as string[];
     await this.blogsRepository.remove(blog);
+    if (urlsToDelete.length > 0) {
+      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (blog delete) failed:', e));
+    }
   }
 
   private mapToBlogDetailDto(blog: Blog): BlogDtoResponse {

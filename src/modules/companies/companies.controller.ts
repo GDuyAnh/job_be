@@ -71,7 +71,7 @@ export class CompaniesController {
     description: 'Admin get company detail by id (for edit, any status)',
     type: CompanyDetailDto,
   })
-  @ApiResponse({ status: 404, description: 'Company not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy công ty' })
   async adminGetCompanyDetail(
     @Param('id', ParseIntPipe) companyId: number,
   ): Promise<CompanyDetailDto> {
@@ -91,7 +91,7 @@ export class CompaniesController {
     @Query() query: GetApplicationsDto,
   ): Promise<JobApplicationResponseDto[]> {
     if (!query.userId) {
-      throw new BadRequestException('UserId is required');
+      throw new BadRequestException('Mã người dùng là bắt buộc');
     }
     return this.companiesService.getApplicationsByJobOwner(query.userId);
   }
@@ -112,7 +112,7 @@ export class CompaniesController {
     description: 'Company detail information (public)',
     type: CompanyDetailDto,
   })
-  @ApiResponse({ status: 404, description: 'Company not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy công ty' })
   async getCompanyDetail(
     @Param('id', ParseIntPipe) companyId: number,
   ): Promise<CompanyDetailDto> {
@@ -127,7 +127,7 @@ export class CompaniesController {
     description: 'Company detail for owner/admin (protected)',
     type: CompanyDetailDto,
   })
-  @ApiResponse({ status: 404, description: 'Company not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy công ty' })
   async getCompanyDetailProtected(
     @Param('id', ParseIntPipe) companyId: number,
     @Request() req,
@@ -145,7 +145,7 @@ export class CompaniesController {
     type: CompanyDetailDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Company not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy công ty' })
   async updateCompany(
     @Param('id', ParseIntPipe) companyId: number,
     @Body() updateCompanyDto: CreateCompanyDto,
@@ -162,7 +162,7 @@ export class CompaniesController {
     status: 200,
     description: 'Company deleted successfully',
   })
-  @ApiResponse({ status: 404, description: 'Company not found' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy công ty' })
   async deleteCompany(@Param('id', ParseIntPipe) companyId: number) {
     await this.companiesService.delete(companyId);
     return { message: `Company with ID ${companyId} deleted successfully` };

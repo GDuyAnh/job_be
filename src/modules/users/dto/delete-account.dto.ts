@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class DeleteAccountDto {
   @ApiProperty({ description: 'Current password for confirmation' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Mật khẩu phải là chuỗi' })
+  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
   password: string;
 }

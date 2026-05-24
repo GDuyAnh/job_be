@@ -22,6 +22,9 @@ export class JobApplicationResponseDto {
   @ApiProperty({ description: 'CV file URL', required: false })
   cvUrl?: string;
 
+  @ApiProperty({ description: 'Cover letter text', required: false })
+  coverLetterText?: string;
+
   @ApiProperty({ description: 'Application date' })
   applicationDate: Date;
 

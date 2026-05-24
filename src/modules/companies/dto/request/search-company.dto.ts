@@ -16,7 +16,7 @@ export class SearchCompanyDto {
     required: false,
   })
   @IsOptional()
-  @IsNumber({}, { message: 'Organization type must be a number' })
+  @IsNumber({}, { message: 'Loại hình tổ chức phải là số' })
   @Type(() => Number)
   organizationType?: number;
 
@@ -26,7 +26,7 @@ export class SearchCompanyDto {
     required: false,
   })
   @IsOptional()
-  @IsNumber({}, { message: 'Location type must be a number' })
+  @IsNumber({}, { message: 'Loại địa điểm phải là số' })
   @Type(() => Number)
   location?: number;
 

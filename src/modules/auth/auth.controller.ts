@@ -25,7 +25,7 @@ export class AuthController {
     // Validate user
     const user = await this.authService.validateUser(email, password);
     if (!user) {
-      throw new UnauthorizedException('incorrect login information');
+      throw new UnauthorizedException('Thông tin đăng nhập không chính xác');
     }
 
     // Generate token
