@@ -36,10 +36,10 @@ export class PublicJobDto {
   @IsString()
   title: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Mô tả chi tiết công việc (HTML)' })
   @IsNotEmpty()
   @IsString()
-  description: string;
+  detailDescription: string;
 
   @ApiProperty({ description: 'Comma-separated category ids' })
   @IsNotEmpty()
@@ -106,11 +106,6 @@ export class PublicJobDto {
   @IsNumber()
   @Type(() => Number)
   salaryType: number;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  detailDescription?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

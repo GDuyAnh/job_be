@@ -8,12 +8,6 @@ export class JobSearchResponseDto {
   title: string;
 
   @ApiProperty({
-    description: 'Job description',
-    example: 'Develop backend services...',
-  })
-  description: string;
-
-  @ApiProperty({
     description: 'Job categories as comma-separated string (e.g., "1,2,3")',
     example: '1,2',
   })
@@ -149,7 +143,6 @@ export class JobSearchResponseDto {
   constructor(job: any) {
     this.id = job.id;
     this.title = job.title;
-    this.description = job.description;
     this.category = job.category;
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;

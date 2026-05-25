@@ -68,6 +68,7 @@ export class JobsService {
     const jobStatus = validStatuses.includes(status) ? status : 'ADMIN_REVIEW';
     data.status = jobStatus;
     data.userId = data.userId;
+    data.detailDescription = (data.detailDescription ?? '').trim();
     const savedJob = await this.jobsRepository.save(
       this.jobsRepository.create(data),
     );
@@ -126,6 +127,9 @@ export class JobsService {
     }
     // note không đổi khi update — chỉ dùng để biết admin add hay user add lúc tạo
     (data as any).note = job.note ?? 'user';
+    if (data.detailDescription !== undefined) {
+      data.detailDescription = (data.detailDescription ?? '').trim();
+    }
     await this.jobsRepository.save({ ...job, ...data });
 
     if (urlsToDelete.length > 0) {
@@ -153,7 +157,7 @@ export class JobsService {
     // keyword: title/description (case-insensitive)
     if (dto.keyword?.trim()) {
       qb.andWhere(
-        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.description) LIKE LOWER(:kw))',
+        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.detailDescription) LIKE LOWER(:kw))',
         { kw: `%${dto.keyword.trim()}%` },
       );
     }
@@ -399,7 +403,7 @@ export class JobsService {
     // keyword: title/description (case-insensitive)
     if (dto.keyword?.trim()) {
       qb.andWhere(
-        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.description) LIKE LOWER(:kw))',
+        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.detailDescription) LIKE LOWER(:kw))',
         { kw: `%${dto.keyword.trim()}%` },
       );
     }

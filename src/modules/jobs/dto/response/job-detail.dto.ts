@@ -19,11 +19,6 @@ export class JobDetailDto {
   @IsNotEmpty()
   title: string;
 
-  @ApiProperty({ description: 'Job description' })
-  @IsString()
-  @IsNotEmpty()
-  description: string;
-
   @ApiProperty({
     description: 'Job categories as comma-separated string (e.g., "1,2,3")',
   })
@@ -172,10 +167,10 @@ export class JobDetailDto {
   @IsString({ message: 'Phúc lợi phải là chuỗi' })
   benefits: string;
 
-  @ApiProperty({ description: 'Detailed description (HTML)', nullable: true })
-  @IsOptional()
+  @ApiProperty({ description: 'Mô tả chi tiết công việc (HTML)' })
   @IsString()
-  detailDescription: string | null;
+  @IsNotEmpty()
+  detailDescription: string;
 
   @ApiProperty({
     description: 'Contact email for job application',
@@ -213,7 +208,6 @@ export class JobDetailDto {
   constructor(job: any) {
     this.id = job.id;
     this.title = job.title;
-    this.description = job.description;
     this.category = job.category;
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
@@ -243,7 +237,7 @@ export class JobDetailDto {
     this.salaryMax = job.salaryMax;
     this.salaryType = job.salaryType;
     this.benefits = job.benefits || '';
-    this.detailDescription = job.detailDescription;
+    this.detailDescription = job.detailDescription ?? '';
     this.email = job.email || null;
     this.phoneNumber = job.phoneNumber || null;
     // Address is already set from company at line 199
