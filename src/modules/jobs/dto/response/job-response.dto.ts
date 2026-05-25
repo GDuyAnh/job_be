@@ -7,9 +7,6 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Job title' })
   title: string;
 
-  @ApiProperty({ description: 'Job description' })
-  description: string;
-
   @ApiProperty({
     description: 'Job categories as comma-separated string (e.g., "1,2,3")',
   })
@@ -129,7 +126,6 @@ export class JobResponseDto {
   constructor(job: any) {
     this.id = job.id;
     this.title = job.title;
-    this.description = job.description;
     this.category = job.category;
     this.location = job.location;
     this.typeOfEmployment = job.typeOfEmployment;
@@ -152,7 +148,7 @@ export class JobResponseDto {
     this.salaryMin = job.salaryMin ?? 0;
     this.salaryMax = job.salaryMax ?? 0;
     this.salaryType = job.salaryType ?? 0;
-    this.detailDescription = job.detailDescription;
+    this.detailDescription = job.detailDescription ?? '';
     this.email = job.email;
     this.phoneNumber = job.phoneNumber;
     this.benefits = job.benefits || '';

@@ -148,7 +148,7 @@ export class PublicJobsController {
       const { posted, deadline } = normalizeJobData();
       const entity = this.jobsRepository.create({
         title: jobDto.title,
-        description: jobDto.description,
+        detailDescription: jobDto.detailDescription,
         category: jobDto.category,
         location: jobDto.location,
         typeOfEmployment: jobDto.typeOfEmployment,
@@ -163,7 +163,6 @@ export class PublicJobsController {
         salaryMin: jobDto.salaryMin ?? 0,
         salaryMax: jobDto.salaryMax ?? 0,
         salaryType: jobDto.salaryType,
-        detailDescription: jobDto.detailDescription ?? null,
         email: jobDto.email,
         phoneNumber: jobDto.phoneNumber ?? null,
         address: jobDto.address,

@@ -825,7 +825,7 @@ export class AdminImportService {
     j.addRow([
       'id',
       'title',
-      'description',
+      'detail_description',
       'category',
       'location',
       'type_of_employment',
@@ -849,7 +849,7 @@ export class AdminImportService {
     j.addRow([
       '',
       'Giáo viên Toán (mẫu)',
-      'Mô tả công việc ngắn gọn. Có thể mở rộng sau khi import.',
+      '<p>Mô tả chi tiết công việc (HTML).</p>',
       SELECT_MULTI_LABEL,
       SELECT_MULTI_LABEL,
       SELECT_SINGLE_LABEL,
@@ -1243,7 +1243,7 @@ export class AdminImportService {
    * - Required theo sheet:
    *   - companies: name, mst
    *   - users: email, username, password
-   *   - jobs: title, description, company_id, (user_id hoặc user_email)
+   *   - jobs: title, detail_description, company_id, (user_id hoặc user_email)
    *   - job_applications: job_id, user_id (resume_path/cover_letter_* optional)
    *   - blogs: title, content (hoặc description), url, status (còn lại optional)
    */
@@ -1300,12 +1300,14 @@ export class AdminImportService {
 
         if (name === 'jobs') {
           const title = str(getCell(row, h, 'title'));
-          const description = str(getCell(row, h, 'description'));
+          const detailDescription =
+            str(getCell(row, h, 'detail_description')) ||
+            str(getCell(row, h, 'description'));
           const excelCompanyId = getResolvedNum(row, h, 'company_id');
           const excelUserId = getResolvedNum(row, h, 'user_id');
           const userEmail = str(getCell(row, h, 'user_email'));
           if (!title) errors.push(`${ctx}: thiếu title`);
-          if (!description) errors.push(`${ctx}: thiếu description`);
+          if (!detailDescription) errors.push(`${ctx}: thiếu detail_description`);
           if (excelCompanyId == null) errors.push(`${ctx}: thiếu company_id`);
           if (excelUserId == null && !userEmail) errors.push(`${ctx}: thiếu user_id hoặc user_email`);
 
@@ -1626,19 +1628,21 @@ export class AdminImportService {
 
           if (name === 'jobs') {
             const title = str(getCell(row, h, 'title'));
-            const description = str(getCell(row, h, 'description'));
+            const detailDescription =
+              str(getCell(row, h, 'detail_description')) ||
+              str(getCell(row, h, 'description'));
             const userEmail = str(getCell(row, h, 'user_email'));
             const excelJobCompanyId = getResolvedNum(row, h, 'company_id');
             const excelJobUserId = getResolvedNum(row, h, 'user_id');
             if (
               !title ||
-              !description ||
+              !detailDescription ||
               excelJobCompanyId == null ||
               (!userEmail && excelJobUserId == null)
             ) {
               const cell = getCellByField(h, r, 'title');
               errors.push(
-                `${ctx}${cell ? `: cell ${cell}` : ''}: cần title, description, company_id, và (user_email hoặc user_id)`,
+                `${ctx}${cell ? `: cell ${cell}` : ''}: cần title, detail_description, company_id, và (user_email hoặc user_id)`,
               );
               continue;
             }
@@ -1777,7 +1781,7 @@ export class AdminImportService {
             }
             const ent = this.jobRepository.create({
               title,
-              description,
+              detailDescription,
               category,
               location,
               typeOfEmployment,
@@ -1795,7 +1799,6 @@ export class AdminImportService {
               salaryMin,
               salaryMax,
               salaryType,
-              detailDescription: str(getCell(row, h, 'detail_description')) || null,
               email: str(getCell(row, h, 'job_email')) || str(getCell(row, h, 'email')) || null,
               phoneNumber: str(getCell(row, h, 'phone_number')) || null,
               benefits,

@@ -21,10 +21,6 @@ export class Job {
   @Column()
   title: string;
 
-  @ApiProperty({ description: 'Job description' })
-  @Column('text')
-  description: string;
-
   @ApiProperty({
     description: 'Job categories as comma-separated string (e.g., "1,2,3")',
   })
@@ -120,8 +116,8 @@ export class Job {
   @Column({ nullable: false })
   salaryType: number;
 
-  @ApiProperty({ description: 'Detailed description' })
-  @Column({ type: 'text', nullable: true })
+  @ApiProperty({ description: 'Mô tả chi tiết công việc (HTML)' })
+  @Column({ type: 'text', nullable: false })
   detailDescription: string;
 
   @ApiProperty({ description: 'Contact email for job application' })

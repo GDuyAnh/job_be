@@ -22,14 +22,6 @@ export class CreateJobDto {
   title: string;
 
   @ApiProperty({
-    description: 'Job description',
-    example: 'Develop backend services...',
-  })
-  @IsString({ message: 'Mô tả phải là chuỗi' })
-  @IsNotEmpty({ message: 'Mô tả không được để trống' })
-  description: string;
-
-  @ApiProperty({
     description: 'Job categories as comma-separated string (e.g., "1,2,3")',
   })
   @IsString({ message: 'Danh mục phải là chuỗi' })
@@ -134,10 +126,13 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Phúc lợi không được để trống' })
   benefits: string;
 
-  @ApiProperty({ description: 'Detailed description', required: false })
-  @IsOptional()
+  @ApiProperty({
+    description: 'Mô tả chi tiết công việc (HTML)',
+    example: '<p>Mô tả công việc...</p>',
+  })
   @IsString({ message: 'Mô tả chi tiết phải là chuỗi' })
-  detailDescription?: string;
+  @IsNotEmpty({ message: 'Mô tả chi tiết không được để trống' })
+  detailDescription: string;
 
   @ApiProperty({
     description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
