@@ -45,11 +45,13 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Kinh nghiệm không được để trống' })
   experienceLevel: number;
 
-  @ApiProperty({ description: 'Required qualification', example: 1 })
-  @Transform(({ value }) => (value !== null ? Number(value) : value))
-  @IsNumber({}, { message: 'Bằng cấp yêu cầu phải là số' })
+  @ApiProperty({
+    description:
+      'Required qualifications as comma-separated string (e.g., "1,2,3")',
+  })
+  @IsString({ message: 'Bằng cấp yêu cầu phải là chuỗi' })
   @IsNotEmpty({ message: 'Bằng cấp yêu cầu không được để trống' })
-  requiredQualification: number;
+  requiredQualification: string;
 
   @ApiProperty({
     description:

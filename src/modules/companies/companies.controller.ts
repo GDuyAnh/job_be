@@ -180,6 +180,18 @@ export class CompaniesController {
     return this.companiesService.approve(companyId);
   }
 
+  @Patch(':id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    description: 'Company rejected successfully',
+  })
+  async rejectCompany(@Param('id', ParseIntPipe) companyId: number) {
+    return this.companiesService.reject(companyId);
+  }
+
   @Patch(':id/feature')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleStatus.ADMIN)

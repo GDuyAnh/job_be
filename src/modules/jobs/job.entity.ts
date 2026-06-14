@@ -41,9 +41,12 @@ export class Job {
   @Column({ nullable: true })
   experienceLevel: number;
 
-  @ApiProperty({ description: 'Required qualification' })
+  @ApiProperty({
+    description:
+      'Required qualifications as comma-separated string (e.g., "1,2,3")',
+  })
   @Column({ nullable: true })
-  requiredQualification: number;
+  requiredQualification: string;
 
   @ApiProperty({
     description:

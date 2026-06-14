@@ -22,6 +22,14 @@ import { JobApplication } from '../jobs/job-application.entity';
 import { JobApplicationResponseDto } from './dto/response/job-application-response.dto';
 import { User } from '../users/user.entity';
 import { UploadService } from '../upload/upload.service';
+import { EmailService } from '../email/email.service';
+import { UsersService } from '../users/users.service';
+import {
+  canonicalMst,
+  getMstLookupVariants,
+  normalizeMstDigits,
+} from '@/common/utils/mst.util';
+import { ApplicationStatus } from '@/enum/application-status';
 
 @Injectable()
 export class CompaniesService {
@@ -41,6 +49,8 @@ export class CompaniesService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private uploadService: UploadService,
+    private emailService: EmailService,
+    private usersService: UsersService,
   ) {}
 
   async create(data: CreateCompanyDto): Promise<CompanyResponseDto> {
@@ -74,9 +84,11 @@ export class CompaniesService {
     // Set isWaiting = true by default (requires admin approval)
     companyData.isWaiting = true;
 
+    const normalizedMst = canonicalMst(mst);
+
     const company = this.companiesRepository.create({
       ...companyData,
-      mst: mst.trim(), // Assign MST explicitly
+      mst: normalizedMst,
     });
     const savedCompany = await this.companiesRepository.save(company);
 
@@ -90,6 +102,10 @@ export class CompaniesService {
       await this.companyImageRepository.save(images);
       savedCompany.companyImages = images;
     }
+
+    this.notifyAdminsCompanyPending(savedCompany).catch((e) =>
+      console.error('Failed to send company pending admin email:', e),
+    );
 
     return new CompanyResponseDto(savedCompany);
   }
@@ -267,32 +283,31 @@ export class CompaniesService {
   }
 
   async getCompanyDetailByMst(mst: string): Promise<CompanyDetailDto> {
-    // 1. Find company based on MST + Company Image
-    const company = await this.companiesRepository.findOne({
-      where: { mst },
-      relations: ['companyImages'],
-    });
-    console.log('Company', company);
+    const variants = getMstLookupVariants(mst);
 
-    if (!company) {
-      throw new NotFoundException('Không tìm thấy công ty');
+    for (const variant of variants) {
+      const company = await this.companiesRepository.findOne({
+        where: { mst: variant },
+        relations: ['companyImages'],
+      });
+
+      if (!company) continue;
+
+      const jobs = await this.jobsRepository.find({
+        where: {
+          companyId: company.id,
+          status: 'APPROVED',
+        },
+        order: {
+          postedDate: 'DESC',
+        },
+      });
+
+      const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
+      return new CompanyDetailDto(company, jobSummaries);
     }
 
-    // 2. Find all approved jobs related to company
-    const jobs = await this.jobsRepository.find({
-      where: {
-        companyId: company.id,
-        status: 'APPROVED',
-      },
-      order: {
-        postedDate: 'DESC',
-      },
-    });
-
-    // 3. Transform jobs into CompanyJobSummaryDto
-    const jobSummaries = jobs.map((job) => new CompanyJobSummaryDto(job));
-
-    return new CompanyDetailDto(company, jobSummaries);
+    throw new NotFoundException('Không tìm thấy công ty');
   }
 
   async update(
@@ -564,7 +579,84 @@ export class CompaniesService {
     // Approve company: set isWaiting = false
     company.isWaiting = false;
     const updatedCompany = await this.companiesRepository.save(company);
+
+    this.notifyCompanyApproved(updatedCompany.id).catch((e) =>
+      console.error('Failed to send company approved email:', e),
+    );
+
     return new CompanyResponseDto(updatedCompany);
+  }
+
+  async reject(
+    companyId: number,
+    rejectReason?: string,
+  ): Promise<CompanyResponseDto> {
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+      relations: ['companyImages'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Không tìm thấy công ty');
+    }
+
+    company.isWaiting = false;
+    const updatedCompany = await this.companiesRepository.save(company);
+
+    this.notifyCompanyRejected(
+      updatedCompany.id,
+      rejectReason || 'Công ty chưa đáp ứng yêu cầu duyệt.',
+    ).catch((e) => console.error('Failed to send company rejected email:', e));
+
+    return new CompanyResponseDto(updatedCompany);
+  }
+
+  private async notifyAdminsCompanyPending(company: Company): Promise<void> {
+    const adminEmails = await this.usersService.findAdminEmails();
+    if (!adminEmails.length) return;
+
+    await this.emailService.sendToManyByTemplate(
+      'COMPANY_PENDING_ADMIN',
+      adminEmails,
+      {
+        companyName: company.name,
+        companyMst: company.mst || '',
+      },
+    );
+  }
+
+  private async notifyCompanyApproved(companyId: number): Promise<void> {
+    const host = await this.usersService.findHostByCompanyId(companyId);
+    if (!host?.email) return;
+
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+    });
+    if (!company) return;
+
+    await this.emailService.sendByTemplate('COMPANY_APPROVED', host.email, {
+      fullName: host.fullName,
+      companyName: company.name,
+    });
+  }
+
+  private async notifyCompanyRejected(
+    companyId: number,
+    rejectReason: string,
+  ): Promise<void> {
+    const host = await this.usersService.findHostByCompanyId(companyId);
+    if (!host?.email) return;
+
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+    });
+    if (!company) return;
+
+    await this.emailService.sendByTemplate('COMPANY_REJECTED', host.email, {
+      fullName: host.fullName,
+      companyName: company.name,
+      rejectReason,
+    });
   }
 
   async getApplicationsByJobOwner(
@@ -583,12 +675,15 @@ export class CompaniesService {
         id: app.id,
         jobTitle: app.job.title,
         jobId: app.job.id,
+        userId: app.userId,
         applicantName: app.user.fullName,
         phone: app.user.phoneNumber || '',
         email: app.user.email,
         cvUrl: app.resumePath || undefined,
         coverLetterText: app.coverLetterText || undefined,
         applicationDate: app.appliedAt,
+        status: app.status || ApplicationStatus.SUBMITTED,
+        statusNote: app.statusNote ?? null,
       });
     });
   }

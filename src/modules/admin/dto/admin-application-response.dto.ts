@@ -16,6 +16,9 @@ export class AdminApplicationResponseDto {
   @ApiProperty({ description: 'Company logo URL', required: false })
   companyLogo?: string;
 
+  @ApiProperty({ description: 'Applicant user ID' })
+  userId: number;
+
   @ApiProperty({ description: 'Applicant full name' })
   applicantName: string;
 
@@ -36,6 +39,12 @@ export class AdminApplicationResponseDto {
 
   @ApiProperty({ description: 'Application date' })
   applicationDate: Date;
+
+  @ApiProperty({ description: 'Application status' })
+  status: string;
+
+  @ApiProperty({ description: 'Status note', required: false })
+  statusNote?: string | null;
 
   constructor(partial: Partial<AdminApplicationResponseDto>) {
     Object.assign(this, partial);

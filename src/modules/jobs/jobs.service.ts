@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { RoleStatus } from '@/enum/role';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Job } from './job.entity';
 import { SearchJobDto } from './dto/request/search-job-request.dto';
 import { JobDetailDto } from './dto/response/job-detail.dto';
@@ -28,6 +28,13 @@ import { JobApplication } from './job-application.entity';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
 import { UsersService } from '../users/users.service';
 import { UploadService } from '../upload/upload.service';
+import { EmailService } from '../email/email.service';
+import { User } from '../users/user.entity';
+import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
+import {
+  APPLICATION_STATUS_LABELS,
+  ApplicationStatus,
+} from '@/enum/application-status';
 
 @Injectable()
 export class JobsService {
@@ -38,12 +45,85 @@ export class JobsService {
     private companiesRepository: Repository<Company>,
     @InjectRepository(JobApplication)
     private jobApplicationRepository: Repository<JobApplication>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
     private usersService: UsersService,
     private uploadService: UploadService,
+    private emailService: EmailService,
   ) {}
 
   /** Job chỉ hiển thị khi status = APPROVED */
   private static readonly JOB_VISIBLE_CONDITION = "job.status = 'APPROVED'";
+
+  /** Chỉ match tiêu đề / tên công ty — tránh false positive từ mô tả HTML. */
+  private static applyJobKeywordSearch(
+    qb: SelectQueryBuilder<Job>,
+    keyword?: string,
+  ): boolean {
+    const trimmed = keyword?.trim();
+    if (!trimmed) {
+      return false;
+    }
+
+    const kw = `%${trimmed}%`;
+    const kwStart = `${trimmed}%`;
+
+    qb.andWhere(
+      '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(company.name) LIKE LOWER(:kw))',
+      { kw, kwStart },
+    );
+
+    return true;
+  }
+
+  private static applyJobKeywordOrdering(
+    qb: SelectQueryBuilder<Job>,
+    hasKeyword: boolean,
+  ): void {
+    if (hasKeyword) {
+      qb.addOrderBy(
+        `CASE
+          WHEN LOWER(job.title) LIKE LOWER(:kwStart) THEN 0
+          WHEN LOWER(job.title) LIKE LOWER(:kw) THEN 1
+          WHEN LOWER(company.name) LIKE LOWER(:kw) THEN 2
+          ELSE 3
+        END`,
+        'ASC',
+      );
+    }
+
+    qb.addOrderBy('job.postedDate', 'DESC');
+  }
+
+  /** Lọc field lưu dạng ID phân tách bằng dấu phẩy (category, location). */
+  private static applyCommaSeparatedIdFilter(
+    qb: SelectQueryBuilder<Job>,
+    column: string,
+    ids: number[] | undefined,
+    allValue: number,
+    paramPrefix: string,
+  ): void {
+    if (!ids?.length) return;
+
+    const filtered = ids.filter((id) => id !== allValue);
+    if (!filtered.length) return;
+
+    const conditions: string[] = [];
+    const params: Record<string, string> = {};
+
+    filtered.forEach((id, i) => {
+      const p = `${paramPrefix}${i}`;
+      conditions.push(
+        `(${column} = :${p} OR ${column} LIKE :${p}Start OR ${column} LIKE :${p}Middle OR ${column} LIKE :${p}End)`,
+      );
+      params[p] = String(id);
+      params[`${p}Start`] = `${id},%`;
+      params[`${p}Middle`] = `%,${id},%`;
+      params[`${p}End`] = `%,${id}`;
+    });
+
+    qb.andWhere(`(${conditions.join(' OR ')})`, params);
+  }
 
   async create(data: CreateJobDto, user?: any): Promise<JobResponseDto> {
     await this.validateJobData(data, false);
@@ -72,6 +152,13 @@ export class JobsService {
     const savedJob = await this.jobsRepository.save(
       this.jobsRepository.create(data),
     );
+
+    if (jobStatus === 'ADMIN_REVIEW') {
+      this.notifyAdminsJobPending(savedJob.id).catch((e) =>
+        console.error('Failed to send job pending admin email:', e),
+      );
+    }
+
     return this.buildJobResponse(savedJob.id);
   }
 
@@ -120,6 +207,8 @@ export class JobsService {
 
     await this.validateJobData(data, true);
 
+    const previousStatus = job.status;
+
     if (data.status !== undefined && data.status !== null) {
       const status = String(data.status).trim().toUpperCase();
       const validStatuses = ['ADMIN_REVIEW', 'PENDING', 'APPROVED', 'REJECTED'];
@@ -135,6 +224,14 @@ export class JobsService {
     if (urlsToDelete.length > 0) {
       this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (job update) failed:', e));
     }
+
+    const newStatus = (data as any).status ?? job.status;
+    if (newStatus === 'REJECTED' && previousStatus !== 'REJECTED') {
+      this.notifyJobRejected(id).catch((e) =>
+        console.error('Failed to send job rejected email:', e),
+      );
+    }
+
     return this.buildJobResponse(id);
   }
 
@@ -154,51 +251,23 @@ export class JobsService {
       .leftJoinAndSelect('job.company', 'company')
       .where('company.isWaiting = :companyWaiting', { companyWaiting: false });
 
-    // keyword: title/description (case-insensitive)
-    if (dto.keyword?.trim()) {
-      qb.andWhere(
-        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.detailDescription) LIKE LOWER(:kw))',
-        { kw: `%${dto.keyword.trim()}%` },
-      );
-    }
+    const hasKeyword = JobsService.applyJobKeywordSearch(qb, dto.keyword);
 
-    // category - search in comma-separated string
-    if (
-      dto.category !== undefined &&
-      dto.category !== null &&
-      dto.category !== ALL_CATEGORIES
-    ) {
-      // Use LIKE to find category in comma-separated string
-      // Match: exact match, start, middle, or end of string
-      qb.andWhere(
-        '(job.category = :c OR job.category LIKE :cStart OR job.category LIKE :cMiddle OR job.category LIKE :cEnd)',
-        {
-          c: String(dto.category),
-          cStart: `${dto.category},%`,
-          cMiddle: `%,${dto.category},%`,
-          cEnd: `%,${dto.category}`,
-        },
-      );
-    }
+    JobsService.applyCommaSeparatedIdFilter(
+      qb,
+      'job.category',
+      dto.category,
+      ALL_CATEGORIES,
+      'c',
+    );
 
-    // location - search in comma-separated string
-    if (
-      dto.location !== undefined &&
-      dto.location !== null &&
-      dto.location !== ALL_LOCATIONS
-    ) {
-      // Use LIKE to find location in comma-separated string
-      // Match: exact match, start, middle, or end of string
-      qb.andWhere(
-        '(job.location = :l OR job.location LIKE :lStart OR job.location LIKE :lMiddle OR job.location LIKE :lEnd)',
-        {
-          l: String(dto.location),
-          lStart: `${dto.location},%`,
-          lMiddle: `%,${dto.location},%`,
-          lEnd: `%,${dto.location}`,
-        },
-      );
-    }
+    JobsService.applyCommaSeparatedIdFilter(
+      qb,
+      'job.location',
+      dto.location,
+      ALL_LOCATIONS,
+      'l',
+    );
 
     // typeOfEmployment (array)
     if (dto.typeOfEmployment?.length > 0) {
@@ -234,7 +303,7 @@ export class JobsService {
     // Viewer: CHỈ thấy job đã duyệt (status = APPROVED hoặc legacy)
     qb.andWhere(JobsService.JOB_VISIBLE_CONDITION);
 
-    qb.orderBy('job.postedDate', 'DESC');
+    JobsService.applyJobKeywordOrdering(qb, hasKeyword);
 
     const jobs = await qb.getMany();
 
@@ -400,40 +469,23 @@ export class JobsService {
       .createQueryBuilder('job')
       .leftJoinAndSelect('job.company', 'company');
 
-    // keyword: title/description (case-insensitive)
-    if (dto.keyword?.trim()) {
-      qb.andWhere(
-        '(LOWER(job.title) LIKE LOWER(:kw) OR LOWER(job.detailDescription) LIKE LOWER(:kw))',
-        { kw: `%${dto.keyword.trim()}%` },
-      );
-    }
+    const hasKeyword = JobsService.applyJobKeywordSearch(qb, dto.keyword);
 
-    // category - search in comma-separated string
-    if (
-      dto.category !== undefined &&
-      dto.category !== null &&
-      dto.category !== ALL_CATEGORIES
-    ) {
-      // Use LIKE to find category in comma-separated string
-      qb.andWhere(
-        '(job.category = :c OR job.category LIKE :cStart OR job.category LIKE :cMiddle OR job.category LIKE :cEnd)',
-        {
-          c: String(dto.category),
-          cStart: `${dto.category},%`,
-          cMiddle: `%,${dto.category},%`,
-          cEnd: `%,${dto.category}`,
-        },
-      );
-    }
+    JobsService.applyCommaSeparatedIdFilter(
+      qb,
+      'job.category',
+      dto.category,
+      ALL_CATEGORIES,
+      'c',
+    );
 
-    // location
-    if (
-      dto.location !== undefined &&
-      dto.location !== null &&
-      dto.location !== ALL_LOCATIONS
-    ) {
-      qb.andWhere('job.location = :l', { l: dto.location });
-    }
+    JobsService.applyCommaSeparatedIdFilter(
+      qb,
+      'job.location',
+      dto.location,
+      ALL_LOCATIONS,
+      'l',
+    );
 
     // typeOfEmployment (array)
     if (dto.typeOfEmployment?.length > 0) {
@@ -461,7 +513,7 @@ export class JobsService {
     // (Tuỳ chọn) nếu SearchJobAdminDto có thêm userId:
     // if (dto.userId) { qb.andWhere('job.userId = :uid', { uid: dto.userId }); }
 
-    qb.orderBy('job.postedDate', 'DESC');
+    JobsService.applyJobKeywordOrdering(qb, hasKeyword);
 
     const jobs = await qb.getMany();
     const jobIds = jobs.map((j) => j.id);
@@ -507,6 +559,11 @@ export class JobsService {
 
     job.status = 'APPROVED';
     const updated = await this.jobsRepository.save(job);
+
+    this.notifyJobApproved(updated.id).catch((e) =>
+      console.error('Failed to send job approved email:', e),
+    );
+
     return this.buildJobResponse(updated.id);
   }
 
@@ -639,15 +696,19 @@ export class JobsService {
       jobId: app.job.id,
       jobTitle: app.job.title,
       companyName: app.job.company?.name || '',
+      companyLogo: app.job.company?.logo || '',
       location: app.job.location || '',
       category: app.job.category || '',
       typeOfEmployment: app.job.typeOfEmployment || null,
       resumePath: app.resumePath || null,
       appliedAt: app.appliedAt,
+      status: app.status || ApplicationStatus.SUBMITTED,
+      statusNote: app.statusNote || null,
       job: {
         id: app.job.id,
         title: app.job.title,
         companyName: app.job.company?.name || '',
+        companyLogo: app.job.company?.logo || '',
         location: app.job.location || '',
         category: app.job.category || '',
         typeOfEmployment: app.job.typeOfEmployment || null,
@@ -723,7 +784,7 @@ export class JobsService {
     });
 
     if (existingApplication) {
-      throw new BadRequestException('Bạn đã ứng tuyển tin này rồi');
+      throw new BadRequestException('Bạn đã ứng tuyển vị trí này.');
     }
 
     // Create new application
@@ -735,15 +796,243 @@ export class JobsService {
       coverLetterUrl: dto.coverLetterUrl || null, // Store cover letter file URL
       appliedAt: new Date(),
       delF: false,
+      status: ApplicationStatus.SUBMITTED,
+      statusNote: null,
     });
 
     const savedApplication =
       await this.jobApplicationRepository.save(application);
+
+    this.notifyApplicationEmails(dto.jobId, user, savedApplication).catch(
+      (e) => console.error('Failed to send application emails:', e),
+    );
 
     return {
       application: savedApplication,
       user: user,
       isNewUser: isNewUser,
     };
+  }
+
+  private async notifyAdminsJobPending(jobId: number): Promise<void> {
+    const job = await this.jobsRepository.findOne({
+      where: { id: jobId },
+      relations: ['company'],
+    });
+    if (!job) return;
+
+    const adminEmails = await this.usersService.findAdminEmails();
+    if (!adminEmails.length) return;
+
+    await this.emailService.sendToManyByTemplate(
+      'JOB_PENDING_ADMIN',
+      adminEmails,
+      {
+        jobTitle: job.title,
+        companyName: job.company?.name || '',
+      },
+    );
+  }
+
+  private async notifyJobApproved(jobId: number): Promise<void> {
+    const job = await this.jobsRepository.findOne({
+      where: { id: jobId },
+      relations: ['company'],
+    });
+    if (!job) return;
+
+    const recipient = await this.resolveJobNotificationRecipient(job);
+    if (!recipient) return;
+
+    const frontendUrl = this.emailService.getFrontendUrl();
+    await this.emailService.sendByTemplate('JOB_APPROVED', recipient.email, {
+      fullName: recipient.fullName,
+      jobTitle: job.title,
+      jobUrl: `${frontendUrl}/jobs/${job.id}`,
+    });
+  }
+
+  private async notifyJobRejected(jobId: number): Promise<void> {
+    const job = await this.jobsRepository.findOne({
+      where: { id: jobId },
+      relations: ['company'],
+    });
+    if (!job) return;
+
+    const recipient = await this.resolveJobNotificationRecipient(job);
+    if (!recipient) return;
+
+    await this.emailService.sendByTemplate('JOB_REJECTED', recipient.email, {
+      fullName: recipient.fullName,
+      jobTitle: job.title,
+      rejectReason: 'Tin tuyển dụng chưa đáp ứng yêu cầu duyệt.',
+    });
+  }
+
+  private async notifyApplicationEmails(
+    jobId: number,
+    user: User | null,
+    application: JobApplication,
+  ): Promise<void> {
+    const job = await this.jobsRepository.findOne({
+      where: { id: jobId },
+      relations: ['company'],
+    });
+    if (!job || !user?.email) return;
+
+    await this.emailService.sendByTemplate(
+      'APPLICATION_CONFIRMATION',
+      user.email,
+      {
+        applicantName: user.fullName,
+        jobTitle: job.title,
+        companyName: job.company?.name || '',
+        applicationDate: new Date(application.appliedAt).toLocaleDateString(
+          'vi-VN',
+        ),
+      },
+    );
+
+    const host = await this.usersService.findHostByCompanyId(job.companyId);
+    if (host?.email) {
+      await this.emailService.sendByTemplate(
+        'NEW_APPLICATION_EMPLOYER',
+        host.email,
+        {
+          jobTitle: job.title,
+          applicantName: user.fullName,
+          applicantEmail: user.email,
+          applicationDate: new Date(application.appliedAt).toLocaleDateString(
+            'vi-VN',
+          ),
+        },
+      );
+    }
+  }
+
+  private async resolveJobNotificationRecipient(
+    job: Job,
+  ): Promise<{ email: string; fullName: string } | null> {
+    const host = await this.usersService.findHostByCompanyId(job.companyId);
+    if (host?.email) {
+      return { email: host.email, fullName: host.fullName };
+    }
+
+    if (job.userId) {
+      const creator = await this.usersRepository.findOne({
+        where: { id: job.userId },
+      });
+      if (creator?.email) {
+        return { email: creator.email, fullName: creator.fullName };
+      }
+    }
+
+    return null;
+  }
+
+  async updateApplicationStatus(
+    applicationId: number,
+    dto: UpdateApplicationStatusDto,
+    user?: any,
+  ) {
+    const application = await this.jobApplicationRepository.findOne({
+      where: { id: applicationId, delF: false },
+      relations: ['job', 'job.company', 'user'],
+    });
+
+    if (!application) {
+      throw new NotFoundException('Không tìm thấy hồ sơ ứng tuyển');
+    }
+
+    this.assertCanManageApplication(application, user);
+
+    const previousStatus =
+      application.status || ApplicationStatus.SUBMITTED;
+    const nextStatus = dto.status;
+    const statusNote = dto.statusMessage?.trim() || null;
+
+    if (previousStatus === nextStatus && statusNote === (application.statusNote || null)) {
+      return this.mapApplicationStatusResponse(application);
+    }
+
+    application.status = nextStatus;
+    application.statusNote = statusNote;
+    const saved = await this.jobApplicationRepository.save(application);
+
+    if (previousStatus !== nextStatus) {
+      this.notifyApplicationStatusUpdate(saved).catch((e) =>
+        console.error('Failed to send application status email:', e),
+      );
+    }
+
+    return this.mapApplicationStatusResponse(saved);
+  }
+
+  private assertCanManageApplication(
+    application: JobApplication,
+    user?: any,
+  ): void {
+    if (!user) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    if (user.role === RoleStatus.ADMIN) {
+      return;
+    }
+
+    if (user.role !== RoleStatus.COMPANY) {
+      throw new ForbiddenException('Bạn không có quyền cập nhật hồ sơ này');
+    }
+
+    const job = application.job;
+    const isHost =
+      user.isHostCompany === true && user.companyId === job?.companyId;
+    const isJobOwner = user.id === job?.userId;
+
+    if (!isHost && !isJobOwner) {
+      throw new ForbiddenException('Bạn không có quyền cập nhật hồ sơ này');
+    }
+  }
+
+  private mapApplicationStatusResponse(application: JobApplication) {
+    return {
+      id: application.id,
+      jobId: application.jobId,
+      status: application.status,
+      statusNote: application.statusNote,
+      applicationDate: application.appliedAt,
+    };
+  }
+
+  private async notifyApplicationStatusUpdate(
+    application: JobApplication,
+  ): Promise<void> {
+    const fullApplication = await this.jobApplicationRepository.findOne({
+      where: { id: application.id },
+      relations: ['job', 'job.company', 'user'],
+    });
+
+    if (!fullApplication?.user?.email) {
+      return;
+    }
+
+    const statusLabel =
+      APPLICATION_STATUS_LABELS[fullApplication.status] ||
+      fullApplication.status;
+    const statusMessage =
+      fullApplication.statusNote?.trim() ||
+      'Nhà tuyển dụng đã cập nhật trạng thái hồ sơ của bạn.';
+
+    await this.emailService.sendByTemplate(
+      'APPLICATION_STATUS_UPDATE',
+      fullApplication.user.email,
+      {
+        applicantName: fullApplication.user.fullName,
+        jobTitle: fullApplication.job?.title || '',
+        companyName: fullApplication.job?.company?.name || '',
+        applicationStatus: statusLabel,
+        statusMessage,
+      },
+    );
   }
 }

@@ -7,17 +7,39 @@ export class SearchJobAdminDto {
   @IsOptional()
   keyword?: string;
 
-  @ApiPropertyOptional({ description: 'Job category (number ID)' })
+  @ApiPropertyOptional({
+    description: 'Job category (array of number IDs)',
+  })
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined ? Number(value) : value))
-  @IsNumber({}, { message: 'Danh mục phải là số' })
-  category?: number;
+  @IsArray()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const raw = Array.isArray(value) ? value : [value];
+    const nums = raw
+      .flatMap((v) => String(v).split(','))
+      .map((v) => Number(v.trim()))
+      .filter((n) => !Number.isNaN(n));
+    return nums.length ? nums : undefined;
+  })
+  @IsNumber({}, { each: true, message: 'Mỗi danh mục phải là số' })
+  category?: number[];
 
-  @ApiPropertyOptional({ description: 'Work location (number ID)' })
+  @ApiPropertyOptional({
+    description: 'Work location (array of number IDs)',
+  })
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined ? Number(value) : value))
-  @IsNumber({}, { message: 'Địa điểm phải là số' })
-  location?: number;
+  @IsArray()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const raw = Array.isArray(value) ? value : [value];
+    const nums = raw
+      .flatMap((v) => String(v).split(','))
+      .map((v) => Number(v.trim()))
+      .filter((n) => !Number.isNaN(n));
+    return nums.length ? nums : undefined;
+  })
+  @IsNumber({}, { each: true, message: 'Mỗi địa điểm phải là số' })
+  location?: number[];
 
   @ApiPropertyOptional({
     description: 'Type of employment (array of number IDs)',

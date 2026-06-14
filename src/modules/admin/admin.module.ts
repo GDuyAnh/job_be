@@ -11,6 +11,7 @@ import { JobBenefit } from '../jobs/job-benefit.entity';
 import { CompanyImage } from '../companies/company-image.entity';
 import { AdminImportService } from './admin-import.service';
 import { UploadModule } from '../upload/upload.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UploadModule } from '../upload/upload.module';
       Blog,
     ]),
     UploadModule,
+    EmailModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, AdminImportService],

@@ -18,6 +18,11 @@ export class PublicCompanyDto {
   @IsString()
   address?: string;
 
+  @ApiProperty({ required: false, description: 'Tax address from MST lookup' })
+  @IsOptional()
+  @IsString()
+  taxAddress?: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsNumber()
@@ -62,11 +67,13 @@ export class PublicJobDto {
   @Type(() => Number)
   experienceLevel?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: 'Comma-separated required qualification ids',
+  })
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  requiredQualification?: number;
+  @IsString()
+  requiredQualification?: string;
 
   @ApiProperty({ required: false, description: 'Comma-separated gender ids' })
   @IsOptional()

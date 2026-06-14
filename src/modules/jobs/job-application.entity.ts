@@ -9,6 +9,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Job } from './job.entity';
 import { User } from '../users/user.entity';
+import { ApplicationStatus } from '@/enum/application-status';
 
 @Entity('job_applications')
 export class JobApplication {
@@ -51,6 +52,25 @@ export class JobApplication {
   @ApiProperty({ description: 'Soft delete flag (for user dashboard)' })
   @Column({ default: false })
   delF: boolean;
+
+  @ApiProperty({
+    description: 'Application processing status',
+    enum: ApplicationStatus,
+    default: ApplicationStatus.SUBMITTED,
+  })
+  @Column({
+    type: 'varchar',
+    length: 32,
+    default: ApplicationStatus.SUBMITTED,
+  })
+  status: ApplicationStatus;
+
+  @ApiProperty({
+    description: 'Latest status note for applicant (email + internal)',
+    required: false,
+  })
+  @Column({ type: 'text', nullable: true })
+  statusNote: string | null;
 
   @ApiProperty({ description: 'Created date' })
   @CreateDateColumn()
