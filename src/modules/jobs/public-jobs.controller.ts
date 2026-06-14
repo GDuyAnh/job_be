@@ -24,6 +24,7 @@ import {
 import { RoleStatus } from '@/enum/role';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from '../auth/auth.service';
+import { EmailService } from '../email/email.service';
 
 @ApiTags('public-jobs')
 @Controller('public/jobs')
@@ -31,6 +32,7 @@ export class PublicJobsController {
   constructor(
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    private readonly emailService: EmailService,
     @InjectRepository(Company)
     private readonly companiesRepository: Repository<Company>,
     @InjectRepository(Job)
@@ -79,12 +81,16 @@ export class PublicJobsController {
         logo: null,
         bannerImage: null,
         address: companyDto.address || '',
+        taxAddress: companyDto.taxAddress || '',
         organizationType: companyDto.organizationType || 1,
         website: companyDto.website || null,
         isWaiting: true, // require admin approval
       });
       const saved = await this.companiesRepository.save(comp);
       // Ignore companyImages on public endpoint to reduce storage usage
+      this.notifyAdminsCompanyPending(saved).catch((e) =>
+        console.error('Failed to send company pending admin email:', e),
+      );
       return saved;
     };
 
@@ -169,7 +175,12 @@ export class PublicJobsController {
         status: 'ADMIN_REVIEW',
         note: 'user',
       } as any);
-      await this.jobsRepository.save(entity);
+      const savedJob = await this.jobsRepository.save(entity);
+      this.notifyAdminsJobPending(
+        Array.isArray(savedJob) ? savedJob[0] : savedJob,
+      ).catch((e) =>
+        console.error('Failed to send job pending admin email:', e),
+      );
     };
 
     // 3) Branching by existence
@@ -224,6 +235,38 @@ export class PublicJobsController {
         );
       }
     }
+  }
+
+  private async notifyAdminsCompanyPending(company: Company): Promise<void> {
+    const adminEmails = await this.usersService.findAdminEmails();
+    if (!adminEmails.length) return;
+
+    await this.emailService.sendToManyByTemplate(
+      'COMPANY_PENDING_ADMIN',
+      adminEmails,
+      {
+        companyName: company.name,
+        companyMst: company.mst || '',
+      },
+    );
+  }
+
+  private async notifyAdminsJobPending(job: Job): Promise<void> {
+    const company = await this.companiesRepository.findOne({
+      where: { id: job.companyId },
+    });
+
+    const adminEmails = await this.usersService.findAdminEmails();
+    if (!adminEmails.length) return;
+
+    await this.emailService.sendToManyByTemplate(
+      'JOB_PENDING_ADMIN',
+      adminEmails,
+      {
+        jobTitle: job.title,
+        companyName: company?.name || '',
+      },
+    );
   }
 }
 

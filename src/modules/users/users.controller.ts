@@ -17,7 +17,6 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DeleteAccountDto } from './dto/delete-account.dto';
 import { User } from './user.entity';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
@@ -80,20 +79,6 @@ export class UsersController {
   ) {
     await this.usersService.changePassword(req.user.id, changePasswordDto);
     return { message: 'Đổi mật khẩu thành công' };
-  }
-
-  @Delete('account')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: 'Account deleted successfully' })
-  @ApiResponse({ status: 401, description: 'Mật khẩu không chính xác' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
-  async deleteAccount(
-    @Request() req,
-    @Body() deleteAccountDto: DeleteAccountDto,
-  ) {
-    await this.usersService.deleteAccount(req.user.id, deleteAccountDto);
-    return { message: 'Đã xóa tài khoản thành công' };
   }
 
   @Get('admin/all')

@@ -639,7 +639,7 @@ export class AdminImportService {
     const listOrg = writeLabelsColumn(lists, 5, ORGANIZATION_TYPE, 'single');
     const listExp = writeLabelsColumn(lists, 6, EXPERIENCE_LEVEL, 'single');
     const listGrade = writeLabelsColumn(lists, 7, GRADE, 'single');
-    const listQual = writeLabelsColumn(lists, 8, REQUIRED_QUALIFICATION, 'single');
+    const listQual = writeLabelsColumn(lists, 8, REQUIRED_QUALIFICATION, 'multi');
     // jobs.gender: multi (để gõ/chọn nhiều giá trị nếu cần)
     const listGender = writeLabelsColumn(lists, 9, GENDER_JOB, 'multi');
     const listBenefit = writeLabelsColumn(lists, 10, JOB_BENEFITS, 'multi');
@@ -1717,7 +1717,7 @@ export class AdminImportService {
             let typeOfEmployment: number;
             let salaryType: number;
             let experienceLevel: number | null;
-            let requiredQualification: number | null;
+            let requiredQualification: string | null;
             let grade: number | null;
             let gender: string;
             let benefits: string;
@@ -1751,9 +1751,9 @@ export class AdminImportService {
                 resolveSingleCode(salTypeRaw, SALARY_TYPE, 'salary_type', 0) || 1;
               const expS = str(getCell(row, h, 'experience_level'));
               experienceLevel = resolveOptionalInt(expS, EXPERIENCE_LEVEL, 'experience_level');
-              const qualS = str(getCell(row, h, 'required_qualification'));
-              requiredQualification = resolveOptionalInt(
-                qualS,
+              const qualRaw = str(getCell(row, h, 'required_qualification'));
+              requiredQualification = resolveCommaCodes(
+                qualRaw,
                 REQUIRED_QUALIFICATION,
                 'required_qualification',
               );

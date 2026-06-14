@@ -23,8 +23,12 @@ export class JobResponseDto {
   @ApiProperty({ description: 'Experience level ID', required: false })
   experienceLevel: number | null;
 
-  @ApiProperty({ description: 'Required qualification ID', required: false })
-  requiredQualification?: number | null;
+  @ApiProperty({
+    description:
+      'Required qualifications as comma-separated string (e.g., "1,2,3")',
+    required: false,
+  })
+  requiredQualification?: string | null;
 
   @ApiProperty({
     description:

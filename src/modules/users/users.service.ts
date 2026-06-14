@@ -2,7 +2,6 @@ import { Injectable,
   ConflictException,
   NotFoundException,
   BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,7 +10,6 @@ import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DeleteAccountDto } from './dto/delete-account.dto';
 import { RoleStatus } from '@/enum/role';
 import { EmailService } from '../email/email.service';
 import { Company } from '../companies/company.entity';
@@ -60,8 +58,15 @@ export class UsersService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // FE đã tạo company rồi, BE chỉ nhận companyId và gán cho user
-    // isHostCompany = true khi tạo company mới (FE set), false khi link tới existing company
+    // User đầu tiên đăng ký với MST/công ty → host; các user sau cùng MST không phải host
+    let isHostCompany = false;
+    if (companyId) {
+      const existingHost = await this.usersRepository.findOne({
+        where: { companyId, isHostCompany: true },
+      });
+      isHostCompany = !existingHost;
+    }
+
     const user = this.usersRepository.create({
       email,
       username,
@@ -70,19 +75,26 @@ export class UsersService {
       phoneNumber: phoneNumber || null,
       role: role || RoleStatus.USER,
       companyId: companyId || null,
-      isHostCompany: false,
+      isHostCompany,
     });
 
     const savedUser = await this.usersRepository.save(user);
 
     // Send welcome email with account information
     try {
-      await this.emailService.sendAccountCredentials(
-        email,
-        fullName,
-        username,
-        password, // Send original password before hashing
-      );
+      const credentialRole =
+        (role || RoleStatus.USER) === RoleStatus.COMPANY
+          ? 'employer'
+          : 'candidate';
+      if (role !== RoleStatus.ADMIN) {
+        await this.emailService.sendAccountCredentials(
+          email,
+          fullName,
+          username,
+          password,
+          credentialRole,
+        );
+      }
     } catch (error) {
       // Log error but don't fail registration if email fails
       console.error('Failed to send welcome email:', error);
@@ -150,7 +162,7 @@ export class UsersService {
       user.password,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Mật khẩu hiện tại không chính xác');
+      throw new BadRequestException('Mật khẩu hiện tại không chính xác');
     }
 
     // Hash new password
@@ -158,6 +170,29 @@ export class UsersService {
 
     // Update password
     await this.usersRepository.update(userId, { password: hashedPassword });
+
+    try {
+      await this.emailService.sendByTemplate('PASSWORD_CHANGED', user.email, {
+        fullName: user.fullName,
+        email: user.email,
+        changedAt: new Date().toLocaleString('vi-VN'),
+      });
+    } catch (error) {
+      console.error('Failed to send password changed email:', error);
+    }
+  }
+
+  async findAdminEmails(): Promise<string[]> {
+    const admins = await this.usersRepository.find({
+      where: { role: RoleStatus.ADMIN },
+    });
+    return [...new Set(admins.map((a) => a.email?.trim()).filter(Boolean))];
+  }
+
+  async findHostByCompanyId(companyId: number): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { companyId, isHostCompany: true },
+    });
   }
 
   async updateProfile(
@@ -244,27 +279,6 @@ export class UsersService {
     return updatedUser;
   }
 
-  async deleteAccount(
-    userId: number,
-    deleteAccountDto: DeleteAccountDto,
-  ): Promise<void> {
-    const { password } = deleteAccountDto;
-
-    // Get user with password
-    const user = await this.findByIdWithPassword(userId);
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Mật khẩu không chính xác');
-    }
-
-    // Soft delete by setting isActive to false
-    // Or hard delete if needed
-    await this.usersRepository.update(userId, { isActive: false });
-    // For hard delete: await this.usersRepository.delete(userId)
-  }
-
   async findOrCreateUserByEmail(
     email: string,
     fullName: string,
@@ -310,9 +324,19 @@ export class UsersService {
         console.error('Failed to send account credentials email:', error);
       }
     } else {
-      // User exists - Update CV and Cover Letter from application
+      // User exists - sync latest application data to profile
       const updateData: any = {};
       const urlsToDelete: string[] = [];
+
+      const trimmedFullName = fullName?.trim();
+      if (trimmedFullName) {
+        updateData.fullName = trimmedFullName;
+      }
+
+      const trimmedPhone = phoneNumber?.trim();
+      if (trimmedPhone) {
+        updateData.phoneNumber = trimmedPhone;
+      }
 
       if (cvUrl !== undefined && cvUrl !== null) {
         if (user.cvUrl && user.cvUrl !== cvUrl) urlsToDelete.push(user.cvUrl);

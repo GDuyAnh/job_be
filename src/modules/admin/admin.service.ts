@@ -7,6 +7,7 @@ import { JobApplication } from '../jobs/job-application.entity';
 import { User } from '../users/user.entity';
 import { AdminApplicationResponseDto } from './dto/admin-application-response.dto';
 import { UploadService } from '../upload/upload.service';
+import { ApplicationStatus } from '@/enum/application-status';
 
 export interface AdminStatsDto {
   companiesCount: number;
@@ -90,6 +91,7 @@ export class AdminService {
         id: app.id,
         jobTitle: job?.title ?? '',
         jobId: app.jobId,
+        userId: app.userId,
         companyName: company?.name ?? '',
         companyLogo: company?.logo ?? undefined,
         applicantName: user?.fullName ?? '',
@@ -99,6 +101,8 @@ export class AdminService {
         category: job?.category ?? '',
         location: job?.location ?? '',
         applicationDate: app.appliedAt,
+        status: app.status || ApplicationStatus.SUBMITTED,
+        statusNote: app.statusNote ?? null,
       });
     });
   }

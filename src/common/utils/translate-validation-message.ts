@@ -314,7 +314,7 @@ function translateCustomDtoMessage(msg: string): string {
     'Hạn nộp không được quá 1 tháng sau ngày đăng':
       'Hạn nộp không được quá 1 tháng sau ngày đăng',
     'Application not found or unauthorized': 'Không tìm thấy hồ sơ hoặc không có quyền',
-    'You have already applied for this job': 'Bạn đã ứng tuyển tin này rồi',
+    'You have already applied for this job': 'Bạn đã ứng tuyển vị trí này.',
     'Application not found': 'Không tìm thấy hồ sơ ứng tuyển',
     'Tải tệp lên thất bại': 'Tải tệp lên thất bại',
     'Tạo URL tải lên thất bại': 'Tạo URL tải lên thất bại',

@@ -8,6 +8,8 @@ import { JobApplication } from '../jobs/job-application.entity';
 import { CompanyImage } from './company-image.entity';
 import { User } from '../users/user.entity';
 import { UploadModule } from '../upload/upload.module';
+import { EmailModule } from '../email/email.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { UploadModule } from '../upload/upload.module';
       User,
     ]),
     UploadModule,
+    EmailModule,
+    UsersModule,
   ],
   controllers: [CompaniesController],
   providers: [CompaniesService],

@@ -1,6 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import {
   AuthModule,
   UsersModule,
@@ -35,6 +36,7 @@ import emailConfig from '@/config/email.config';
       //   rejectUnauthorized: true,
       // },
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     DemoModule,

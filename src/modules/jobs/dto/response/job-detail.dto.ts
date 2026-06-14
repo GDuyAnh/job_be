@@ -40,10 +40,14 @@ export class JobDetailDto {
   @IsNumber()
   experienceLevel: number | null;
 
-  @ApiProperty({ description: 'Required qualification ID', nullable: true })
+  @ApiProperty({
+    description:
+      'Required qualifications as comma-separated string (e.g., "1,2,3")',
+    nullable: true,
+  })
   @IsOptional()
-  @IsNumber()
-  requiredQualification: number | null;
+  @IsString()
+  requiredQualification: string | null;
 
   @ApiProperty({
     description:

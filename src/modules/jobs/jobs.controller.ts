@@ -27,6 +27,7 @@ import { LocationStatsDto } from './dto/response/location-stats.dto';
 import { JobDetailDto } from './dto/response/job-detail.dto';
 import { SearchJobAdminDto } from './dto/request/search-job-request-admin.dto';
 import { CreateJobApplicationDto } from './dto/create-job-application.dto';
+import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -180,6 +181,23 @@ export class JobsController {
   ) {
     await this.jobsService.softDeleteApplication(applicationId, req.user.id);
     return { message: 'Đã xóa hồ sơ ứng tuyển' };
+  }
+
+  @Patch('applications/:applicationId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleStatus.COMPANY, RoleStatus.ADMIN)
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Application status updated' })
+  async updateApplicationStatus(
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+    @Body() dto: UpdateApplicationStatusDto,
+    @Request() req,
+  ) {
+    return this.jobsService.updateApplicationStatus(
+      applicationId,
+      dto,
+      req.user,
+    );
   }
 
   @Get(':id')
