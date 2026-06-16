@@ -129,18 +129,22 @@ export class CreateCompanyDto {
   })
   website?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Detailed address',
     example: '123 Nguyen Van Linh, District 7',
   })
+  @IsOptional()
   @IsString({ message: 'Địa chỉ phải là chuỗi' })
-  @IsNotEmpty({ message: 'Địa chỉ không được để trống' })
-  address: string;
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return undefined;
+    const trimmed = String(value).trim();
+    return trimmed === '' ? undefined : trimmed;
+  })
+  address?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Tax address',
     example: '123 Nguyen Van Linh, District 7',
-    required: false,
   })
   @IsOptional()
   @IsString({ message: 'Địa chỉ thuế phải là chuỗi' })
