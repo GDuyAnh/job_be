@@ -56,9 +56,6 @@ export class CompanyDetailDto {
   @ApiProperty({ description: 'Founded year', nullable: true })
   foundedYear: number | null;
 
-  @ApiProperty({ description: 'Company email', nullable: true })
-  email: string | null;
-
   @ApiProperty({ description: 'Company description', nullable: true })
   description: string | null;
 
@@ -101,7 +98,6 @@ export class CompanyDetailDto {
     this.taxAddress = company.taxAddress ?? null;
     this.companySize = company.companySize ?? null;
     this.foundedYear = company.foundedYear ?? null;
-    this.email = company.email ?? null;
     this.description = company.description ?? null;
     this.insight = company.insight ?? null;
     this.overview = company.overview ?? null;

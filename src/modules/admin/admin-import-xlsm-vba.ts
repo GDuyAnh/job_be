@@ -2,13 +2,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as XLSX from 'xlsx';
 
+function assetPathCandidates(fileName: string): string[] {
+  return [
+    path.join(__dirname, 'assets', fileName),
+    path.join(process.cwd(), 'src', 'modules', 'admin', 'assets', fileName),
+  ];
+}
+
 /** Đọc blob VBA từ file cạnh (build) nếu có. */
 export function tryReadVbarawBytes(): Buffer | null {
-  const candidates = [
-    path.join(__dirname, 'assets', 'vbaraw.bin'),
-    path.join(process.cwd(), 'src', 'modules', 'admin', 'assets', 'vbaraw.bin'),
-  ];
-  for (const p of candidates) {
+  for (const p of assetPathCandidates('vbaraw.bin')) {
     try {
       if (fs.existsSync(p) && fs.statSync(p).size > 0) {
         return fs.readFileSync(p);

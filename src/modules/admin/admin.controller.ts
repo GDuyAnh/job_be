@@ -80,11 +80,9 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description:
-      'Tải mẫu: .xlsx hoặc .xlsm (khi có vbaraw.bin). 5 sheet dữ liệu + note + lists; cột id (công thức) + FK dropdown; macro tùy chọn — xem assets/README-VBA.txt. File tĩnh trong assets (nếu có) có thể lệch phiên bản so với mẫu build động.',
+      'Tải mẫu: ưu tiên file tĩnh assets/mau-import-tuyengiaovien.xlsm (hoặc .xlsx). Không có file tĩnh thì server tự build (có thể gắn VBA qua vbaraw.bin).',
   })
   async getImportExcelTemplate(@Res() res: Response) {
-    // Ưu tiên trả về file template tĩnh (đã có macro sẵn) nếu trong dự án có đặt sẵn.
-    // Nếu không có, fallback sang build template động như hiện tại.
     const tpl = await this.adminImportService
       .getStaticImportTemplateFile()
       .catch(() => this.adminImportService.buildImportExcelTemplate());

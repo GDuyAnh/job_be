@@ -50,6 +50,13 @@ export class Company {
   @Column({ type: 'boolean', default: false })
   isFeatured: boolean;
 
+  @ApiProperty({
+    description: 'Soft-delete flag — true when company is rejected/removed by admin',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  isDeleted: boolean;
+
   @ApiProperty({ description: 'Company website' })
   @Column({ nullable: true })
   website: string;
@@ -69,10 +76,6 @@ export class Company {
   @ApiProperty({ description: 'Founded year' })
   @Column({ type: 'int', nullable: true })
   foundedYear: number;
-
-  @ApiProperty({ description: 'Company email' })
-  @Column({ nullable: true })
-  email: string;
 
   @ApiProperty({ description: 'Company Insight' })
   @Column({ type: 'text', nullable: true })

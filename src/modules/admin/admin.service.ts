@@ -56,6 +56,9 @@ export class AdminService {
       .andWhere('company.isWaiting = :companyWaiting', {
         companyWaiting: false,
       })
+      .andWhere('company.isDeleted = :companyDeleted', {
+        companyDeleted: false,
+      })
       .getCount();
   }
 
@@ -68,6 +71,9 @@ export class AdminService {
       .where("job.status = 'APPROVED'")
       .andWhere('company.isWaiting = :companyWaiting', {
         companyWaiting: false,
+      })
+      .andWhere('company.isDeleted = :companyDeleted', {
+        companyDeleted: false,
       })
       .getCount();
   }

@@ -176,9 +176,32 @@ export const DEFAULT_EMAIL_TEMPLATES: DefaultEmailTemplate[] = [
     ],
   },
   {
+    code: 'COMPANY_PENDING_EMPLOYER',
+    name: 'Công ty chờ duyệt (NTD)',
+    description:
+      'Gửi cho user NTD khi đăng ký / được gắn vào công ty đang chờ admin duyệt.',
+    subject: 'Công ty {{companyName}} đang chờ duyệt - {{siteName}}',
+    htmlBody: wrapBody(
+      'Đăng ký công ty thành công',
+      `<p>Xin chào <strong>{{fullName}}</strong>,</p>
+<p>Công ty <strong>{{companyName}}</strong> (MST: {{companyMst}}) đã được đăng ký trên {{siteName}} và đang chờ quản trị viên phê duyệt.</p>
+<p>Bạn sẽ nhận email thông báo khi công ty được duyệt. Trong thời gian chờ, bạn có thể đăng nhập tại: <a href="{{loginUrl}}">{{loginUrl}}</a></p>
+<p>Trân trọng,<br><strong>Đội ngũ {{siteName}}</strong></p>`,
+    ),
+    variables: [
+      'fullName',
+      'companyName',
+      'companyMst',
+      'loginUrl',
+      'siteName',
+      'year',
+    ],
+  },
+  {
     code: 'COMPANY_APPROVED',
     name: 'Công ty được duyệt',
-    description: 'Gửi cho host công ty khi admin duyệt công ty.',
+    description:
+      'Gửi cho tất cả user NTD đang hoạt động thuộc công ty khi admin duyệt công ty.',
     subject: 'Công ty {{companyName}} đã được duyệt - {{siteName}}',
     htmlBody: wrapBody(
       'Công ty đã được duyệt',
@@ -191,7 +214,8 @@ export const DEFAULT_EMAIL_TEMPLATES: DefaultEmailTemplate[] = [
   {
     code: 'COMPANY_REJECTED',
     name: 'Công ty bị từ chối',
-    description: 'Gửi cho host công ty khi admin từ chối duyệt.',
+    description:
+      'Gửi cho tất cả user NTD đang hoạt động thuộc công ty khi admin từ chối / xóa mềm.',
     subject: 'Thông báo về công ty {{companyName}} - {{siteName}}',
     htmlBody: wrapBody(
       'Công ty chưa được duyệt',
@@ -222,6 +246,28 @@ export const DEFAULT_EMAIL_TEMPLATES: DefaultEmailTemplate[] = [
       'jobTitle',
       'companyName',
       'adminDashboardUrl',
+      'siteName',
+      'year',
+    ],
+  },
+  {
+    code: 'JOB_PENDING_EMPLOYER',
+    name: 'Tin tuyển dụng chờ duyệt (NTD)',
+    description:
+      'Gửi cho NTD khi đăng tin mới (free-post / dashboard) ở trạng thái ADMIN_REVIEW.',
+    subject: 'Tin "{{jobTitle}}" đang chờ duyệt - {{siteName}}',
+    htmlBody: wrapBody(
+      'Đăng tin thành công',
+      `<p>Xin chào <strong>{{fullName}}</strong>,</p>
+<p>Tin tuyển dụng <strong>{{jobTitle}}</strong> tại <strong>{{companyName}}</strong> đã được gửi và đang chờ quản trị viên phê duyệt.</p>
+<p>Bạn có thể theo dõi tại: <a href="{{dashboardUrl}}">{{dashboardUrl}}</a></p>
+<p>Trân trọng,<br><strong>Đội ngũ {{siteName}}</strong></p>`,
+    ),
+    variables: [
+      'fullName',
+      'jobTitle',
+      'companyName',
+      'dashboardUrl',
       'siteName',
       'year',
     ],

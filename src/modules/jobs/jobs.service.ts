@@ -157,6 +157,9 @@ export class JobsService {
       this.notifyAdminsJobPending(savedJob.id).catch((e) =>
         console.error('Failed to send job pending admin email:', e),
       );
+      this.notifyEmployerJobPendingForJob(savedJob.id).catch((e) =>
+        console.error('Failed to send job pending employer email:', e),
+      );
     }
 
     return this.buildJobResponse(savedJob.id);
@@ -226,6 +229,11 @@ export class JobsService {
     }
 
     const newStatus = (data as any).status ?? job.status;
+    if (newStatus === 'APPROVED' && previousStatus !== 'APPROVED') {
+      this.notifyJobApproved(id).catch((e) =>
+        console.error('Failed to send job approved email:', e),
+      );
+    }
     if (newStatus === 'REJECTED' && previousStatus !== 'REJECTED') {
       this.notifyJobRejected(id).catch((e) =>
         console.error('Failed to send job rejected email:', e),
@@ -831,6 +839,24 @@ export class JobsService {
         jobTitle: job.title,
         companyName: job.company?.name || '',
       },
+    );
+  }
+
+  private async notifyEmployerJobPendingForJob(jobId: number): Promise<void> {
+    const job = await this.jobsRepository.findOne({
+      where: { id: jobId },
+      relations: ['company'],
+    });
+    if (!job) return;
+
+    const recipient = await this.resolveJobNotificationRecipient(job);
+    if (!recipient) return;
+
+    await this.usersService.notifyEmployerJobPending(
+      recipient.email,
+      recipient.fullName,
+      job.title,
+      job.company?.name || '',
     );
   }
 

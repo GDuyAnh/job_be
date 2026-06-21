@@ -26,7 +26,10 @@ export class UsersService {
     private uploadService: UploadService,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(
+    createUserDto: CreateUserDto,
+    options?: { suppressRegistrationEmails?: boolean },
+  ): Promise<User> {
     const {
       email,
       username,
@@ -80,29 +83,117 @@ export class UsersService {
 
     const savedUser = await this.usersRepository.save(user);
 
-    // Send welcome email with account information
-    try {
-      const credentialRole =
-        (role || RoleStatus.USER) === RoleStatus.COMPANY
-          ? 'employer'
-          : 'candidate';
-      if (role !== RoleStatus.ADMIN) {
-        await this.emailService.sendAccountCredentials(
-          email,
-          fullName,
-          username,
-          password,
-          credentialRole,
-        );
-      }
-    } catch (error) {
-      // Log error but don't fail registration if email fails
-      console.error('Failed to send welcome email:', error);
+    if (!options?.suppressRegistrationEmails) {
+      this.sendEmployerRegistrationNotifications({
+        email,
+        fullName,
+        username,
+        password,
+        role: role || RoleStatus.USER,
+        companyId: savedUser.companyId,
+      }).catch((e) =>
+        console.error('Failed to send registration emails:', e),
+      );
     }
 
     // delete password
     delete savedUser.password;
     return savedUser;
+  }
+
+  /** Username duy nhất từ email (free-post / admin tạo user). */
+  async generateUniqueUsernameFromEmail(email: string): Promise<string> {
+    const base = (email.split('@')[0] || 'user').trim() || 'user';
+    if (!(await this.findByUsername(base))) {
+      return base;
+    }
+    const candidate = `${base}_${Date.now().toString().slice(-6)}`;
+    if (!(await this.findByUsername(candidate))) {
+      return candidate;
+    }
+    return `${base}_${Date.now()}`;
+  }
+
+  /** Email đăng ký NTD: thông tin tài khoản + công ty chờ duyệt (nếu có). */
+  async sendEmployerRegistrationNotifications(params: {
+    email: string;
+    fullName: string;
+    username: string;
+    password: string;
+    role: RoleStatus | number;
+    companyId?: number | null;
+  }): Promise<void> {
+    const { email, fullName, username, password, role, companyId } = params;
+
+    if (role === RoleStatus.ADMIN) {
+      return;
+    }
+
+    const credentialRole =
+      role === RoleStatus.COMPANY ? 'employer' : 'candidate';
+
+    await this.emailService.sendAccountCredentials(
+      email,
+      fullName,
+      username,
+      password,
+      credentialRole,
+    );
+
+    if (role === RoleStatus.COMPANY && companyId) {
+      await this.notifyEmployerCompanyPendingIfNeeded(
+        email,
+        fullName,
+        companyId,
+      );
+    }
+  }
+
+  /** Email sau free-post jobs/upload: đăng ký NTD + tin chờ duyệt. */
+  async sendEmployerFreePostNotifications(params: {
+    email: string;
+    fullName: string;
+    username: string;
+    password: string;
+    companyId: number;
+    jobTitle: string;
+    companyName: string;
+  }): Promise<void> {
+    await this.sendEmployerRegistrationNotifications({
+      email: params.email,
+      fullName: params.fullName,
+      username: params.username,
+      password: params.password,
+      role: RoleStatus.COMPANY,
+      companyId: params.companyId,
+    });
+
+    await this.notifyEmployerJobPending(
+      params.email,
+      params.fullName,
+      params.jobTitle,
+      params.companyName,
+    );
+  }
+
+  async notifyEmployerJobPending(
+    email: string,
+    fullName: string,
+    jobTitle: string,
+    companyName: string,
+  ): Promise<void> {
+    const trimmedEmail = email?.trim();
+    if (!trimmedEmail) return;
+
+    await this.emailService.sendByTemplate(
+      'JOB_PENDING_EMPLOYER',
+      trimmedEmail,
+      {
+        fullName: fullName?.trim() || trimmedEmail,
+        jobTitle,
+        companyName,
+      },
+    );
   }
 
   async findByUsername(username: string): Promise<User | null> {
@@ -193,6 +284,33 @@ export class UsersService {
     return this.usersRepository.findOne({
       where: { companyId, isHostCompany: true },
     });
+  }
+
+  /** Tất cả user NTD thuộc công ty (dedupe email) — dùng gửi thông báo duyệt/từ chối công ty. */
+  async findCompanyUserRecipients(
+    companyId: number,
+  ): Promise<{ email: string; fullName: string }[]> {
+    const users = await this.usersRepository.find({
+      where: { companyId, isActive: true },
+      order: { isHostCompany: 'DESC', id: 'ASC' },
+    });
+
+    const seen = new Set<string>();
+    const recipients: { email: string; fullName: string }[] = [];
+
+    for (const user of users) {
+      const email = user.email?.trim();
+      if (!email) continue;
+      const key = email.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      recipients.push({
+        email,
+        fullName: user.fullName?.trim() || email,
+      });
+    }
+
+    return recipients;
   }
 
   async updateProfile(
@@ -407,7 +525,40 @@ export class UsersService {
     const updatedUser = await this.usersRepository.save(user);
     delete updatedUser.password;
 
+    this.notifyEmployerCompanyPendingIfNeeded(
+      updatedUser.email,
+      updatedUser.fullName,
+      companyId,
+    ).catch((e) =>
+      console.error('Failed to send company pending employer email:', e),
+    );
+
     return updatedUser;
+  }
+
+  /** Gửi email xác nhận chờ duyệt cho NTD khi công ty vẫn isWaiting. */
+  private async notifyEmployerCompanyPendingIfNeeded(
+    email: string,
+    fullName: string,
+    companyId: number,
+  ): Promise<void> {
+    const trimmedEmail = email?.trim();
+    if (!trimmedEmail) return;
+
+    const company = await this.companiesRepository.findOne({
+      where: { id: companyId },
+    });
+    if (!company?.isWaiting || company.isDeleted) return;
+
+    await this.emailService.sendByTemplate(
+      'COMPANY_PENDING_EMPLOYER',
+      trimmedEmail,
+      {
+        fullName: fullName?.trim() || trimmedEmail,
+        companyName: company.name,
+        companyMst: company.mst || '',
+      },
+    );
   }
 
   async deleteUserByAdmin(userId: number): Promise<void> {
