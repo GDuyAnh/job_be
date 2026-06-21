@@ -150,15 +150,6 @@ export class CreateCompanyDto {
   @IsString({ message: 'Địa chỉ thuế phải là chuỗi' })
   taxAddress?: string;
 
-  @ApiProperty({
-    description: 'Company email',
-    example: 'contact@company.com',
-    required: false,
-  })
-  @IsOptional()
-  @IsString({ message: 'Email phải là chuỗi' })
-  email?: string;
-
   @ApiProperty({ description: 'Company size', example: 100, required: false })
   @IsOptional()
   @ValidateIf((o, value) => value != null && value !== '')

@@ -22,7 +22,6 @@ import {
   PublicFreePostResponseDto,
 } from './dto/request/public-free-post.dto';
 import { RoleStatus } from '@/enum/role';
-import * as bcrypt from 'bcryptjs';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
 
@@ -96,18 +95,22 @@ export class PublicJobsController {
 
     // Helper: create company user (password auto)
     const createCompanyUser = async (companyId: number, host = false) => {
-      const username = email.split('@')[0];
-      const defaultPassword = username + '123';
-      // Use UsersService.create to ensure hashing + welcome email
-      const newUser = await this.usersService.create({
+      const username = await this.usersService.generateUniqueUsernameFromEmail(
         email,
-        username,
-        password: defaultPassword,
-        fullName: companyDto.name || username,
-        phoneNumber: undefined,
-        role: RoleStatus.COMPANY,
-        companyId,
-      } as any);
+      );
+      const defaultPassword = username + '123';
+      const newUser = await this.usersService.create(
+        {
+          email,
+          username,
+          password: defaultPassword,
+          fullName: companyDto.name || username,
+          phoneNumber: undefined,
+          role: RoleStatus.COMPANY,
+          companyId,
+        } as any,
+        { suppressRegistrationEmails: true },
+      );
 
       if (host) {
         await this.usersService.setHostCompany(newUser.id, companyId, true);
@@ -176,11 +179,32 @@ export class PublicJobsController {
         note: 'user',
       } as any);
       const savedJob = await this.jobsRepository.save(entity);
-      this.notifyAdminsJobPending(
-        Array.isArray(savedJob) ? savedJob[0] : savedJob,
-      ).catch((e) =>
+      const job = Array.isArray(savedJob) ? savedJob[0] : savedJob;
+      this.notifyAdminsJobPending(job).catch((e) =>
         console.error('Failed to send job pending admin email:', e),
       );
+      return job;
+    };
+
+    const notifyNewEmployerFreePost = (
+      companyId: number,
+      companyName: string,
+      username: string,
+      defaultPassword: string,
+    ) => {
+      this.usersService
+        .sendEmployerFreePostNotifications({
+          email,
+          fullName: companyDto.name || username,
+          username,
+          password: defaultPassword,
+          companyId,
+          jobTitle: jobDto.title,
+          companyName,
+        })
+        .catch((e) =>
+          console.error('Failed to send employer free-post emails:', e),
+        );
     };
 
     // 3) Branching by existence
@@ -189,9 +213,15 @@ export class PublicJobsController {
       if (!existingCompany) {
         // A) email not exists + company not exists -> create both then job
         const newCompany = await createCompany();
-        const { user: newUser, username, defaultPassword } = await createCompanyUser(newCompany.id, false);
+        const { user: newUser, username, defaultPassword } =
+          await createCompanyUser(newCompany.id, false);
         await createJob(newCompany.id, newUser.id);
-        // Auto login and return token
+        notifyNewEmployerFreePost(
+          newCompany.id,
+          newCompany.name,
+          username,
+          defaultPassword,
+        );
         const loginResult = await this.authService.autoLoginByEmail(email);
         return ok(
           `Đăng tin thành công! Đang chuyển hướng đến dashboard...`,
@@ -200,9 +230,15 @@ export class PublicJobsController {
         );
       } else {
         // B) email not exists + company exists -> create user (non-host), job
-        const { user: newUser, username, defaultPassword } = await createCompanyUser(existingCompany.id, false);
+        const { user: newUser, username, defaultPassword } =
+          await createCompanyUser(existingCompany.id, false);
         await createJob(existingCompany.id, newUser.id);
-        // Auto login and return token
+        notifyNewEmployerFreePost(
+          existingCompany.id,
+          existingCompany.name,
+          username,
+          defaultPassword,
+        );
         const loginResult = await this.authService.autoLoginByEmail(email);
         return ok(
           `Đăng tin thành công! Đang chuyển hướng đến dashboard...`,
@@ -230,6 +266,16 @@ export class PublicJobsController {
           );
         }
         await createJob(existingCompany.id, user.id);
+        this.usersService
+          .notifyEmployerJobPending(
+            user.email,
+            user.fullName,
+            jobDto.title,
+            existingCompany.name,
+          )
+          .catch((e) =>
+            console.error('Failed to send job pending employer email:', e),
+          );
         return ok(
           'Đăng tin thành công! Vui lòng đăng nhập để kiểm tra ở dashboard.',
         );

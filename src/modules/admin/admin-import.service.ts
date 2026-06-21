@@ -48,16 +48,21 @@ const USER_GENDER_OPTIONS: { code: number; label: string }[] = [
 ];
 const TPL_LIST_ROW_START = 2;
 const TPL_DATA_ROW_END = 500;
-const COMPANIES_TPL_COL_COUNT = 22;
+const COMPANIES_TPL_COL_COUNT = 21;
 /** id, email, …, company_id (FK), company_mst, … */
 const USERS_TPL_COL_COUNT = 20;
-/** id, title, …, company_id, company_mst, user_id, user_email, … */
-const JOBS_TPL_COL_COUNT = 23;
+/** id, title, …, company_id, user_id, …, email, deadline, posted_date, post_type, note */
+const JOBS_TPL_COL_COUNT = 26;
 const JOB_APPS_TPL_COL_COUNT = 7;
 const BLOGS_TPL_COL_COUNT = 13;
 const SELECT_MULTI_LABEL = '---Select-multi---';
 const SELECT_SINGLE_LABEL = '---Select-single---';
 type ListSelectHint = 'multi' | 'single' | 'none';
+
+function isSelectHintValue(v: string): boolean {
+  const t = v.trim();
+  return !t || t === SELECT_MULTI_LABEL || t === SELECT_SINGLE_LABEL;
+}
 
 function writeLabelsColumn(
   lists: ExcelJS.Worksheet,
@@ -304,6 +309,15 @@ const BLOG_CATEGORY_OPTIONS = [
   { code: 3, label: 'phong-van' },
   { code: 4, label: 'kinh-nghiem' },
 ];
+const POST_TYPE_OPTIONS = [
+  { code: 1, label: 'Basic' },
+  { code: 2, label: 'Hot' },
+  { code: 3, label: 'Urgent' },
+];
+const JOB_NOTE_OPTIONS = [
+  { code: 1, label: 'user' },
+  { code: 2, label: 'admin' },
+];
 
 function colToLetter(col: number): string {
   let n = col;
@@ -381,7 +395,7 @@ function rowHasImportableData(
   const pick = (keys: string[]) => keys.some((k) => str(getCell(row, h, k)) !== '');
   if (name === 'companies') return pick(['name', 'mst']);
   if (name === 'users') return pick(['email', 'username']);
-  if (name === 'jobs') return pick(['title', 'company_id', 'user_email', 'user_id']);
+  if (name === 'jobs') return pick(['title', 'company_id', 'user_id']);
   if (name === 'job_applications')
     return pick(['applicant_email', 'job_title', 'company_mst', 'job_id', 'user_id']);
   return pick(['title']);
@@ -505,11 +519,11 @@ const EXCEL_NOTE_MASTERDATA: [string, string][] = [
   ],
   [
     'Trình độ (required_qualification)',
-    'Cột required_qualification (tùy chọn): 1=Chưa tốt nghiệp; 2=Cao đẳng; 3=Đại học; 4=Sư phạm; 5=Thạc sĩ; 6=Phó tiến sĩ; 7=Tiến sĩ.',
+    'Cột required_qualification (tùy chọn, multi): nhiều mã cách phẩy. 1=Chưa tốt nghiệp; 2=Cao đẳng; 3=Đại học; 4=Sư phạm; 5=Thạc sĩ; 6=Phó tiến sĩ; 7=Tiến sĩ.',
   ],
   [
     'Giới tính (gender) — job',
-    'Cột gender trong jobs thường lưu mã chuỗi (vd 1, 2 hoặc 1,2): 1=Nam; 2=Nữ.',
+    'Cột gender trong jobs (multi): mã chuỗi (vd 1, 2 hoặc 1,2): 1=Nam; 2=Nữ.',
   ],
   [
     'Phúc lợi (benefits)',
@@ -604,7 +618,7 @@ export class AdminImportService {
     );
   }
 
-  /** Tạo mẫu .xlsx; nếu có `assets/vbaraw.bin` sẽ gắn VBA (SheetJS) → .xlsm. */
+  /** Tạo mẫu .xlsx; nếu có assets/vbaraw.bin sẽ gắn VBA (SheetJS) → .xlsm. */
   async buildImportExcelTemplate(): Promise<AdminExcelTemplateFile> {
     const vbaraw = tryReadVbarawBytes();
     const wb = new ExcelJS.Workbook();
@@ -628,6 +642,8 @@ export class AdminImportService {
       'blog_status',
       'blog_category',
       'user_gender',
+      'post_type',
+      'job_note',
     ];
     // Multi-select dùng VBA/gõ nhiều mã trong cùng ô: category/location/benefits.
     const listCat = writeLabelsColumn(lists, 1, CATEGORY, 'multi');
@@ -649,6 +665,8 @@ export class AdminImportService {
     const listBlogStatus = writeLabelsColumn(lists, 14, BLOG_STATUS_OPTIONS, 'single');
     const listBlogCategory = writeLabelsColumn(lists, 15, BLOG_CATEGORY_OPTIONS, 'single');
     const listUserGender = writeLabelsColumn(lists, 16, USER_GENDER_OPTIONS, 'single');
+    const listPostType = writeLabelsColumn(lists, 17, POST_TYPE_OPTIONS, 'single');
+    const listJobNote = writeLabelsColumn(lists, 18, JOB_NOTE_OPTIONS, 'single');
     lists.getRow(1).font = { bold: true };
     lists.state = 'hidden';
 
@@ -660,19 +678,19 @@ export class AdminImportService {
       vbaraw
         ? [
             'Macro: chọn nhiều (1ô)',
-            'Bản tải về sẽ là .xlsm (có VBA khi server có vbaraw.bin). Khi mở: Bật nội dung (Enable Content). Ở sheet "jobs": cột 4 (category), 5 (location), 20 (benefits): mỗi lần chọn từ thả xuống, giá trị sẽ nối cách phẩy trong cùng ô.',
+            'Bản tải về sẽ là .xlsm (có VBA khi server có vbaraw.bin). Khi mở: Bật nội dung (Enable Content). Ở sheet "jobs": cột 4 (category), 5 (location), 16 (required_qualification), 17 (gender), 18 (benefits): mỗi lần chọn từ thả xuống, giá trị sẽ nối cách phẩy trong cùng ô.',
           ]
         : [
             'Macro (tùy chọn)',
-            'Để tải bản .xlsm hỗ trợ nối nhiều mục trong 1ô (theo bài hướng dẫn VBA), developer tạo vbaraw.bin: xem assets/README-VBA.txt. Không bắt buộc: dùng nhiều cột hoặc dấu phẩy.',
+            'Để tải bản .xlsm hỗ trợ nối nhiều mục trong 1ô, đặt vbaraw.bin hoặc file mau-import-tuyengiaovien.xlsm trong assets. Không bắt buộc: gõ nhiều mã/nhãn cách phẩy trong cùng ô.',
           ],
       [
         'Bắt đầu nhanh',
-        '1) companies → 2) users → 3) jobs → sheet khác. Dòng 1 = tiêu đề, dữ liệu từ dòng 2. Cột A: id tạm 1, 2, 3… (một công thức cho mọi dòng — copy/drag dòng vẫn đúng; dòng dữ liệu đầu tiên phải là dòng 2). Trên "jobs": multi-select ở category (cột 4), location (cột 5), benefits (cột 20).',
+        '1) companies → 2) users → 3) jobs → sheet khác. Dòng 1 = tiêu đề, dữ liệu từ dòng 2. Cột A: id tạm 1, 2, 3… Trên "jobs": multi-select ở category (4), location (5), required_qualification (16), gender (17), benefits (18).',
       ],
       [
         'Khóa & tham chiếu trong file',
-        'company_id / user_id / job_id là id tạm trùng cột A sheet cha (cùng file). Import ưu tiên các cột *_id nếu điền đúng; không thì vẫn dùng company_mst, user_email, hoặc job_title+company_mst như cũ.',
+        'company_id / user_id / job_id là id tạm trùng cột A sheet cha (cùng file). Import ưu tiên các cột *_id; job_applications cũ có thể dùng job_title + company_mst.',
       ],
       [
         'Chung',
@@ -680,7 +698,7 @@ export class AdminImportService {
       ],
       [
         'Thứ tự import',
-        'Nên theo: companies → users → jobs → job_applications → blogs. Có thể dùng company_id / user_id / job_id (dropdown) hoặc company_mst / user_email / job_title+company_mst.',
+        'Nên theo: companies → users → jobs → job_applications → blogs. Jobs: company_id + user_id (dropdown).',
       ],
       [
         'Sheet lists (ẩn)',
@@ -688,7 +706,7 @@ export class AdminImportService {
       ],
       [
         'companies',
-        'organization_type: số, nhãn (từ sheet lists cột org), hoặc mã+nhãn. 0/1 (có thể true/false): is_waiting, is_featured. company_size, founded_year: số. Còn lại: chuỗi (name, mst, email, địa chỉ, link…).',
+        'Không có cột email (email NTD nằm ở sheet users). organization_type: số/nhãn (lists cột org). 0/1: is_waiting, is_featured. company_size, founded_year: số. Còn lại: name, mst, địa chỉ, link…',
       ],
       [
         'users',
@@ -696,11 +714,11 @@ export class AdminImportService {
       ],
       [
         'Cột nhiều mã (jobs)',
-        'Chọn nhiều danh mục/địa điểm/phúc lợi bằng cách nhập/gõ nhiều mã cách phẩy trong 1ô (hoặc dùng VBA trong file .xlsm). Hệ thống gộp và bỏ trùng, lưu mã nối bằng dấu phẩy.',
+        'Chọn nhiều danh mục/địa điểm/trình độ/giới tính/phúc lợi bằng cách nhập/gõ nhiều mã cách phẩy trong 1ô (hoặc dùng VBA trong file .xlsm). Hệ thống gộp và bỏ trùng, lưu mã nối bằng dấu phẩy.',
       ],
       [
         'jobs',
-        'Cột 4 category, 5 location, 20 benefits (multi). company_id / user_id: dropdown id từ sheet companies/users; hoặc company_mst + user_email. File cũ thiếu cột id/FK: import vẫn chạy.',
+        'Multi: cột 4 category, 5 location, 16 required_qualification, 17 gender, 18 benefits. Bắt buộc: company_id (7), user_id (8) — dropdown sheet companies/users. Tùy chọn: email (22, liên hệ tin — trùng cột jobs.email DB), deadline (23), posted_date (24), post_type (25), note (26).',
       ],
       [
         'job_applications',
@@ -726,7 +744,6 @@ export class AdminImportService {
       'id',
       'name',
       'mst',
-      'email',
       'website',
       'address',
       'tax_address',
@@ -750,7 +767,6 @@ export class AdminImportService {
       '',
       'Trường mẫu A',
       '0123456789',
-      'contact@example.com',
       'https://example.com',
       'Hà Nội',
       '',
@@ -831,7 +847,6 @@ export class AdminImportService {
       'type_of_employment',
       'company_id',
       'user_id',
-      'user_email',
       'salary_min',
       'salary_max',
       'salary_type',
@@ -845,6 +860,11 @@ export class AdminImportService {
       'image_logo',
       'banner_logo',
       'phone_number',
+      'email',
+      'deadline',
+      'posted_date',
+      'post_type',
+      'note',
     ]);
     j.addRow([
       '',
@@ -855,7 +875,6 @@ export class AdminImportService {
       SELECT_SINGLE_LABEL,
       1,
       1,
-      'user@example.com',
       10000000,
       20000000,
       SELECT_SINGLE_LABEL,
@@ -863,12 +882,17 @@ export class AdminImportService {
       SELECT_SINGLE_LABEL,
       SELECT_SINGLE_LABEL,
       SELECT_SINGLE_LABEL,
-      SELECT_SINGLE_LABEL,
-      SELECT_SINGLE_LABEL,
+      SELECT_MULTI_LABEL,
+      SELECT_MULTI_LABEL,
       SELECT_MULTI_LABEL,
       'https://placehold.co/200x200',
       'https://placehold.co/1200x400',
       '0900000000',
+      'contact@example.com',
+      '2026-12-31',
+      '',
+      SELECT_SINGLE_LABEL,
+      SELECT_SINGLE_LABEL,
     ]);
 
     const ja = wb.addWorksheet('job_applications', {
@@ -921,7 +945,7 @@ export class AdminImportService {
 
     applyListValidation(
       c,
-      8,
+      7,
       2,
       TPL_DATA_ROW_END,
       listFormula('E', listOrg.start, listOrg.end, true),
@@ -930,7 +954,7 @@ export class AdminImportService {
         text: 'Chọn 1 mục từ list. Có thể gõ số 1–8 hoặc nhãn tương ứng.',
       },
     );
-    for (const col of [11, 12]) {
+    for (const col of [10, 11]) {
       applyListValidation(c, col, 2, TPL_DATA_ROW_END, listFormula('L', listBool01.start, listBool01.end, true), {
         title: 'Cờ bật/tắt',
         text: 'Chọn 0 hoặc 1 (cũng có thể tự gõ 0/1).',
@@ -982,6 +1006,14 @@ export class AdminImportService {
       title: 'Phúc lợi',
       text: 'Chọn phúc lợi cho cột benefits (có thể chọn nhiều bằng VBA hoặc gõ nhiều mã/nhãn cách phẩy trong 1 ô).',
     };
+    const qualListOpts = {
+      title: 'Trình độ yêu cầu',
+      text: 'Chọn trình độ cho cột required_qualification (có thể chọn nhiều bằng VBA hoặc gõ nhiều mã/nhãn cách phẩy trong 1 ô).',
+    };
+    const genderListOpts = {
+      title: 'Giới tính (tin)',
+      text: 'Chọn giới tính cho cột gender (có thể chọn nhiều bằng VBA hoặc gõ nhiều mã/nhãn cách phẩy trong 1 ô).',
+    };
     // Multi-select dùng VBA hoặc gõ nhiều mã cách phẩy trong cùng 1 ô,
     // nên chỉ giữ lại cột list đầu tiên cho category/location/benefits.
     applyListValidation(
@@ -1014,15 +1046,15 @@ export class AdminImportService {
     );
     applyListValidation(j, 7, 2, TPL_DATA_ROW_END, sheetColARange('companies'), {
       title: 'company_id',
-      text: 'Chọn id công ty (cột A sheet companies), hoặc để trống và dùng company_mst.',
+      text: 'Chọn id công ty (cột A sheet companies).',
     });
-    applyListValidation(j, 9, 2, TPL_DATA_ROW_END, sheetColARange('users'), {
+    applyListValidation(j, 8, 2, TPL_DATA_ROW_END, sheetColARange('users'), {
       title: 'user_id',
-      text: 'Chọn id user (cột A sheet users), hoặc để trống và dùng user_email.',
+      text: 'Chọn id user (cột A sheet users).',
     });
     applyListValidation(
       j,
-      13, // salary_type
+      11, // salary_type
       2,
       TPL_DATA_ROW_END,
       listFormula('D', listSalary.start, listSalary.end, true),
@@ -1033,51 +1065,7 @@ export class AdminImportService {
     );
     applyListValidation(
       j,
-      16, // experience_level
-      2,
-      TPL_DATA_ROW_END,
-      listFormula('F', listExp.start, listExp.end, true),
-      {
-        title: 'Kinh nghiệm',
-        text: 'Chọn 1 từ list (có thể gõ số 1–7).',
-      },
-    );
-    applyListValidation(
-      j,
-      17, // grade
-      2,
-      TPL_DATA_ROW_END,
-      listFormula('G', listGrade.start, listGrade.end, true),
-      {
-        title: 'Cấp dạy',
-        text: 'Chọn 1: mầm non, tiểu học, trung học, … (hoặc số 1–8).',
-      },
-    );
-    applyListValidation(
-      j,
-      18, // required_qualification
-      2,
-      TPL_DATA_ROW_END,
-      listFormula('H', listQual.start, listQual.end, true),
-      {
-        title: 'Trình độ yêu cầu',
-        text: 'Chọn 1 từ list (số 1–7 nếu gõ số).',
-      },
-    );
-    applyListValidation(
-      j,
-      19, // gender
-      2,
-      TPL_DATA_ROW_END,
-      listFormula('I', listGender.start, listGender.end, true),
-      {
-        title: 'Giới tính (tin)',
-        text: 'Chọn 1: Nam hoặc Nữ. Nhiều mã: gõ 1,2 cách phẩy (ít dùng).',
-      },
-    );
-    applyListValidation(
-      j,
-      15, // job_status
+      13, // status
       2,
       TPL_DATA_ROW_END,
       listFormula('M', listJobStatus.start, listJobStatus.end, true),
@@ -1088,11 +1076,71 @@ export class AdminImportService {
     );
     applyListValidation(
       j,
-      20, // benefits
+      14, // experience_level
+      2,
+      TPL_DATA_ROW_END,
+      listFormula('F', listExp.start, listExp.end, true),
+      {
+        title: 'Kinh nghiệm',
+        text: 'Chọn 1 từ list (có thể gõ số 1–7).',
+      },
+    );
+    applyListValidation(
+      j,
+      15, // grade
+      2,
+      TPL_DATA_ROW_END,
+      listFormula('G', listGrade.start, listGrade.end, true),
+      {
+        title: 'Cấp dạy',
+        text: 'Chọn 1: mầm non, tiểu học, trung học, … (hoặc số 1–8).',
+      },
+    );
+    applyListValidation(
+      j,
+      16, // required_qualification
+      2,
+      TPL_DATA_ROW_END,
+      listFormula('H', listQual.start, listQual.end, true),
+      qualListOpts,
+    );
+    applyListValidation(
+      j,
+      17, // gender
+      2,
+      TPL_DATA_ROW_END,
+      listFormula('I', listGender.start, listGender.end, true),
+      genderListOpts,
+    );
+    applyListValidation(
+      j,
+      18, // benefits
       2,
       TPL_DATA_ROW_END,
       listFormula('J', listBenefit.start, listBenefit.end, true),
       benListOpts,
+    );
+    applyListValidation(
+      j,
+      25, // post_type
+      2,
+      TPL_DATA_ROW_END,
+      listFormula('Q', listPostType.start, listPostType.end, true),
+      {
+        title: 'Loại tin',
+        text: 'Chọn 1: Basic (cơ bản), Hot (mới nhất), Urgent (tuyển gấp).',
+      },
+    );
+    applyListValidation(
+      j,
+      26, // note
+      2,
+      TPL_DATA_ROW_END,
+      listFormula('R', listJobNote.start, listJobNote.end, true),
+      {
+        title: 'Ghi chú nguồn',
+        text: 'Chọn user hoặc admin.',
+      },
     );
     applyListValidation(ja, 2, 2, TPL_DATA_ROW_END, sheetColARange('jobs'), {
       title: 'job_id',
@@ -1145,6 +1193,8 @@ export class AdminImportService {
       listBlogStatus.end,
       listBlogCategory.end,
       listUserGender.end,
+      listPostType.end,
+      listJobNote.end,
     );
 
     setAutoColumnWidths(
@@ -1168,7 +1218,7 @@ export class AdminImportService {
     setAutoColumnWidths(
       lists,
       1,
-      16,
+      18,
       1,
       listsLastRow,
       10,
@@ -1243,7 +1293,7 @@ export class AdminImportService {
    * - Required theo sheet:
    *   - companies: name, mst
    *   - users: email, username, password
-   *   - jobs: title, detail_description, company_id, (user_id hoặc user_email)
+   *   - jobs: title, detail_description, company_id, user_id
    *   - job_applications: job_id, user_id (resume_path/cover_letter_* optional)
    *   - blogs: title, content (hoặc description), url, status (còn lại optional)
    */
@@ -1262,6 +1312,17 @@ export class AdminImportService {
       if (!ws) continue;
       const h = buildHeaderMap(ws, 1);
       if (h.size === 0) continue;
+
+      if (name === 'companies' && h.has('email')) {
+        errors.push(
+          'sheet "companies": cột "email" đã bỏ — xóa cột này khỏi file (email NTD điền ở sheet users, cột email).',
+        );
+      }
+      if (name === 'jobs' && (h.has('user_email') || h.has('job_email'))) {
+        errors.push(
+          'sheet "jobs": cột "user_email" / "job_email" đã bỏ — dùng user_id (dropdown users) và email (liên hệ tin, trùng jobs.email trong DB).',
+        );
+      }
 
       for (let r = 2; r <= ws.rowCount; r++) {
         const row = ws.getRow(r);
@@ -1305,11 +1366,10 @@ export class AdminImportService {
             str(getCell(row, h, 'description'));
           const excelCompanyId = getResolvedNum(row, h, 'company_id');
           const excelUserId = getResolvedNum(row, h, 'user_id');
-          const userEmail = str(getCell(row, h, 'user_email'));
           if (!title) errors.push(`${ctx}: thiếu title`);
           if (!detailDescription) errors.push(`${ctx}: thiếu detail_description`);
           if (excelCompanyId == null) errors.push(`${ctx}: thiếu company_id`);
-          if (excelUserId == null && !userEmail) errors.push(`${ctx}: thiếu user_id hoặc user_email`);
+          if (excelUserId == null) errors.push(`${ctx}: thiếu user_id`);
 
           const salaryMin = num(getCell(row, h, 'salary_min'), 0);
           const salaryMax = num(getCell(row, h, 'salary_max'), 0);
@@ -1485,7 +1545,6 @@ export class AdminImportService {
             const ent = this.companyRepository.create({
               name: companyName,
               mst,
-              email: str(getCell(row, h, 'email')) || null,
               website: str(getCell(row, h, 'website')) || null,
               address: str(getCell(row, h, 'address')) || null,
               taxAddress: str(getCell(row, h, 'tax_address')) || null,
@@ -1631,18 +1690,17 @@ export class AdminImportService {
             const detailDescription =
               str(getCell(row, h, 'detail_description')) ||
               str(getCell(row, h, 'description'));
-            const userEmail = str(getCell(row, h, 'user_email'));
             const excelJobCompanyId = getResolvedNum(row, h, 'company_id');
             const excelJobUserId = getResolvedNum(row, h, 'user_id');
             if (
               !title ||
               !detailDescription ||
               excelJobCompanyId == null ||
-              (!userEmail && excelJobUserId == null)
+              excelJobUserId == null
             ) {
               const cell = getCellByField(h, r, 'title');
               errors.push(
-                `${ctx}${cell ? `: cell ${cell}` : ''}: cần title, detail_description, company_id, và (user_email hoặc user_id)`,
+                `${ctx}${cell ? `: cell ${cell}` : ''}: cần title, detail_description, company_id, user_id`,
               );
               continue;
             }
@@ -1684,27 +1742,14 @@ export class AdminImportService {
               }
             }
             if (!userId) {
-              userId = emailToUserId.get(userEmail) ?? 0;
-              if (!userId) {
-                const u = await this.userRepository.findOne({ where: { email: userEmail } });
-                if (u) {
-                  userId = u.id;
-                  emailToUserId.set(userEmail, u.id);
-                }
-              }
-            }
-            if (!userId) {
-              const cell = getCellByField(h, r, 'user_email');
-              errors.push(`${ctx}${cell ? `: cell ${cell}` : ''}: không tìm thấy user (user_id / user_email)`);
+              const cell = getCellByField(h, r, 'user_id');
+              errors.push(`${ctx}${cell ? `: cell ${cell}` : ''}: không tìm thấy user (user_id)`);
               continue;
             }
 
             const rawStatus = str(getCell(row, h, 'status'));
             const rawTrim = rawStatus.trim();
-            const st =
-              !rawTrim || rawTrim === SELECT_MULTI_LABEL || rawTrim === SELECT_SINGLE_LABEL
-                ? 'APPROVED'
-                : rawTrim.toUpperCase();
+            const st = isSelectHintValue(rawTrim) ? 'APPROVED' : rawTrim.toUpperCase();
             const allowedJobsStatus = ['APPROVED', 'ADMIN_REVIEW', 'PENDING', 'REJECTED'];
             if (!allowedJobsStatus.includes(st)) {
               const cell = getCellByField(h, r, 'status');
@@ -1799,12 +1844,18 @@ export class AdminImportService {
               salaryMin,
               salaryMax,
               salaryType,
-              email: str(getCell(row, h, 'job_email')) || str(getCell(row, h, 'email')) || null,
+              email: str(getCell(row, h, 'email')) || null,
               phoneNumber: str(getCell(row, h, 'phone_number')) || null,
               benefits,
               address,
-              postType: str(getCell(row, h, 'post_type')) || 'Basic',
-              note: str(getCell(row, h, 'note')) || 'user',
+              postType: (() => {
+                const raw = str(getCell(row, h, 'post_type'));
+                return isSelectHintValue(raw) ? 'Basic' : raw || 'Basic';
+              })(),
+              note: (() => {
+                const raw = str(getCell(row, h, 'note'));
+                return isSelectHintValue(raw) ? 'user' : raw || 'user';
+              })(),
             } as Job);
             const saved = await this.jobRepository.save(ent);
             jobKeyToId.set(`#${companyId}::${title}`, saved.id);

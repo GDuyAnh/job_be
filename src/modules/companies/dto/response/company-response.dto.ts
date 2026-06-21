@@ -39,6 +39,12 @@ export class CompanyResponseDto {
   })
   isFeatured: boolean;
 
+  @ApiProperty({
+    description: 'Soft-delete flag (admin rejected / removed company)',
+    default: false,
+  })
+  isDeleted: boolean;
+
   @ApiProperty({ description: 'Facebook link', nullable: true })
   facebookLink: string | null;
 
@@ -71,9 +77,6 @@ export class CompanyResponseDto {
 
   @ApiProperty({ description: 'Founded year', nullable: true })
   foundedYear: number | null;
-
-  @ApiProperty({ description: 'Company email' })
-  email: string;
 
   @ApiProperty({ description: 'Company description', nullable: true })
   description: string | null;
@@ -120,6 +123,7 @@ export class CompanyResponseDto {
     this.organizationType = company.organizationType;
     this.isWaiting = company.isWaiting;
     this.isFeatured = company.isFeatured;
+    this.isDeleted = company.isDeleted ?? false;
     this.facebookLink = company.facebookLink;
     this.twitterLink = company.twitterLink;
     this.linkedInLink = company.linkedInLink;
@@ -131,7 +135,6 @@ export class CompanyResponseDto {
     this.bannerImage = company.bannerImage ?? null;
     this.companySize = company.companySize;
     this.foundedYear = company.foundedYear;
-    this.email = company.email;
     this.description = company.description;
     this.insight = company.insight;
     this.overview = company.overview;

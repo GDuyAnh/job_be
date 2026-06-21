@@ -124,6 +124,7 @@ export class CompaniesService {
         .select('company')
         .addSelect('COUNT(job.id)', 'openPositions')
         .where('company.isWaiting = :isWaiting', { isWaiting: false })
+        .andWhere('company.isDeleted = :isDeleted', { isDeleted: false })
         .groupBy('company.id')
         .getRawAndEntities();
 
@@ -186,6 +187,7 @@ export class CompaniesService {
 
     // Filter out companies waiting for approval (for public search)
     qb.andWhere('company.isWaiting = :isWaiting', { isWaiting: false });
+    qb.andWhere('company.isDeleted = :isDeleted', { isDeleted: false });
 
     qb.groupBy('company.id');
 
@@ -238,8 +240,8 @@ export class CompaniesService {
       user?.role === RoleStatus.COMPANY && user?.companyId === companyId;
 
     if (!isAdmin && !isOwner) {
-      // Only show approved companies to public
-      if (company.isWaiting) {
+      // Only show approved, non-deleted companies to public
+      if (company.isWaiting || company.isDeleted) {
         throw new NotFoundException('Không tìm thấy công ty');
       }
     }
@@ -292,6 +294,7 @@ export class CompaniesService {
       });
 
       if (!company) continue;
+      if (company.isDeleted) continue;
 
       const jobs = await this.jobsRepository.find({
         where: {
@@ -353,6 +356,9 @@ export class CompaniesService {
       throw new ConflictException('Tên công ty đã tồn tại');
     }
 
+    const prevIsWaiting = company.isWaiting;
+    const prevIsDeleted = company.isDeleted;
+
     // Destructure and handle MST separately to prevent data loss
     // MST, logo, and companyImages are extracted separately, so companyData won't contain them
     const { companyImages, logo, mst, ...companyData } = data;
@@ -380,7 +386,24 @@ export class CompaniesService {
 
     // Update other fields (MST is already handled above, so it won't be overwritten)
     Object.assign(company, companyData);
+
+    // Admin duyệt lại: bỏ cờ xóa mềm khi chuyển sang đã duyệt
+    if (isAdmin && company.isWaiting === false) {
+      company.isDeleted = false;
+    }
+
     const updated = await this.companiesRepository.save(company);
+
+    if (
+      isAdmin &&
+      !updated.isWaiting &&
+      !updated.isDeleted &&
+      (prevIsWaiting || prevIsDeleted)
+    ) {
+      this.notifyCompanyApproved(updated.id).catch((e) =>
+        console.error('Failed to send company approved email:', e),
+      );
+    }
 
     if (companyImages !== undefined) {
       const prevImages = (company.companyImages || []).map((i) => i.url).filter(Boolean);
@@ -423,38 +446,24 @@ export class CompaniesService {
   async delete(id: number): Promise<void> {
     const company = await this.companiesRepository.findOne({
       where: { id },
-      relations: ['companyImages'],
     });
 
     if (!company) {
       throw new NotFoundException(`Company with ID ${id} Không tìm thấy`);
     }
 
-    const jobCount = await this.jobsRepository.count({
-      where: { companyId: id },
-    });
-
-    if (jobCount > 0) {
-      throw new BadRequestException('Không thể xóa công ty đang có tin tuyển dụng hoạt động');
+    if (company.isDeleted) {
+      return;
     }
 
-    // Best-effort: xóa file trên R2 trước khi xóa record
-    const urlsToDelete: string[] = [];
-    if (company.logo) urlsToDelete.push(company.logo);
-    if (company.bannerImage) urlsToDelete.push(company.bannerImage);
-    if (company.companyImages?.length) {
-      urlsToDelete.push(...company.companyImages.map((i) => i.url).filter(Boolean));
-    }
-    if (urlsToDelete.length > 0) {
-      this.uploadService.deleteBatch(urlsToDelete).catch((e) => console.error('R2 delete (company) failed:', e));
-    }
+    company.isDeleted = true;
+    company.isWaiting = false;
+    await this.companiesRepository.save(company);
 
-    // Xóa company images trước (cascade sẽ tự động xóa nhưng để chắc chắn)
-    if (company.companyImages && company.companyImages.length > 0) {
-      await this.companyImageRepository.remove(company.companyImages);
-    }
-
-    await this.companiesRepository.delete(id);
+    this.notifyCompanyRejected(
+      company.id,
+      'Công ty đã bị từ chối và gỡ khỏi hệ thống.',
+    ).catch((e) => console.error('Failed to send company rejected email:', e));
   }
 
   async listForAdmin(
@@ -474,7 +483,7 @@ export class CompaniesService {
     if (!noFilterKeyword) {
       const kw = `%${dto.keyword.trim()}%`;
       qb.andWhere(
-        '(LOWER(company.name) LIKE LOWER(:keyword) OR company.mst LIKE :keyword OR LOWER(company.email) LIKE LOWER(:keyword))',
+        '(LOWER(company.name) LIKE LOWER(:keyword) OR company.mst LIKE :keyword)',
         { keyword: kw },
       );
     }
@@ -576,13 +585,23 @@ export class CompaniesService {
       throw new NotFoundException('Không tìm thấy công ty');
     }
 
+    if (company.isDeleted) {
+      throw new BadRequestException('Công ty đã bị từ chối, không thể duyệt lại');
+    }
+
+    const wasWaiting = company.isWaiting;
+    const wasDeleted = company.isDeleted;
+
     // Approve company: set isWaiting = false
     company.isWaiting = false;
+    company.isDeleted = false;
     const updatedCompany = await this.companiesRepository.save(company);
 
-    this.notifyCompanyApproved(updatedCompany.id).catch((e) =>
-      console.error('Failed to send company approved email:', e),
-    );
+    if (wasWaiting || wasDeleted) {
+      this.notifyCompanyApproved(updatedCompany.id).catch((e) =>
+        console.error('Failed to send company approved email:', e),
+      );
+    }
 
     return new CompanyResponseDto(updatedCompany);
   }
@@ -601,6 +620,7 @@ export class CompaniesService {
     }
 
     company.isWaiting = false;
+    company.isDeleted = true;
     const updatedCompany = await this.companiesRepository.save(company);
 
     this.notifyCompanyRejected(
@@ -626,37 +646,42 @@ export class CompaniesService {
   }
 
   private async notifyCompanyApproved(companyId: number): Promise<void> {
-    const host = await this.usersService.findHostByCompanyId(companyId);
-    if (!host?.email) return;
-
-    const company = await this.companiesRepository.findOne({
-      where: { id: companyId },
-    });
-    if (!company) return;
-
-    await this.emailService.sendByTemplate('COMPANY_APPROVED', host.email, {
-      fullName: host.fullName,
-      companyName: company.name,
-    });
+    await this.notifyCompanyUsersByTemplate(companyId, 'COMPANY_APPROVED', {});
   }
 
   private async notifyCompanyRejected(
     companyId: number,
     rejectReason: string,
   ): Promise<void> {
-    const host = await this.usersService.findHostByCompanyId(companyId);
-    if (!host?.email) return;
+    await this.notifyCompanyUsersByTemplate(companyId, 'COMPANY_REJECTED', {
+      rejectReason,
+    });
+  }
+
+  /** Gửi email cho mọi user NTD đang hoạt động thuộc công ty. */
+  private async notifyCompanyUsersByTemplate(
+    companyId: number,
+    code: 'COMPANY_APPROVED' | 'COMPANY_REJECTED',
+    extra: Record<string, string>,
+  ): Promise<void> {
+    const recipients =
+      await this.usersService.findCompanyUserRecipients(companyId);
+    if (!recipients.length) return;
 
     const company = await this.companiesRepository.findOne({
       where: { id: companyId },
     });
     if (!company) return;
 
-    await this.emailService.sendByTemplate('COMPANY_REJECTED', host.email, {
-      fullName: host.fullName,
-      companyName: company.name,
-      rejectReason,
-    });
+    await Promise.all(
+      recipients.map((recipient) =>
+        this.emailService.sendByTemplate(code, recipient.email, {
+          fullName: recipient.fullName,
+          companyName: company.name,
+          ...extra,
+        }),
+      ),
+    );
   }
 
   async getApplicationsByJobOwner(
@@ -718,7 +743,7 @@ export class CompaniesService {
     const company = this.companiesRepository.create({
       name: companyName,
       mst: taxCode.trim(),
-      logo: 'https://via.placeholder.com/150', // Logo mặc định
+      logo: '/images/company-logo-placeholder.svg',
       address: '',
       organizationType: 1, // Mặc định là loại hình đầu tiên
       isWaiting: true, // Cần admin duyệt
