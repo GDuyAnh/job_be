@@ -22,11 +22,22 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 import { Roles } from '@/modules/constants/roles.decorator';
 import { RoleStatus } from '@/enum/role';
+import { PublicAdminContactDto } from './dto/public-admin-contact.dto';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('public/admin-contact')
+  @ApiResponse({
+    status: 200,
+    description: 'Thông tin liên hệ admin (email, hotline) — public',
+    type: PublicAdminContactDto,
+  })
+  async getPublicAdminContact(): Promise<PublicAdminContactDto | null> {
+    return this.usersService.findPublicAdminContact();
+  }
 
   @Post('register')
   @ApiResponse({ status: 201, description: 'success', type: User })

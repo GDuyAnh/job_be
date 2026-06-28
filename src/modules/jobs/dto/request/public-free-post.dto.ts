@@ -61,30 +61,27 @@ export class PublicJobDto {
   @Type(() => Number)
   typeOfEmployment: number;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty()
   @IsNumber()
   @Type(() => Number)
-  experienceLevel?: number;
+  experienceLevel: number;
 
   @ApiProperty({
-    required: false,
     description: 'Comma-separated required qualification ids',
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  requiredQualification?: string;
+  requiredQualification: string;
 
-  @ApiProperty({ required: false, description: 'Comma-separated gender ids' })
-  @IsOptional()
+  @ApiProperty({ description: 'Comma-separated gender ids' })
+  @IsNotEmpty()
   @IsString()
-  gender?: string;
+  gender: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty()
   @IsNumber()
   @Type(() => Number)
-  grade?: number;
+  grade: number;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -123,6 +120,13 @@ export class PublicJobDto {
   @IsNotEmpty()
   @IsString()
   email: string;
+
+  @ApiProperty({
+    description: 'Comma-separated benefit ids (e.g. "1,2,3")',
+  })
+  @IsNotEmpty()
+  @IsString()
+  benefits: string;
 
   @ApiProperty()
   @IsNotEmpty()

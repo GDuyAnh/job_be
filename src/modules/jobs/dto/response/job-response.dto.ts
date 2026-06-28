@@ -62,7 +62,7 @@ export class JobResponseDto {
   updatedAt: Date;
 
   @ApiProperty({
-    description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
+    description: 'Job status: ADMIN_REVIEW | APPROVED | REJECTED',
     example: 'APPROVED',
   })
   status: string;

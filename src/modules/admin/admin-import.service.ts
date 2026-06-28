@@ -296,8 +296,7 @@ const YES_NO_OPTIONS = [
 const JOB_STATUS_OPTIONS = [
   { code: 1, label: 'APPROVED' },
   { code: 2, label: 'ADMIN_REVIEW' },
-  { code: 3, label: 'PENDING' },
-  { code: 4, label: 'REJECTED' },
+  { code: 3, label: 'REJECTED' },
 ];
 const BLOG_STATUS_OPTIONS = [
   { code: 1, label: 'published' },
@@ -385,6 +384,26 @@ function createProvIdAllocator(): (row: ExcelJS.Row, h: HeaderMap) => number {
     seq += 1;
     return seq;
   };
+}
+
+export type AdminImportDataMode = 'clear' | 'keep';
+
+/** Id cột A trong Excel là id tạm — khi giữ data cũ không được fallback sang id DB trùng số. */
+async function resolveImportFkId(
+  excelId: number,
+  provMap: Map<number, number>,
+  keepExistingData: boolean,
+  findByDbId: () => Promise<{ id: number } | null>,
+): Promise<number | null> {
+  const mapped = provMap.get(excelId);
+  if (mapped != null) return mapped;
+  if (keepExistingData) return null;
+  const found = await findByDbId();
+  if (found) {
+    provMap.set(excelId, found.id);
+    return found.id;
+  }
+  return null;
 }
 
 function rowHasImportableData(
@@ -557,6 +576,20 @@ export class AdminImportService {
     @InjectRepository(CompanyImage)
     private readonly companyImageRepository: Repository<CompanyImage>,
   ) {}
+
+  private async seedExistingImportLookups(
+    mstToCompanyId: Map<string, number>,
+    emailToUserId: Map<string, number>,
+  ): Promise<void> {
+    const companies = await this.companyRepository.find({ select: ['id', 'mst'] });
+    for (const c of companies) {
+      if (c.mst) mstToCompanyId.set(c.mst, c.id);
+    }
+    const users = await this.userRepository.find({ select: ['id', 'email'] });
+    for (const u of users) {
+      if (u.email) emailToUserId.set(u.email, u.id);
+    }
+  }
 
   /**
    * Xóa toàn bộ dữ liệu thuộc phạm vi import (trừ user role ADMIN).
@@ -1071,7 +1104,7 @@ export class AdminImportService {
       listFormula('M', listJobStatus.start, listJobStatus.end, true),
       {
         title: 'Trạng thái tin',
-        text: 'Chọn 1: APPROVED, ADMIN_REVIEW, PENDING, REJECTED.',
+        text: 'Chọn 1: APPROVED, ADMIN_REVIEW, REJECTED.',
       },
     );
     applyListValidation(
@@ -1455,7 +1488,10 @@ export class AdminImportService {
     }
   }
 
-  async importFromExcelBuffer(fileBuffer: Buffer): Promise<AdminImportResultDto> {
+  async importFromExcelBuffer(
+    fileBuffer: Buffer,
+    options?: { dataMode?: AdminImportDataMode },
+  ): Promise<AdminImportResultDto> {
     if (!fileBuffer || fileBuffer.length === 0) {
       throw new BadRequestException('File rỗng');
     }
@@ -1478,6 +1514,8 @@ export class AdminImportService {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(fileBuffer as unknown as never);
 
+    const keepExistingData = options?.dataMode !== 'clear';
+
     // Validate trước, nếu có lỗi: không xóa data cũ, không import.
     const validateErrors = await this.validateExcelBeforeImport(wb);
     if (validateErrors.length > 0) {
@@ -1487,8 +1525,12 @@ export class AdminImportService {
       };
     }
 
-    // Chỉ xóa dữ liệu cũ khi validate OK
-    await this.clearAllDataBeforeExcelImport();
+    if (keepExistingData) {
+      await this.seedExistingImportLookups(mstToCompanyId, emailToUserId);
+      this.log.log('Import Excel: giữ nguyên dữ liệu cũ — chỉ thêm mới / bỏ qua bản ghi trùng.');
+    } else {
+      await this.clearAllDataBeforeExcelImport();
+    }
 
     for (const name of [
       'companies',
@@ -1598,15 +1640,12 @@ export class AdminImportService {
             const excelCompanyId = getResolvedNum(row, h, 'company_id');
             let companyId: number | null = null;
             if (excelCompanyId != null) {
-              const mapped = provCompanyIdToDbId.get(excelCompanyId);
-              if (mapped) companyId = mapped;
-              else {
-                const cById = await this.companyRepository.findOne({ where: { id: excelCompanyId } });
-                if (cById) {
-                  companyId = cById.id;
-                  provCompanyIdToDbId.set(excelCompanyId, cById.id);
-                }
-              }
+              companyId = await resolveImportFkId(
+                excelCompanyId,
+                provCompanyIdToDbId,
+                keepExistingData,
+                () => this.companyRepository.findOne({ where: { id: excelCompanyId } }),
+              );
             }
             if (companyId == null && companyMst) {
               const cid = mstToCompanyId.get(companyMst);
@@ -1714,16 +1753,13 @@ export class AdminImportService {
               continue;
             }
             let companyId = 0;
-            // company_id là bắt buộc: chỉ resolve từ id (ưu tiên map id tạm trong file -> id DB)
-            const mapped = provCompanyIdToDbId.get(excelJobCompanyId!);
-            if (mapped) companyId = mapped;
-            else {
-              const cById = await this.companyRepository.findOne({ where: { id: excelJobCompanyId! } });
-              if (cById) {
-                companyId = cById.id;
-                provCompanyIdToDbId.set(excelJobCompanyId!, cById.id);
-              }
-            }
+            const resolvedCompanyId = await resolveImportFkId(
+              excelJobCompanyId!,
+              provCompanyIdToDbId,
+              keepExistingData,
+              () => this.companyRepository.findOne({ where: { id: excelJobCompanyId! } }),
+            );
+            if (resolvedCompanyId) companyId = resolvedCompanyId;
             if (!companyId) {
               const cell = getCellByField(h, r, 'company_id');
               errors.push(`${ctx}${cell ? `: cell ${cell}` : ''}: không tìm thấy company (company_id)`);
@@ -1731,15 +1767,13 @@ export class AdminImportService {
             }
             let userId = 0;
             if (excelJobUserId != null) {
-              const mapped = provUserIdToDbId.get(excelJobUserId);
-              if (mapped) userId = mapped;
-              else {
-                const uById = await this.userRepository.findOne({ where: { id: excelJobUserId } });
-                if (uById) {
-                  userId = uById.id;
-                  provUserIdToDbId.set(excelJobUserId, uById.id);
-                }
-              }
+              const resolvedUserId = await resolveImportFkId(
+                excelJobUserId,
+                provUserIdToDbId,
+                keepExistingData,
+                () => this.userRepository.findOne({ where: { id: excelJobUserId } }),
+              );
+              if (resolvedUserId) userId = resolvedUserId;
             }
             if (!userId) {
               const cell = getCellByField(h, r, 'user_id');
@@ -1749,8 +1783,9 @@ export class AdminImportService {
 
             const rawStatus = str(getCell(row, h, 'status'));
             const rawTrim = rawStatus.trim();
-            const st = isSelectHintValue(rawTrim) ? 'APPROVED' : rawTrim.toUpperCase();
-            const allowedJobsStatus = ['APPROVED', 'ADMIN_REVIEW', 'PENDING', 'REJECTED'];
+            let st = isSelectHintValue(rawTrim) ? 'APPROVED' : rawTrim.toUpperCase();
+            if (st === 'PENDING') st = 'ADMIN_REVIEW';
+            const allowedJobsStatus = ['APPROVED', 'ADMIN_REVIEW', 'REJECTED'];
             if (!allowedJobsStatus.includes(st)) {
               const cell = getCellByField(h, r, 'status');
               errors.push(`${ctx}${cell ? `: cell ${cell}` : ''}: status: giá trị không hợp lệ "${rawStatus}"`);
@@ -1876,15 +1911,13 @@ export class AdminImportService {
             }
             let userId = 0;
             if (excelJaUserId != null) {
-              const mapped = provUserIdToDbId.get(excelJaUserId);
-              if (mapped) userId = mapped;
-              else {
-                const uById = await this.userRepository.findOne({ where: { id: excelJaUserId } });
-                if (uById) {
-                  userId = uById.id;
-                  provUserIdToDbId.set(excelJaUserId, uById.id);
-                }
-              }
+              const resolvedUserId = await resolveImportFkId(
+                excelJaUserId,
+                provUserIdToDbId,
+                keepExistingData,
+                () => this.userRepository.findOne({ where: { id: excelJaUserId } }),
+              );
+              if (resolvedUserId) userId = resolvedUserId;
             }
             if (!userId && applicantEmail) {
               userId = emailToUserId.get(applicantEmail) ?? 0;
@@ -1903,15 +1936,13 @@ export class AdminImportService {
             const key = `${companyMst}::${jobTitle}`;
             let jobId = 0;
             if (excelJaJobId != null) {
-              const mapped = provJobIdToDbId.get(excelJaJobId);
-              if (mapped) jobId = mapped;
-              else {
-                const jById = await this.jobRepository.findOne({ where: { id: excelJaJobId } });
-                if (jById) {
-                  jobId = jById.id;
-                  provJobIdToDbId.set(excelJaJobId, jById.id);
-                }
-              }
+              const resolvedJobId = await resolveImportFkId(
+                excelJaJobId,
+                provJobIdToDbId,
+                keepExistingData,
+                () => this.jobRepository.findOne({ where: { id: excelJaJobId } }),
+              );
+              if (resolvedJobId) jobId = resolvedJobId;
             }
             if (!jobId) jobId = jobKeyToId.get(key) ?? 0;
             if (!jobId) {

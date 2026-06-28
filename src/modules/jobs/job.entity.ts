@@ -84,7 +84,7 @@ export class Job {
   updatedAt: Date;
 
   @ApiProperty({
-    description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED. Chỉ hiển thị khi APPROVED.',
+    description: 'Job status: ADMIN_REVIEW | APPROVED | REJECTED. Chỉ hiển thị khi APPROVED.',
   })
   @Column({ type: 'varchar', length: 20, nullable: true, default: 'ADMIN_REVIEW' })
   status: string;

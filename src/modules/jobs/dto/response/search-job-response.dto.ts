@@ -56,7 +56,7 @@ export class JobSearchResponseDto {
   @ApiProperty({ description: 'User ID', example: 1 })
   userId: number;
 
-  @ApiProperty({ description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED' })
+  @ApiProperty({ description: 'Job status: ADMIN_REVIEW | APPROVED | REJECTED' })
   status: string;
 
   @ApiProperty({ description: 'Application deadline', required: false })

@@ -19,7 +19,7 @@ import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { ApiTags, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService, AdminStatsDto } from './admin.service';
-import { AdminImportService, AdminImportResultDto } from './admin-import.service';
+import { AdminImportService, AdminImportResultDto, AdminImportDataMode } from './admin-import.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../constants/roles.decorator';
@@ -104,16 +104,18 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description:
-      'Trước khi import: xóa toàn bộ companies, jobs, job_applications, blogs, job_benefit, company_image và user không phải ADMIN (giữ tài khoản ADMIN). Sau đó import từ Excel — summary + lỗi theo dòng nếu có.',
+      'Import từ Excel. dataMode=clear: xóa toàn bộ companies, jobs, … trước khi import. dataMode=keep (mặc định): giữ dữ liệu cũ, thêm mới và map id tạm trong file.',
   })
   @ApiBearerAuth()
   async postImportExcel(
     @UploadedFile() file: Express.Multer.File,
+    @Body('dataMode') dataMode?: string,
   ): Promise<AdminImportResultDto> {
     if (!file?.buffer) {
       throw new BadRequestException('Vui lòng gửi file (field: file)');
     }
-    return this.adminImportService.importFromExcelBuffer(file.buffer);
+    const mode: AdminImportDataMode = dataMode === 'clear' ? 'clear' : 'keep';
+    return this.adminImportService.importFromExcelBuffer(file.buffer, { dataMode: mode });
   }
 
   @Get('applications')
