@@ -70,7 +70,7 @@ export class SearchJobAdminDto {
   experienceLevel?: number[];
 
   @ApiPropertyOptional({
-    description: 'Filter by job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
+    description: 'Filter by job status: ADMIN_REVIEW | APPROVED | REJECTED',
   })
   @IsOptional()
   @IsString()

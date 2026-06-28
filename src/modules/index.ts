@@ -8,3 +8,4 @@ export { BlogsModule } from './blogs/blogs.module';
 export { UploadModule } from './upload/upload.module';
 export { EmailModule } from './email/email.module';
 export { AdminModule } from './admin/admin.module';
+export { ContactModule } from './contact/contact.module';

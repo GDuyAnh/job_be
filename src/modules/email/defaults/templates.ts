@@ -421,6 +421,45 @@ export const DEFAULT_EMAIL_TEMPLATES: DefaultEmailTemplate[] = [
     ],
     isActive: true,
   },
+  {
+    code: 'CONTACT_FORM_USER',
+    name: 'Xác nhận form liên hệ',
+    description: 'Gửi cho người dùng sau khi gửi tin nhắn qua trang Liên hệ.',
+    subject: 'Đã nhận tin nhắn của bạn - {{siteName}}',
+    htmlBody: wrapBody(
+      'Cảm ơn bạn đã liên hệ',
+      `<p>Xin chào <strong>{{fullName}}</strong>,</p>
+<p>Chúng tôi đã nhận tin nhắn của bạn với chủ đề <strong>{{subjectLabel}}</strong>.</p>
+<p>Đội ngũ {{siteName}} sẽ phản hồi qua email <strong>{{email}}</strong> trong thời gian sớm nhất.</p>
+<div class="credentials">
+  <p><strong>Nội dung:</strong></p>
+  <p>{{message}}</p>
+</div>
+<p>Trân trọng,<br><strong>Đội ngũ {{siteName}}</strong></p>`,
+    ),
+    variables: ['fullName', 'email', 'subjectLabel', 'message', 'siteName', 'year'],
+    isActive: true,
+  },
+  {
+    code: 'CONTACT_FORM_ADMIN',
+    name: 'Tin nhắn liên hệ mới (admin)',
+    description: 'Gửi cho admin khi có tin nhắn mới từ form Liên hệ.',
+    subject: '[Liên hệ] {{subjectLabel}} - {{fullName}}',
+    htmlBody: wrapBody(
+      'Tin nhắn liên hệ mới',
+      `<p>Có tin nhắn mới từ form liên hệ trên website.</p>
+<div class="credentials">
+  <p><strong>Họ tên:</strong> {{fullName}}</p>
+  <p><strong>Email:</strong> {{email}}</p>
+  <p><strong>Chủ đề:</strong> {{subjectLabel}}</p>
+  <p><strong>Nội dung:</strong></p>
+  <p>{{message}}</p>
+</div>
+<p>Vui lòng phản hồi người gửi qua email trực tiếp.</p>`,
+    ),
+    variables: ['fullName', 'email', 'subjectLabel', 'message', 'siteName', 'year'],
+    isActive: true,
+  },
 ];
 
 export function getDefaultTemplate(code: string): DefaultEmailTemplate | undefined {

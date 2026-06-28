@@ -203,7 +203,7 @@ export class JobDetailDto {
   jobAddress: string | null;
 
   @ApiProperty({
-    description: 'Job status: ADMIN_REVIEW | PENDING | APPROVED | REJECTED',
+    description: 'Job status: ADMIN_REVIEW | APPROVED | REJECTED',
     example: 'APPROVED',
   })
   @IsString()

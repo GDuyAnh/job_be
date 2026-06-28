@@ -11,6 +11,7 @@ import {
   BlogsModule,
   UploadModule,
   AdminModule,
+  ContactModule,
 } from '@/modules';
 import { LoggerMiddleware } from '@common/middleware/logger.middleware';
 import appConfig from '@/config/app.config';
@@ -45,6 +46,7 @@ import emailConfig from '@/config/email.config';
     BlogsModule,
     UploadModule,
     AdminModule,
+    ContactModule,
   ],
 })
 export class AppModule implements NestModule {

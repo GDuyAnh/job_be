@@ -36,6 +36,13 @@ import {
   ApplicationStatus,
 } from '@/enum/application-status';
 
+function normalizeJobStatus(status?: string | null, fallback = 'ADMIN_REVIEW'): string {
+  const s = (status?.trim() || fallback).toUpperCase();
+  if (s === 'PENDING') return 'ADMIN_REVIEW';
+  const valid = ['ADMIN_REVIEW', 'APPROVED', 'REJECTED'];
+  return valid.includes(s) ? s : fallback;
+}
+
 @Injectable()
 export class JobsService {
   constructor(
@@ -143,9 +150,7 @@ export class JobsService {
       );
     }
 
-    const status = (data.status?.trim() || 'ADMIN_REVIEW').toUpperCase();
-    const validStatuses = ['ADMIN_REVIEW', 'PENDING', 'APPROVED', 'REJECTED'];
-    const jobStatus = validStatuses.includes(status) ? status : 'ADMIN_REVIEW';
+    const jobStatus = normalizeJobStatus(data.status);
     data.status = jobStatus;
     data.userId = data.userId;
     data.detailDescription = (data.detailDescription ?? '').trim();
@@ -213,9 +218,10 @@ export class JobsService {
     const previousStatus = job.status;
 
     if (data.status !== undefined && data.status !== null) {
-      const status = String(data.status).trim().toUpperCase();
-      const validStatuses = ['ADMIN_REVIEW', 'PENDING', 'APPROVED', 'REJECTED'];
-      (data as any).status = validStatuses.includes(status) ? status : job.status || 'ADMIN_REVIEW';
+      (data as any).status = normalizeJobStatus(
+        String(data.status),
+        job.status || 'ADMIN_REVIEW',
+      );
     }
     // note không đổi khi update — chỉ dùng để biết admin add hay user add lúc tạo
     (data as any).note = job.note ?? 'user';

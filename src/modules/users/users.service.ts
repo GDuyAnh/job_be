@@ -280,6 +280,25 @@ export class UsersService {
     return [...new Set(admins.map((a) => a.email?.trim()).filter(Boolean))];
   }
 
+  /** Thông tin liên hệ công khai — admin đầu tiên (active) trong hệ thống. */
+  async findPublicAdminContact(): Promise<{
+    fullName: string;
+    email: string;
+    phoneNumber: string | null;
+  } | null> {
+    const admin = await this.usersRepository.findOne({
+      where: { role: RoleStatus.ADMIN, isActive: true },
+      order: { id: 'ASC' },
+    });
+    if (!admin?.email?.trim()) return null;
+
+    return {
+      fullName: admin.fullName?.trim() || 'Admin',
+      email: admin.email.trim(),
+      phoneNumber: admin.phoneNumber?.trim() || null,
+    };
+  }
+
   async findHostByCompanyId(companyId: number): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { companyId, isHostCompany: true },
