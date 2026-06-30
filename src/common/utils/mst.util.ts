@@ -2,16 +2,26 @@ export function normalizeMstDigits(raw: string): string {
   return String(raw ?? '').replace(/\D/g, '');
 }
 
+/** Cho phép chữ số và dấu gạch ngang khi nhập MST. */
+export function sanitizeMstInput(value: string): string {
+  return String(value ?? '').replace(/[^\d-]/g, '');
+}
+
 export function isValidMstFormat(raw: string): boolean {
   const digits = normalizeMstDigits(raw);
   return digits.length === 10 || digits.length === 13;
 }
 
 export function getMstLookupVariants(raw: string): string[] {
-  const digits = normalizeMstDigits(raw);
+  const trimmed = String(raw ?? '').trim();
+  const digits = normalizeMstDigits(trimmed);
   if (!digits) return [];
 
   const variants = new Set<string>([digits]);
+
+  if (trimmed && trimmed !== digits) {
+    variants.add(trimmed);
+  }
 
   if (digits.length === 10 && digits.startsWith('0')) {
     const withoutLeading = digits.replace(/^0+/, '');

@@ -29,6 +29,7 @@ import {
   resolveRoleUser,
   resolveSingleCode,
 } from './import-excel-label-maps';
+import { isValidMstFormat, normalizeMstDigits } from '@/common/utils/mst.util';
 import { attachVbaToXlsm, tryReadVbarawBytes } from './admin-import-xlsm-vba';
 
 type HeaderMap = Map<string, number>;
@@ -406,6 +407,49 @@ async function resolveImportFkId(
   return null;
 }
 
+function normalizeImportEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function formatJobUserNotFoundError(
+  ctx: string,
+  h: HeaderMap,
+  rowIndex: number,
+  excelUserId: number | null,
+  jobEmail: string,
+  excelEmailToUserId: Map<string, number>,
+): string {
+  const userIdCell = getCellByField(h, rowIndex, 'user_id');
+  const emailCell = getCellByField(h, rowIndex, 'email');
+  const prefix = `${ctx}${userIdCell ? `: cell ${userIdCell}` : ''}`;
+  const details: string[] = [];
+
+  if (excelUserId != null) {
+    details.push(`user_id=${excelUserId} không map được tới user trong file import`);
+  } else {
+    details.push('thiếu user_id');
+  }
+
+  const trimmedEmail = jobEmail.trim();
+  if (!trimmedEmail) {
+    details.push('cột email (liên hệ tin) trống nên không thể gán user theo email');
+  } else {
+    const excelEmails = [...excelEmailToUserId.keys()];
+    details.push(
+      `email liên hệ "${trimmedEmail}" không khớp user nào trong sheet users của file` +
+        (excelEmails.length
+          ? ` (có ${excelEmails.length} email user trong file, vd: ${excelEmails.slice(0, 3).join(', ')})`
+          : ' (chưa có user nào được ghi nhận từ sheet users trong lần import này)'),
+    );
+    details.push(`email "${trimmedEmail}" cũng không tồn tại trong DB`);
+    if (emailCell) {
+      details.push(`hãy kiểm tra ${emailCell} khớp email user hoặc ${userIdCell ?? 'user_id'} khớp id tạm cột A sheet users`);
+    }
+  }
+
+  return `${prefix}: không tìm thấy user — ${details.join('; ')}`;
+}
+
 function rowHasImportableData(
   name: 'companies' | 'users' | 'jobs' | 'job_applications' | 'blogs',
   row: ExcelJS.Row,
@@ -587,8 +631,58 @@ export class AdminImportService {
     }
     const users = await this.userRepository.find({ select: ['id', 'email'] });
     for (const u of users) {
-      if (u.email) emailToUserId.set(u.email, u.id);
+      if (u.email) {
+        emailToUserId.set(u.email, u.id);
+        emailToUserId.set(normalizeImportEmail(u.email), u.id);
+      }
     }
+  }
+
+  private async resolveJobImportUserId(
+    excelUserId: number | null,
+    jobEmailRaw: string,
+    provUserIdToDbId: Map<number, number>,
+    excelEmailToUserId: Map<string, number>,
+    emailToUserId: Map<string, number>,
+    keepExistingData: boolean,
+  ): Promise<number | null> {
+    let userId = 0;
+
+    if (excelUserId != null) {
+      const resolved = await resolveImportFkId(
+        excelUserId,
+        provUserIdToDbId,
+        keepExistingData,
+        () => this.userRepository.findOne({ where: { id: excelUserId } }),
+      );
+      if (resolved) userId = resolved;
+    }
+
+    const jobEmail = jobEmailRaw.trim();
+    if (!userId && jobEmail) {
+      const fromExcel = excelEmailToUserId.get(normalizeImportEmail(jobEmail));
+      if (fromExcel) userId = fromExcel;
+    }
+
+    if (!userId && jobEmail) {
+      const normalized = normalizeImportEmail(jobEmail);
+      const cached = emailToUserId.get(jobEmail) ?? emailToUserId.get(normalized);
+      if (cached) {
+        userId = cached;
+      } else {
+        const u = await this.userRepository
+          .createQueryBuilder('u')
+          .where('LOWER(u.email) = :email', { email: normalized })
+          .getOne();
+        if (u) {
+          userId = u.id;
+          emailToUserId.set(u.email, u.id);
+          emailToUserId.set(normalized, u.id);
+        }
+      }
+    }
+
+    return userId || null;
   }
 
   /**
@@ -1449,14 +1543,14 @@ export class AdminImportService {
     const invalid: string[] = [];
 
     for (const mst of msts) {
-      // MST thường là chuỗi số; nếu không phải số thì coi là invalid luôn
       const t = String(mst || '').trim();
-      if (!t || !/^\d+$/.test(t)) {
+      if (!t || !isValidMstFormat(t)) {
         invalid.push(mst);
         continue;
       }
 
-      const ok = await this.checkVietQrBusinessExists(t).catch(() => false);
+      const digits = normalizeMstDigits(t);
+      const ok = await this.checkVietQrBusinessExists(digits).catch(() => false);
       if (!ok) invalid.push(t);
     }
 
@@ -1505,6 +1599,8 @@ export class AdminImportService {
     const errors: string[] = [];
     const mstToCompanyId = new Map<string, number>();
     const emailToUserId = new Map<string, number>();
+    /** Email user từ sheet users trong file import hiện tại (ưu tiên khi gán job theo email). */
+    const excelEmailToUserId = new Map<string, number>();
     const jobKeyToId = new Map<string, number>();
     /** Id tạm trong file (cột A / công thức) → id thật DB sau import hoặc khi đã tồn tại. */
     const provCompanyIdToDbId = new Map<number, number>();
@@ -1630,6 +1726,7 @@ export class AdminImportService {
               const prev = dupE ?? dupU;
               if (prev) {
                 if (dupE) emailToUserId.set(dupE.email, dupE.id);
+                excelEmailToUserId.set(normalizeImportEmail(email), prev.id);
                 provUserIdToDbId.set(allocProvId(row, h), prev.id);
               }
               const cell = getCellByField(h, r, 'email') ?? getCellByField(h, r, 'username');
@@ -1719,6 +1816,8 @@ export class AdminImportService {
             } as User);
             const saved = await this.userRepository.save(ent);
             emailToUserId.set(email, saved.id);
+            emailToUserId.set(normalizeImportEmail(email), saved.id);
+            excelEmailToUserId.set(normalizeImportEmail(email), saved.id);
             provUserIdToDbId.set(allocProvId(row, h), saved.id);
             summary.users += 1;
             continue;
@@ -1766,18 +1865,27 @@ export class AdminImportService {
               continue;
             }
             let userId = 0;
-            if (excelJobUserId != null) {
-              const resolvedUserId = await resolveImportFkId(
-                excelJobUserId,
-                provUserIdToDbId,
-                keepExistingData,
-                () => this.userRepository.findOne({ where: { id: excelJobUserId } }),
-              );
-              if (resolvedUserId) userId = resolvedUserId;
-            }
+            const jobContactEmail = str(getCell(row, h, 'email'));
+            const resolvedUserId = await this.resolveJobImportUserId(
+              excelJobUserId,
+              jobContactEmail,
+              provUserIdToDbId,
+              excelEmailToUserId,
+              emailToUserId,
+              keepExistingData,
+            );
+            if (resolvedUserId) userId = resolvedUserId;
             if (!userId) {
-              const cell = getCellByField(h, r, 'user_id');
-              errors.push(`${ctx}${cell ? `: cell ${cell}` : ''}: không tìm thấy user (user_id)`);
+              errors.push(
+                formatJobUserNotFoundError(
+                  ctx,
+                  h,
+                  r,
+                  excelJobUserId,
+                  jobContactEmail,
+                  excelEmailToUserId,
+                ),
+              );
               continue;
             }
 
