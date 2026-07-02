@@ -411,6 +411,40 @@ function normalizeImportEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+function resolveImportUserRoleFromCode(roleCode: number): RoleStatus {
+  if (roleCode === RoleStatus.ADMIN) return RoleStatus.ADMIN;
+  if (roleCode === RoleStatus.COMPANY) return RoleStatus.COMPANY;
+  return RoleStatus.USER;
+}
+
+function buildExcelUserLookups(wb: ExcelJS.Workbook): {
+  provIdToRole: Map<number, RoleStatus>;
+  provIdToEmail: Map<number, string>;
+} {
+  const provIdToRole = new Map<number, RoleStatus>();
+  const provIdToEmail = new Map<number, string>();
+  const ws = wb.getWorksheet('users') ?? wb.getWorksheet('USERS');
+  if (!ws) return { provIdToRole, provIdToEmail };
+
+  const h = buildHeaderMap(ws, 1);
+  if (h.size === 0) return { provIdToRole, provIdToEmail };
+
+  const allocProvId = createProvIdAllocator();
+  for (let r = 2; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    if (!rowHasImportableData('users', row, h)) continue;
+
+    const provId = allocProvId(row, h);
+    const roleCode = resolveRoleUser(str(getCell(row, h, 'role')), RoleStatus.USER);
+    provIdToRole.set(provId, resolveImportUserRoleFromCode(roleCode));
+
+    const email = str(getCell(row, h, 'email'));
+    if (email) provIdToEmail.set(provId, normalizeImportEmail(email));
+  }
+
+  return { provIdToRole, provIdToEmail };
+}
+
 function formatJobUserNotFoundError(
   ctx: string,
   h: HeaderMap,
@@ -683,6 +717,43 @@ export class AdminImportService {
     }
 
     return userId || null;
+  }
+
+  private async resolveUserRoleForJobImport(
+    excelUserId: number,
+    lookups: {
+      provIdToRole: Map<number, RoleStatus>;
+      provIdToEmail: Map<number, string>;
+    },
+  ): Promise<RoleStatus | null> {
+    const sheetEmail = lookups.provIdToEmail.get(excelUserId);
+    if (sheetEmail) {
+      const dbByEmail = await this.userRepository
+        .createQueryBuilder('u')
+        .select(['u.id', 'u.role'])
+        .where('LOWER(u.email) = :email', { email: sheetEmail })
+        .getOne();
+      if (dbByEmail) return dbByEmail.role;
+    }
+
+    const fromSheet = lookups.provIdToRole.get(excelUserId);
+    if (fromSheet != null) return fromSheet;
+
+    const dbById = await this.userRepository.findOne({
+      where: { id: excelUserId },
+      select: ['id', 'role'],
+    });
+    return dbById?.role ?? null;
+  }
+
+  private formatJobCandidateUserError(
+    ctx: string,
+    h: HeaderMap,
+    rowIndex: number,
+    excelUserId: number,
+  ): string {
+    const userIdCell = getCellByField(h, rowIndex, 'user_id');
+    return `${ctx}${userIdCell ? `: cell ${userIdCell}` : ''}: user_id=${excelUserId} thuộc ứng viên (role USER) — không thể đăng job`;
   }
 
   /**
@@ -1426,6 +1497,7 @@ export class AdminImportService {
    */
   private async validateExcelBeforeImport(wb: ExcelJS.Workbook): Promise<string[]> {
     const errors: string[] = [];
+    const excelUserLookups = buildExcelUserLookups(wb);
 
     const sheetNames = ['companies', 'users', 'jobs', 'job_applications', 'blogs'] as const;
 
@@ -1497,6 +1569,16 @@ export class AdminImportService {
           if (!detailDescription) errors.push(`${ctx}: thiếu detail_description`);
           if (excelCompanyId == null) errors.push(`${ctx}: thiếu company_id`);
           if (excelUserId == null) errors.push(`${ctx}: thiếu user_id`);
+
+          if (excelUserId != null) {
+            const userRole = await this.resolveUserRoleForJobImport(
+              excelUserId,
+              excelUserLookups,
+            );
+            if (userRole === RoleStatus.USER) {
+              errors.push(this.formatJobCandidateUserError(ctx, h, r, excelUserId));
+            }
+          }
 
           const salaryMin = num(getCell(row, h, 'salary_min'), 0);
           const salaryMax = num(getCell(row, h, 'salary_max'), 0);
@@ -1663,7 +1745,6 @@ export class AdminImportService {
             if (exist) {
               mstToCompanyId.set(mst, exist.id);
               provCompanyIdToDbId.set(allocProvId(row, h), exist.id);
-              errors.push(`${ctx}: bỏ qua, MST trùng`);
               continue;
             }
             const orgRaw = str(getCell(row, h, 'organization_type'));
@@ -1729,8 +1810,6 @@ export class AdminImportService {
                 excelEmailToUserId.set(normalizeImportEmail(email), prev.id);
                 provUserIdToDbId.set(allocProvId(row, h), prev.id);
               }
-              const cell = getCellByField(h, r, 'email') ?? getCellByField(h, r, 'username');
-              errors.push(`${ctx}${cell ? `: cell ${cell}` : ''}: email hoặc username đã tồn tại — bỏ qua dòng`);
               continue;
             }
             const companyMst = str(getCell(row, h, 'company_mst'));
@@ -1756,12 +1835,7 @@ export class AdminImportService {
               }
             }
             const roleCode = resolveRoleUser(str(getCell(row, h, 'role')), RoleStatus.USER);
-            const role =
-              roleCode === RoleStatus.ADMIN
-                ? RoleStatus.ADMIN
-                : roleCode === RoleStatus.COMPANY
-                ? RoleStatus.COMPANY
-                : RoleStatus.USER;
+            const role = resolveImportUserRoleFromCode(roleCode);
 
             // users.location/expertise lưu dạng mã số (string). Excel có thể nhập mã hoặc chọn nhãn từ list.
             let location: string | null = null;
@@ -1885,6 +1959,17 @@ export class AdminImportService {
                   jobContactEmail,
                   excelEmailToUserId,
                 ),
+              );
+              continue;
+            }
+
+            const jobOwner = await this.userRepository.findOne({
+              where: { id: userId },
+              select: ['id', 'role'],
+            });
+            if (!jobOwner || jobOwner.role === RoleStatus.USER) {
+              errors.push(
+                this.formatJobCandidateUserError(ctx, h, r, excelJobUserId!),
               );
               continue;
             }
